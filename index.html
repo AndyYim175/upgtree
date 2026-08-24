@@ -270,7 +270,7 @@
 
         // ==================== NODE TREE DEFINITION (one line each) ====================
         const TREE_NODES = [
-            { id: 'INFO_CORE', type: 'info', code: 'Start', name: 'Beginnings', coords: [0,0], reqs: [], desc: 'Central point generator.', getInfoText: ()=>`Rate: +${formatNum(calculateGainRate('P'))}/s` },
+            { id: 'INFO_CORE', type: 'info', code: 'Start', name: 'The start. You can pan the screen!', coords: [0,0], reqs: [], desc: 'Central point generator.', getInfoText: ()=>`Rate: +${formatNum(calculateGainRate('P'))}/s` },
             { id: '#1', type: 'upgrade', code: '#01', name: 'Beginning', coords: [0,1], reqs: [], borderColor: 'green', desc: '+1 Base point/s.', effects: [{ type: 'base_gain', currency: 'P', formula: (lvl)=>lvl*1 }], costCurrency: 'P', costFormula: (lvl)=>0, maxLevel: 1 },
             { id: '#2', type: 'upgrade', code: '#02', name: 'A bigger increase', coords: [1,1], reqs: [[0,1]], borderColor: 'green', desc: '+2p/s', effects: [{ type: 'base_gain', currency: 'P', formula: (lvl)=>lvl*2 }], costCurrency: 'P', costFormula: (lvl)=>5, maxLevel: 1 },
             { id: '#3', type: 'upgrade', code: '#03', name: 'Multipliers', coords: [1,0], reqs: [[1,1]], borderColor: 'orange', desc: 'x2 p/s.', effects: [{ type: 'currency_mult', currency: 'P', formula: (lvl)=>Math.pow(2.0,lvl) }], costCurrency: 'P', costFormula: (lvl)=>24, maxLevel: 1 },
