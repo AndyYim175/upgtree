@@ -204,6 +204,7 @@
             { coords: [[1.25, 2.5], [2.5, 3]], thickness: 6, color: 'lightblue', opacity: 0.2, requirements: ['D14'], type: 'line' },
             { type: 'rect', coords: [-2.5, -2.5], width: 800, height: 800, fillColor: 'green', fillOpacity: 0.3, strokeColor: '#34d399', strokeOpacity: 0.9, strokeWidth: 2, requirements: ['#1'] },
             { type: 'rect', coords: [2.5, -2.5], width: 800, height: 800, fillColor: '#f9bfbf', fillOpacity: 0.3, strokeColor: '#f9bfbf', strokeOpacity: 0.9, strokeWidth: 2, requirements: ['P05'] },
+            { type: 'rect', coords: [7.5, -2.5], width: 800, height: 800, fillColor: '#750d37', fillOpacity: 0.3, strokeColor: '#750d37', strokeOpacity: 0.9, strokeWidth: 2, requirements: ['AU19'] },
             { type: 'rect', coords: [-2.4, -2.4], width: 288, height: 128, fillColor: 'lightgreen', fillOpacity: 0.5, strokeColor: '#34d399', strokeOpacity: 0.9, strokeWidth: 0, requirements: ['D8'] },
             { type: 'rect', coords: [-2.5, -7.5], width: 800, height: 800, fillColor: 'lightgreen', fillOpacity: 0.3, strokeColor: '#34d399', strokeOpacity: 0.9, strokeWidth: 2, requirements: ['B01'] },
             { type: 'rect', coords: [-2.5, 2.5], width: 800, height: 800, fillColor: 'lightblue', fillOpacity: 0.4, strokeColor: 'lightblue', strokeOpacity: 0.9, strokeWidth: 2, requirements: ['R1'] },
@@ -211,6 +212,7 @@
             { type: 'rect', coords: [2.5, -7.5], width: 800, height: 800, fillColor: '#d1d0d0', fillOpacity: 0.35, strokeColor: 'lightyellow', strokeOpacity: 0.9, strokeWidth: 2, requirements: ['B01'] },
             { type: 'rect', coords: [2.5, 2.5], width: 800, height: 800, fillColor: 'darkorchid', fillOpacity: 0.35, strokeColor: 'purple', strokeOpacity: 0.9, strokeWidth: 2, requirements: ['R12'] },
             { type: 'rect', coords: [-2.5, 7.5], width: 800, height: 800, fillColor: 'lightyellow', fillOpacity: 0.5, strokeColor: 'lightyellow', strokeOpacity: 0.9, strokeWidth: 2, requirements: ['R11'] },
+            { type: 'rect', coords: [2.5, 7.5], width: 800, height: 800, fillColor: 'blue', fillOpacity: 0.15, strokeColor: 'lightyellow', strokeOpacity: 0.9, strokeWidth: 2, requirements: ['P09'] },
             { type: 'rect', coords: [-7.5, 7.5], width: 800, height: 800, fillColor: 'lightgrey', fillOpacity: 0.3, strokeColor: 'grey', strokeOpacity: 0.9, strokeWidth: 2, requirements: ['P04'] },
             { type: 'text', coords: [-2.5, -2.5], text: '⚘⚘⚘⚘⚘⚘⚘⚘⚘⚘⚘⚘⚘⚘⚘⚘⚘⚘⚘⚘⚘⚘⚘⚘⚘⚘⚘⚘⚘⚘⚘⚘⚘⚘⚘⚘⚘⚘⚘⚘⚘⚘⚘⚘', alignment: 'Bottom-left', color: 'green', fontSize: 28, opacity: 0.8, requirements: ['D6'] },
             { type: 'text', coords: [0, 0], text: '₽', alignment: 'Center', color: 'green', fontSize: 288, opacity: 0.5, requirements: ['D7'] },
@@ -227,11 +229,13 @@
             { type: 'text', coords: [-2.5, 2.65], text: 'Your first reset layer.', alignment: 'Bottom-left', color: 'lightblue', fontSize: 14, opacity: 1, requirements: ['D15'] },
             { type: 'text', coords: [-2.5, -2.5], text: 'Point baseplate', alignment: 'Bottom-left', color: 'lightgreen', fontSize: 28, opacity: 1, requirements: ['#1'] },
             { type: 'text', coords: [2.5, -2.5], text: 'Automation baseplate', alignment: 'Bottom-left', color: '#f9bfbf', fontSize: 28, opacity: 1, requirements: ['P05'] },
+            { type: 'text', coords: [7.5, -2.5], text: 'Automation+ baseplate', alignment: 'Bottom-left', color: '#750d37', fontSize: 28, opacity: 1, requirements: ['AU19'] },
             { type: 'text', coords: [-2.5, -7.5], text: 'Bonus baseplate', alignment: 'Bottom-left', color: 'lightgreen', fontSize: 28, opacity: 0.9, requirements: ['B01'] },
             { type: 'text', coords: [2.5, -7.5], text: 'Infinity baseplate', alignment: 'Bottom-left', color: '#d1d0d0', fontSize: 28, opacity: 0.9, requirements: ['B01'] },
             { type: 'text', coords: [-2.5, 2.5], text: 'Research baseplate', alignment: 'Bottom-left', color: 'lightblue', fontSize: 28, opacity: 0.9, requirements: ['R1'] },
             { type: 'text', coords: [-7.5, 2.5], text: 'Energy baseplate', alignment: 'Bottom-left', color: 'orange', fontSize: 28, opacity: 0.9, requirements: ['R7'] },
             { type: 'text', coords: [-2.5, 7.5], text: 'Prestige baseplate', alignment: 'Bottom-left', color: 'lightyellow', fontSize: 28, opacity: 0.9, requirements: ['R11'] },
+            { type: 'text', coords: [2.5, 7.5], text: 'Generator baseplate', alignment: 'Bottom-left', color: 'turquoise', fontSize: 28, opacity: 0.9, requirements: ['P09'] },
             { type: 'text', coords: [-7.5, 7.5], text: 'Experience baseplate', alignment: 'Bottom-left', color: 'lightgrey', fontSize: 28, opacity: 0.9, requirements: ['P04'] }
         ];
         // ==================== AUDIO ENGINE ====================
@@ -291,7 +295,22 @@
         // ==================== GAME CONSTANTS ====================
         const NODE_SIZE = 120,
             NODE_GAP = 160;
-        const CURRENCIES = { P: { id: 'P', name: 'Points', color: 'text-grey-400', fillBg: 'rgba(34,197,94,0.18)' }, R: { id: 'R', name: 'Research', color: 'text-cyan-400', fillBg: 'rgba(34,197,94,0.18)' }, '€': { id: '€', name: 'Prestige', color: 'text-yellow-400', fillBg: 'rgba(245,158,11,0.22)' }, XP: { id: 'XP', name: 'Experience', color: 'text-grey-400', fillBg: 'rgba(245,158,11,0.22)' }, L: { id: 'L', name: 'Levels', color: 'text-grey-400', fillBg: 'rgba(245,158,11,0.22)' }, α: { id: 'α', name: 'Alpha', color: 'text-emerald-400', fillBg: 'rgba(34,197,94,0.18)' }, QT: { id: 'QT', name: 'Quantum Tokens', color: 'text-cyan-400', fillBg: 'rgba(6,182,212,0.22)' }, T: { id: 'T', name: 'Tachyon', color: 'text-purple-400', fillBg: 'rgba(168,85,247,0.22)' }, '¤': { id: '¤', name: 'Decoration power', color: 'text-purple-400', fillBg: 'rgba(34,197,94,0.18)' }, '∞': { id: '∞', name: 'Infinities', color: 'text-grey-400', fillBg: 'rgba(34,197,94,0.18)', rainbow: true }, '♦': { id: '♦', name: 'Infinity fragments', color: 'text-purple-400', fillBg: 'rgba(34,197,94,0.18)' }, E: { id: 'E', name: 'Energy', color: 'text-orange-400', fillBg: 'rgba(34,197,94,0.18)' } };
+        const CURRENCIES = 
+        { 
+            P: { id: 'P', name: 'Points', color: 'text-grey-400', fillBg: 'rgba(34,197,94,0.25)' }, 
+            R: { id: 'R', name: 'Research', color: 'text-cyan-400', fillBg: 'rgba(0,150,250,0.25)' }, 
+            '€': { id: '€', name: 'Prestige', color: 'text-yellow-400', fillBg: 'rgba(245,158,11,0.25)' }, 
+            '+': { id: '+', name: 'Additions', color: 'text-blue-400', fillBg: 'rgba(0,128,255,0.25)' }, 
+            '×': { id: '×', name: 'Multiplications', color: 'text-red-400', fillBg: 'rgba(0,128,255,0.25)' }, 
+            XP: { id: 'XP', name: 'Experience', color: 'text-grey-400', fillBg: 'rgba(128,128,128,0.25)' }, 
+            L: { id: 'L', name: 'Levels', color: 'text-grey-400', fillBg: 'rgba(128,128,128,0.25)' }, 
+            α: { id: 'α', name: 'Alpha', color: 'text-emerald-400', fillBg: 'rgba(34,197,94,0.18)' }, 
+            QT: { id: 'QT', name: 'Quantum Tokens', color: 'text-cyan-400', fillBg: 'rgba(6,182,212,0.22)' }, 
+            T: { id: 'T', name: 'Tachyon', color: 'text-purple-400', fillBg: 'rgba(168,85,247,0.22)' }, 
+            '¤': { id: '¤', name: 'Decoration power', color: 'text-purple-400', fillBg: 'rgba(34,197,94,0.18)' }, 
+            '∞': { id: '∞', name: 'Infinities', color: 'text-grey-400', fillBg: 'rgba(34,197,94,0.18)', rainbow: true }, 
+            '♦': { id: '♦', name: 'Infinity fragments', color: 'text-purple-400', fillBg: 'rgba(34,197,94,0.18)' }, 
+            E: { id: 'E', name: 'Energy', color: 'text-orange-400', fillBg: 'rgba(255,165,0,0.535)' } };
         // ==================== GAME STATE ====================
         let gameState = { currencies: { P: 0, PR: 0, QT: 0, T: 0 }, discoveredCurrencies: ['P'], currencyOrder: ['P'], hiddenCurrencies: [], levels: {}, unlockedDecorations: [], camera: { panX: 0, panY: 0, scale: 1 }, soundMuted: false, showEffects: true, buyMode: 1, skipResetConfirm: {}, paused: false };
         let displayLevels = {},
@@ -311,446 +330,169 @@
         function getCurr(key) { return gameState.currencies[key] || 0; }
         // ==================== NODE TREE DEFINITION ====================
         const TREE_NODES = [
-            { id: 'INFO_CORE', type: 'info', code: 'Start', name: 'The start. You can pan the screen! There is buy max in the settings.', coords: [0, 0], reqs: [], desc: 'Central point generator.', getInfoText: () => `Rate: +${formatNum(calculateGainRate('P'))}/s` },
-            { id: '#1', type: 'upgrade', code: '#01', name: 'Beginning', coords: [0, 1], reqs: [], borderColor: 'green', desc: '+1 Base point/s.', effects: [{ type: 'base_gain', currency: 'P', formula: (lvl) => lvl * 1 }], costCurrency: 'P', costFormula: (lvl) => 0, maxLevel: 1 },
-            { id: '#2', type: 'upgrade', code: '#02', name: 'A bigger increase', coords: [1, 1], reqs: [
-                    [0, 1]
-                ], borderColor: 'green', desc: '+2p/s', effects: [{ type: 'base_gain', currency: 'P', formula: (lvl) => lvl * 2 }], costCurrency: 'P', costFormula: (lvl) => 5, maxLevel: 1 },
-            { id: '#3', type: 'upgrade', code: '#03', name: 'Multipliers', coords: [1, 0], reqs: [
-                    [1, 1]
-                ], borderColor: 'orange', desc: 'x2 p/s.', effects: [{ type: 'currency_mult', currency: 'P', formula: (lvl) => Math.pow(2.0, lvl) }], costCurrency: 'P', costFormula: (lvl) => 24, maxLevel: 1 },
-            { id: '#4', type: 'upgrade', code: '#04', name: 'More points', coords: [-1, 1], reqs: [
-                    [0, 1]
-                ], borderColor: 'green', desc: '+1 p/s per level.', effects: [{ type: 'base_gain', currency: 'P', formula: (lvl) => 1 * lvl }], costCurrency: 'P', costFormula: (lvl) => Math.ceil(Math.pow(1.25, Math.min(lvl, 10 + ((lvl - 10) / 6))) * 50), maxLevel: 10 },
-            { id: '#5', type: 'upgrade', code: '#05', name: 'More mult', coords: [1, -1], reqs: [
-                    [1, 0]
-                ], borderColor: 'orange', desc: 'x1.1 p/s per level.', effects: [{ type: 'currency_mult', currency: 'P', formula: (lvl) => Math.pow(1.1, lvl) }], costCurrency: 'P', costFormula: (lvl) => Math.ceil(Math.pow(1.4, lvl) * 60), maxLevel: 8 },
-            { id: '#6', type: 'upgrade', code: '#06', name: 'Point boost', coords: [-1, 0], reqs: [
-                    [-1, 1]
-                ], borderColor: 'orange', desc: '+5% p/s per level additive.', effects: [{ type: 'currency_mult', currency: 'P', formula: (lvl) => 1 + 0.05 * lvl }], costCurrency: 'P', costFormula: (lvl) => Math.ceil(Math.pow(1.125, lvl) * (225 * (lvl >= 40) + 25)), maxLevel: 40 },
-            { id: '#7', type: 'upgrade', code: '#07', name: 'Another mult', coords: [-1, -1], reqs: [
-                    [-1, 0]
-                ], borderColor: 'orange', desc: 'x2.5 p/s.', effects: [{ type: 'currency_mult', currency: 'P', formula: (lvl) => Math.pow(2.5, lvl) }], costCurrency: 'P', costFormula: (lvl) => 1250, maxLevel: 1 },
-            { id: '#8', type: 'upgrade', code: '#08', name: 'Research', coords: [0, -1], reqs: [
-                    [-1, -1]
-                ], borderColor: 'orange', desc: 'Unlock research (on top of #1)', effects: [{}], costCurrency: 'P', costFormula: (lvl) => 5000, maxLevel: 1 },
-            { id: '#9', type: 'upgrade', code: '#09', name: 'Self-boost', coords: [-2, -1], reqs: [
-                    [-1, 4],
-                    [-1, -1]
-                ], borderColor: 'orange', desc: 'Points boost itself. p^0.08', effects: [{ type: 'currency_mult', currency: 'P', formula: (lvl, getcurr) => Math.pow(getCurr('P'), 0.08 * lvl) }], costCurrency: 'P', costFormula: (lvl) => 12500, maxLevel: 1 },
-            { id: '#10', type: 'upgrade', code: '#10', name: 'Uncapped', coords: [-2, 0], reqs: [
-                    [-1, 4],
-                    [-1, 0]
-                ], borderColor: 'red', desc: '#4 cap +5/level', effects: [{ type: 'max_level_mod', target: '#4', amount: (lvl) => 5 * lvl }], costCurrency: 'P', costFormula: (lvl) => Math.floor(75000 * Math.pow(1.075, lvl)), maxLevel: 98 },
-            { id: '#11', type: 'upgrade', code: '#11', name: 'Many', coords: [2, 0], reqs: [
-                    [-1, 4],
-                    [1, 0]
-                ], borderColor: 'orange', desc: 'x1.03 p/s per level.', effects: [{ type: 'currency_mult', currency: 'P', formula: (lvl) => Math.pow(1.03, lvl) }], costCurrency: 'P', costFormula: (lvl) => Math.floor(45000 * (1 + 0.025 * lvl) * Math.pow(1.083367, lvl)), maxLevel: 125 },
-            { id: '#12', type: 'upgrade', code: '#12', name: 'yes!', coords: [2, -1], reqs: [
-                    [-1, 5],
-                    [1, -1]
-                ], borderColor: 'orange', desc: 'x1.25 resc/lvl.', effects: [{ type: 'reset_gain_mult', targetCurrency: 'R', formula: (lvl) => Math.pow(1.25, lvl) }], costCurrency: 'P', costFormula: (lvl) => Math.floor(5e9 * Math.pow(2.5, lvl)), maxLevel: 5 },
-            { id: '#13', type: 'upgrade', code: '#13', name: 'woah!', coords: [1, -2], reqs: [
-                    [-1, 5],
-                    [1, -1]
-                ], borderColor: 'orange', desc: 'increase max.lvl to #6 per level.', effects: [{ type: 'max_level_mod', target: '#6', amount: (lvl) => Math.floor(5 * Math.pow(lvl, 1.8)) }], costCurrency: 'P', costFormula: (lvl) => Math.floor(3e9 * Math.pow(1.65, lvl)), maxLevel: 10 },
-            { id: '#14', type: 'upgrade', code: '#14', name: 'this too', coords: [0, 2], reqs: [
-                    [-1, 5],
-                    [-2, 4],
-                    [0, 1]
-                ], borderColor: 'orange', desc: '+50% energy per level', effects: [{ type: 'currency_mult', currency: 'E', formula: (lvl) => 1 + 0.5 * lvl }], costCurrency: 'P', costFormula: (lvl) => Math.floor(1e10 * Math.pow(2, Math.pow(lvl, 0.75))), maxLevel: 18 },
-            { id: '#15', type: 'upgrade', code: '#15', name: 'Reversed', coords: [1, 2], reqs: [
-                    [-1, 5],
-                    [1, 1]
-                ], borderColor: 'orange', desc: 'Unspent resc boost points.', effects: [{ type: 'currency_mult', currency: 'P', formula: (lvl) => 1 + lvl * Math.pow((getCurr('R') / 1000) + 3, 0.2) }], costCurrency: 'P', costFormula: (lvl) => Math.floor(3.5e11 * Math.pow(2, Math.pow(lvl, 0.75))), maxLevel: 1 },
-            { id: '#16', type: 'upgrade', code: '#16', name: 'Infinite', coords: [2, 1], reqs: [
-                    [-1, 5],
-                    [1, 1]
-                ], borderColor: 'orange', desc: '+2% points additive/lvl. There is no max.', effects: [{ type: 'currency_mult', currency: 'P', formula: (lvl) => 1 + 0.02 * (lvl) }, { type: 'max_level_mod', target: '#16', amount: (lvl) => 2 * lvl }], costCurrency: 'P', costFormula: (lvl) => Math.floor(1e9 * Math.pow(1.05, lvl)), maxLevel: 1 },
-            { id: '#17', type: 'upgrade', code: '#17', name: 'Uncapped^2', coords: [-2, 1], reqs: [
-                    [-2, 0],
-                    [-2, 10]
-                ], borderColor: 'red', desc: '#10 cap +5/lvl.', effects: [{ type: 'max_level_mod', target: '#10', amount: (lvl) => 5 * (lvl) }], costCurrency: 'P', costFormula: (lvl) => Math.floor(1e15 * Math.pow(2, Math.pow(lvl, 0.7))), maxLevel: 100 },
-            { id: '#18', type: 'upgrade', code: '#18', name: 'Simplify', coords: [-1, 2], reqs: [
-                    [-1, 1],
-                    [-2, 10]
-                ], borderColor: 'orange', desc: 'x3 points.', effects: [{ type: 'currency_mult', currency: 'P', formula: (lvl) => 1 + 2 * lvl }], costCurrency: 'P', costFormula: (lvl) => 1.25e17, maxLevel: 1 },
-            { id: '#19', type: 'upgrade', code: '#19', name: 'Hi!', coords: [-2, 2], reqs: [
-                    [-1, 2],
-                    [-2, 10]
-                ], borderColor: 'orange', desc: 'Boost decoration power by x10/lvl.', effects: [{ type: 'currency_mult', currency: '¤', formula: (lvl) => Math.pow(10, lvl) }], costCurrency: 'P', costFormula: (lvl) => 1.5e17 * Math.pow(1.35, Math.pow(lvl + 2, 1.5)), maxLevel: 15 },
-            { id: '#20', type: 'upgrade', code: '#20', name: 'Twenty!', coords: [2, 2], reqs: [
-                    [2, 1],
-                    [-2, 10]
-                ], borderColor: 'orange', desc: 'Boost resc generate rate by x1.25/lvl.', effects: [{ type: 'currency_mult', currency: 'R', formula: (lvl) => Math.pow(1.25, lvl) }], costCurrency: 'P', costFormula: (lvl) => 1e18 * Math.pow(2.5, Math.pow(lvl, 1.25)), maxLevel: 15 },
-            { id: 'Resc_hint', type: 'info', code: 'Tips', name: 'Autobuy limits', coords: [1, 3], reqs: [
-                    [0, -1]
-                ], desc: 'Central point generator.', getInfoText: () => `Consider changing autobuy to 1 to avoid accidentally buying muitiple resc.upgs!` },
-            { id: 'Resc', type: 'reset', code: 'Research', name: 'Reset prev. progress for research points!', coords: [0, 3], reqs: [
-                    [0, -1]
-                ], desc: 'Reset Previous progress for research points!', targetCurrency: 'R', resetCurrencies: ['P'], resettedCoords: [
-                    [2, 2],
-                    [-2, 2],
-                    [-1, 2],
-                    [-2, 1],
-                    [2, 1],
-                    [1, 2],
-                    [0, 2],
-                    [1, -2],
-                    [2, -1],
-                    [-2, 0],
-                    [2, 0],
-                    [0, 1],
-                    [1, 0],
-                    [-1, 0],
-                    [1, 1],
-                    [1, -1],
-                    [-1, -1],
-                    [-1, 1],
-                    [-2, -1],
-                    [-2, 0]
-                ], calculateGain: () => { const p = gameState.currencies.P; if (p < 2500) return 0; return Math.floor(1 + Math.pow(p / 1000, 0.4) * 100) / 100; } },
-            { id: 'R1', type: 'upgrade', code: 'R1', name: 'Start-off', coords: [0, 4], reqs: [
-                    [0, -1]
-                ], borderColor: 'green', desc: '+10p/s per level.', effects: [{ type: 'base_gain', currency: 'P', formula: (lvl) => 10 * lvl }], costCurrency: 'R', costFormula: (lvl) => 2 + 1 * lvl, maxLevel: 5 },
-            { id: 'R2', type: 'upgrade', code: 'R2', name: 'Boosting', coords: [0, 5], reqs: [
-                    [0, 4]
-                ], borderColor: 'green', desc: 'x1.5 points per level.', effects: [{ type: 'currency_mult', currency: 'P', formula: (lvl) => Math.pow(1.5, lvl) }], costCurrency: 'R', costFormula: (lvl) => 3 + 2 * lvl, maxLevel: 5 },
-            { id: 'R3', type: 'upgrade', code: 'R3', name: 'Double', coords: [1, 4], reqs: [
-                    [0, 4]
-                ], borderColor: 'green', desc: 'x1.2 points per level, +7pt/s per level.', effects: [{ type: 'currency_mult', currency: 'P', formula: (lvl) => Math.pow(1.2, lvl) }, { type: 'base_gain', currency: 'P', formula: (lvl) => 7 * lvl }], costCurrency: 'R', costFormula: (lvl) => 2 + 3 * lvl, maxLevel: 5 },
-            { id: 'R4', type: 'upgrade', code: 'R4', name: 'Content', coords: [-1, 4], reqs: [
-                    [0, 4]
-                ], borderColor: 'green', desc: 'Unlock MORE point upgrades.', effects: [], costCurrency: 'R', costFormula: (lvl) => 5, maxLevel: 1 },
-            { id: 'R5', type: 'upgrade', code: 'R5', name: 'This too', coords: [2, 4], reqs: [
-                    [1, 4]
-                ], desc: '+0.5x resc.gain, first lvl start with x2 research.', effects: [{ type: 'reset_gain_mult', targetCurrency: 'R', formula: (lvl) => 1 + 0.5 * Math.min(lvl, 1) + 0.5 * lvl }], costCurrency: 'R', costFormula: (lvl) => Math.floor(50 * Math.pow(1.35, lvl)), maxLevel: 3 },
-            { id: 'R6', type: 'upgrade', code: 'R6', name: 'Both too!', coords: [2, 5], reqs: [
-                    [2, 4]
-                ], desc: '+0.2x resc.gain/lvl, +1x pt.gain/lvl.', effects: [{ type: 'reset_gain_mult', targetCurrency: 'R', formula: (lvl) => 1 + 0 * Math.min(lvl, 1) + 0.2 * lvl }, { type: 'currency_mult', currency: 'P', formula: (lvl) => 1 + 1 * lvl }], costCurrency: 'R', costFormula: (lvl) => Math.floor(300 * Math.pow(1.35, lvl)), maxLevel: 3 },
-            { id: 'R7', type: 'upgrade', code: 'R7', name: 'More content!', coords: [-2, 4], reqs: [
-                    [-1, 4]
-                ], desc: 'Unlock new content.', effects: [], costCurrency: 'R', costFormula: (lvl) => 500, maxLevel: 1 },
-            { id: 'R8', type: 'upgrade', code: 'R8', name: 'Extra content!', coords: [-1, 5], reqs: [
-                    [-1, 4]
-                ], desc: 'Unlock even More point upgrades.', effects: [], costCurrency: 'R', costFormula: (lvl) => 5000, maxLevel: 1 },
-            { id: 'R9', type: 'upgrade', code: 'R9', name: 'Point = good', coords: [-1, 3], reqs: [
-                    [-1, 4]
-                ], borderColor: 'orange', desc: 'x1.5 research if points is above 1M', effects: [{ type: 'reset_gain_mult', targetCurrency: 'R', formula: (lvl, getLvl, getCurr) => 1 + 0.5 * lvl * (getCurr('P') > 1000000) }], costCurrency: 'R', costFormula: (lvl) => 20, maxLevel: 1 },
-            { id: 'R10', type: 'upgrade', code: 'R10', name: 'Better beginnings', coords: [-2, 3], reqs: [
-                    [-1, 3],
-                    [-2, 4]
-                ], borderColor: 'orange', desc: 'x2 points if points is below 1B, else x1.2', effects: [{ type: 'currency_mult', currency: 'P', formula: (lvl, getLvl, getCurr) => 1 + 1 * lvl - 0.8 * lvl * (getCurr('P') > 1000000000) }], costCurrency: 'R', costFormula: (lvl) => 2000, maxLevel: 1 },
-            { id: 'R11', type: 'upgrade', code: 'R11', name: 'Its time!!!', coords: [0, 6], reqs: [
-                    [-2, 4],
-                    [-1, 5]
-                ], desc: 'Unlock a new reset layer.', effects: [], costCurrency: 'R', costFormula: (lvl) => 1e6, maxLevel: 1 },
-            { id: 'R12', type: 'upgrade', code: 'R12', name: 'Prettier', coords: [2, 3], reqs: [
-                    [2, 4]
-                ], desc: 'Unlock decorator. (have progression)', effects: [], costCurrency: 'R', costFormula: (lvl) => 75, maxLevel: 1 },
-            { id: 'R13', type: 'upgrade', code: 'R13', name: 'Infinite+', coords: [1, 5], reqs: [
-                    [-1, 5],
-                    [0, 5],
-                    [2, 5],
-                    [1, 4]
-                ], borderColor: 'orange', desc: 'Muitiply points based on #16 levels', effects: [{ type: 'reset_gain_mult', targetCurrency: 'R', formula: (lvl, getLvl, getCurr) => 1 + 0.005 * lvl * (getLevel('#16')) }], costCurrency: 'R', costFormula: (lvl) => 100000, maxLevel: 1 },
-            { id: 'Dinfo', type: 'info', code: 'Tip', name: 'Decorators', coords: [3, 3], reqs: [
-                    [2, 3]
-                ], desc: 'Central point generator.', getInfoText: () => `Amount: +${formatNum(getCurr('¤'))}¤, Rate: +${formatNum(calculateGainRate('¤'))}/s` },
-            { id: 'D1', type: 'upgrade', code: 'D1', name: 'Boost #1', coords: [4, 3], reqs: [
-                    [2, 3]
-                ], desc: 'Decoration power boost points.', effects: [{ type: 'currency_mult', currency: 'P', formula: (lvl, getLvl, getCurr) => 1 + 0.1 * Math.pow((lvl * Math.log10(getCurr('¤') + 1)), 1.8) }], costCurrency: 'R', costFormula: (lvl) => 100, maxLevel: 1 },
-            { id: 'D2', type: 'upgrade', code: 'D2', name: 'Boost #2', coords: [5, 3], reqs: [
-                    [4, 3],
-                    [2, 3]
-                ], desc: 'Decoration power boost research.', effects: [{ type: 'reset_gain_mult', targetCurrency: 'R', formula: (lvl, getLvl, getCurr) => 1 + 0.08 * Math.pow((lvl * Math.log10(getCurr('¤') + 1)), 1.2) }], costCurrency: 'R', costFormula: (lvl) => 1000, maxLevel: 1 },
-            { id: 'D6', type: 'upgrade', code: 'D6', name: 'Flowers', coords: [3, 4], reqs: [
-                    [2, 3]
-                ], desc: 'Deco pt.baseplate. +1 deco power/s.', effects: [{ type: 'base_gain', currency: '¤', formula: (lvl) => lvl * 1 }], costCurrency: 'P', costFormula: (lvl) => 1e6, maxLevel: 1 },
-            { id: 'D7', type: 'upgrade', code: 'D7', name: 'Background', coords: [4, 4], reqs: [
-                    [2, 3]
-                ], desc: 'Deco pt.baseplate. +4 deco power/s.', effects: [{ type: 'base_gain', currency: '¤', formula: (lvl) => lvl * 4 }], costCurrency: 'P', costFormula: (lvl) => 1e7, maxLevel: 1 },
-            { id: 'D8', type: 'upgrade', code: 'D8', name: 'Garden', coords: [5, 4], reqs: [
-                    [2, 3]
-                ], desc: 'Deco pt.baseplate. +15 deco power/s.', effects: [{ type: 'base_gain', currency: '¤', formula: (lvl) => lvl * 15 }], costCurrency: 'P', costFormula: (lvl) => 2e8, maxLevel: 1 },
-            { id: 'D9', type: 'upgrade', code: 'D9', name: 'Background 2', coords: [6, 4], reqs: [
-                    [2, 3]
-                ], desc: 'Deco pt.baseplate. +80 deco power/s.', effects: [{ type: 'base_gain', currency: '¤', formula: (lvl) => lvl * 80 }], costCurrency: 'P', costFormula: (lvl) => 5e9, maxLevel: 1 },
-            { id: 'D10', type: 'upgrade', code: 'D10', name: 'Description', coords: [7, 4], reqs: [
-                    [2, 3]
-                ], desc: 'Deco pt.baseplate. +200 deco power/s.', effects: [{ type: 'base_gain', currency: '¤', formula: (lvl) => lvl * 200 }], costCurrency: 'P', costFormula: (lvl) => 1.25e11, maxLevel: 1 },
-            { id: 'D11', type: 'upgrade', code: 'D11', name: 'Background', coords: [3, 5], reqs: [
-                    [2, 3]
-                ], desc: 'Deco resc.bp. x1.5 deco power/s.', effects: [{ type: 'currency_mult', currency: '¤', formula: (lvl) => 1 + lvl * 0.5 }], costCurrency: 'R', costFormula: (lvl) => 50, maxLevel: 1 },
-            { id: 'D12', type: 'upgrade', code: 'D12', name: 'Background 2', coords: [4, 5], reqs: [
-                    [2, 3]
-                ], desc: 'Deco resc.bp. x2 deco power/s.', effects: [{ type: 'currency_mult', currency: '¤', formula: (lvl) => 1 + lvl * 1 }], costCurrency: 'R', costFormula: (lvl) => 1e3, maxLevel: 1 },
-            { id: 'D13', type: 'upgrade', code: 'D13', name: 'Fence', coords: [5, 5], reqs: [
-                    [2, 3]
-                ], desc: 'Deco resc.bp. x2.5 deco power/s.', effects: [{ type: 'currency_mult', currency: '¤', formula: (lvl) => 1 + lvl * 1.5 }], costCurrency: 'R', costFormula: (lvl) => 2e4, maxLevel: 1 },
-            { id: 'D14', type: 'upgrade', code: 'D14', name: 'Bg lines', coords: [6, 5], reqs: [
-                    [2, 3]
-                ], desc: 'Deco resc.bp. x3 deco power/s.', effects: [{ type: 'currency_mult', currency: '¤', formula: (lvl) => 1 + lvl * 2 }], costCurrency: 'R', costFormula: (lvl) => 5e6, maxLevel: 1 },
-            { id: 'D15', type: 'upgrade', code: 'D15', name: 'Description', coords: [7, 5], reqs: [
-                    [2, 3]
-                ], desc: 'Deco resc.bp. x4 deco power/s.', effects: [{ type: 'currency_mult', currency: '¤', formula: (lvl) => 1 + lvl * 3 }], costCurrency: 'R', costFormula: (lvl) => 1.25e8, maxLevel: 1 },
-            { id: 'E01', type: 'upgrade', code: 'E1', name: 'Energetic', coords: [-3, 4], reqs: [
-                    [-2, 4]
-                ], borderColor: 'green', desc: 'Start generating energy at a rate of 1/s.', effects: [{ type: 'base_gain', currency: 'E', formula: (lvl) => lvl * 1 }], costCurrency: 'E', costFormula: (lvl) => 0, maxLevel: 1 },
-            { id: 'E02', type: 'upgrade', code: 'E2', name: 'factor I', coords: [-4, 4], reqs: [
-                    [-3, 4]
-                ], borderColor: 'orange', desc: '+0.2x energy per level.', effects: [{ type: 'currency_mult', currency: 'E', formula: (lvl) => 1 + lvl * 0.2 }], costCurrency: 'P', costFormula: (lvl) => Math.round(1e7 * Math.pow(1.8, Math.pow(lvl, 0.6))), maxLevel: 100 },
-            { id: 'E03', type: 'upgrade', code: 'E3', name: 'factor II', coords: [-5, 4], reqs: [
-                    [-3, 4]
-                ], borderColor: 'orange', desc: '+0.2x energy per level.', effects: [{ type: 'currency_mult', currency: 'E', formula: (lvl) => 1 + lvl * 0.2 }], costCurrency: 'R', costFormula: (lvl) => Math.round(12500 * Math.pow(1.5, lvl)), maxLevel: 100 },
-            { id: 'E04', type: 'upgrade', code: 'E4', name: 'factor III', coords: [-6, 4], reqs: [
-                    [-3, 4]
-                ], borderColor: 'orange', desc: '+0.2x energy per level.', effects: [{ type: 'currency_mult', currency: 'E', formula: (lvl) => 1 + lvl * 0.2 }], costCurrency: 'E', costFormula: (lvl) => Math.round(2500 * Math.pow(1.5, lvl)), maxLevel: 100 },
-            { id: 'E05', type: 'upgrade', code: 'E5', name: 'Energy upg 1', coords: [-3, 5], reqs: [
-                    [-3, 4]
-                ], borderColor: 'orange', desc: 'x1.2 points per level.', effects: [{ type: 'currency_mult', currency: 'P', formula: (lvl) => Math.pow(1.2, lvl) }], costCurrency: 'E', costFormula: (lvl) => Math.round((10 + 10 * Math.min(5, lvl)) * Math.pow(2, lvl)), maxLevel: 25 },
-            { id: 'E06', type: 'upgrade', code: 'E6', name: 'Energy upg 2', coords: [-4, 5], reqs: [
-                    [-3, 5]
-                ], borderColor: 'orange', desc: 'x2 energy per level.', effects: [{ type: 'currency_mult', currency: 'E', formula: (lvl) => Math.pow(2, lvl) }], costCurrency: 'E', costFormula: (lvl) => Math.round(750 * Math.pow(10 + lvl - 1, lvl)), maxLevel: 25 },
-            { id: 'E07', type: 'upgrade', code: 'E7', name: 'Energy upg 3', coords: [-5, 5], reqs: [
-                    [-4, 5]
-                ], borderColor: 'orange', desc: 'x1.1 resc per level.', effects: [{ type: 'reset_gain_mult', targetCurrency: 'R', formula: (lvl) => Math.pow(1.1, lvl) }], costCurrency: 'E', costFormula: (lvl) => Math.round(500 * Math.pow(3, lvl)), maxLevel: 25 },
-            { id: 'E08', type: 'upgrade', code: 'E8', name: 'Energy upg 4', coords: [-4, 6], reqs: [
-                    [-4, 5]
-                ], borderColor: 'orange', desc: 'x3 energy if its less than 1k, x2 threshold/lvl after', effects: [{ type: 'currency_mult', currency: 'E', formula: (lvl, getLvl, getCurr) => 1 + 2 * (lvl > 0) * (getCurr('E') < Math.pow(2, lvl - 1) * 1000) }], costCurrency: 'E', costFormula: (lvl) => Math.round(250 * Math.pow(2.1, lvl)), maxLevel: 25 },
-            { id: 'E09', type: 'upgrade', code: 'E9', name: 'Energy upg 5', coords: [-4, 7], reqs: [
-                    [-4, 6],
-                    [-1, 10]
-                ], borderColor: 'orange', desc: 'x1.5 energy.', effects: [{ type: 'currency_mult', currency: 'E', formula: (lvl) => Math.pow(1.5, lvl) }], costCurrency: 'E', costFormula: (lvl) => Math.round(1e7 * Math.pow(2.5, (Math.pow(lvl + 7, 2) - 49) * 0.05)), maxLevel: 25 },
-            { id: 'E10', type: 'upgrade', code: 'E10', name: 'factor IV', coords: [-7, 4], reqs: [
-                    [-6, 4],
-                    [-1, 10]
-                ], borderColor: 'orange', desc: '+0.2x energy per level. note: it cost €!', effects: [{ type: 'currency_mult', currency: 'E', formula: (lvl) => 1 + lvl * 0.2 }], costCurrency: '€', costFormula: (lvl) => 0.25 + 0.25 * lvl, maxLevel: 45 },
-            { id: 'E11', type: 'upgrade', code: 'E11', name: 'Energy upg 6', coords: [-6, 5], reqs: [
-                    [-5, 5],
-                    [-1, 10]
-                ], borderColor: 'orange', desc: '+5% prestige per level.', effects: [{ type: 'reset_gain_mult', targetCurrency: '€', formula: (lvl) => 1 + lvl * 0.05 }], costCurrency: 'E', costFormula: (lvl) => 1e8 * Math.pow(10, 0.5 * Math.pow(lvl, 0.7)), maxLevel: 80 },
-            { id: 'Prestige', type: 'reset', code: 'Prestige', name: 'Reset all prev. progress for prestige!', coords: [0, 8], reqs: [
-                    [0, 6]
-                ], desc: 'Reset Previous progress for research points!', targetCurrency: '€', resetCurrencies: ['P', 'R', 'E'], resettedCoords: [
-                    [2, 2],
-                    [-2, 2],
-                    [-1, 2],
-                    [-2, 1],
-                    [-6, 5],
-                    [-7, 4],
-                    [-4, 7],
-                    [0, 1],
-                    [1, 1],
-                    [1, 0],
-                    [-1, 1],
-                    [1, -1],
-                    [-1, 0],
-                    [-1, -1],
-                    [0, -1],
-                    [-2, -1],
-                    [-2, 0],
-                    [2, 0],
-                    [2, -1],
-                    [1, -2],
-                    [0, 2],
-                    [1, 2],
-                    [2, 1],
-                    [0, 4],
-                    [0, 5],
-                    [1, 4],
-                    [-1, 4],
-                    [2, 4],
-                    [2, 5],
-                    [-2, 4],
-                    [-1, 5],
-                    [-1, 3],
-                    [-2, 3],
-                    [2, 3],
-                    [1, 5],
-                    [-3, 4],
-                    [-4, 4],
-                    [-5, 4],
-                    [-6, 4],
-                    [-3, 5],
-                    [-4, 5],
-                    [-5, 5],
-                    [-4, 6]
-                ], calculateGain: () => { const p = gameState.currencies.R; if (p < 1000000) return 0; return Math.floor(Math.pow(p / 1000000, 0.32) * 100) / 100; } },
-            { id: 'P01', type: 'upgrade', code: 'P01', name: 'Another beginning', coords: [0, 9], reqs: [
-                    [0, 6]
-                ], borderColor: 'orange', desc: 'x4 points, x3 prestige, x2 energy.', effects: [{ type: 'currency_mult', currency: 'P', formula: (lvl) => lvl * 4 }, { type: 'reset_gain_mult', targetCurrency: 'R', formula: (lvl) => 1 + 2 * lvl }, { type: 'currency_mult', currency: 'E', formula: (lvl) => lvl * 2 }], costCurrency: '€', costFormula: (lvl) => 1, maxLevel: 1 },
-            { id: 'P02', type: 'upgrade', code: 'P02', name: 'Passive yay!', coords: [1, 9], reqs: [
-                    [0, 9]
-                ], borderColor: 'green', desc: '+5 research (yes, research) per second (when <= 100)', effects: [{ type: 'base_gain', currency: 'R', formula: (lvl, getLvl, getCurr) => lvl * (getCurr('R') <= 100) * 5 }], costCurrency: '€', costFormula: (lvl) => 3, maxLevel: 1 },
-            { id: 'P03', type: 'upgrade', code: 'P03', name: 'Beginning', coords: [-1, 9], reqs: [
-                    [0, 9]
-                ], borderColor: 'green', desc: 'x5 energy.', effects: [{ type: 'currency_mult', currency: 'E', formula: (lvl) => lvl * 5 }], costCurrency: '€', costFormula: (lvl) => 2, maxLevel: 1 },
-            { id: 'P04', type: 'upgrade', code: 'P04', name: 'Content', coords: [0, 10], reqs: [
-                    [0, 9]
-                ], borderColor: 'green', desc: 'Unlock the experience (leveling) baseplate.', effects: [], costCurrency: '€', costFormula: (lvl) => 5, maxLevel: 1 },
-            { id: 'P05', type: 'upgrade', code: 'P05', name: 'Automated', coords: [1, 10], reqs: [
-                    [1, 9]
-                ], borderColor: 'green', desc: 'Unlock automation!!', effects: [], costCurrency: '€', costFormula: (lvl) => 6, maxLevel: 1 },
-            { id: 'P06', type: 'upgrade', code: 'P06', name: 'Energy+', coords: [-1, 10], reqs: [
-                    [0, 10]
-                ], borderColor: 'green', desc: 'Unlock more energy upgrades (reset on prestige!!).', effects: [], costCurrency: '€', costFormula: (lvl) => 12, maxLevel: 1 },
-            { id: 'P07', type: 'upgrade', code: 'P07', name: 'Point++', coords: [-2, 10], reqs: [
-                    [0, 10]
-                ], borderColor: 'green', desc: 'Unlock more point upgrades.', effects: [], costCurrency: '€', costFormula: (lvl) => 30, maxLevel: 1 },
-            { id: 'AU01', type: 'upgrade', code: 'AU01', name: 'Start()', coords: [3, 0], reqs: [
-                    [1, 10]
-                ], borderColor: 'green', desc: 'Unlock upgrades. Note that all automation made (NOT AUTOMATION UPGRADES) cost nothing (i.e cost become requirement)', effects: [], costCurrency: 'R', costFormula: (lvl) => 0, maxLevel: 1 },
-            { id: 'AU02', type: 'upgrade', code: 'AU02', name: 'Automate(1)', coords: [4, 0], reqs: [
-                    [3, 0]
-                ], borderColor: 'green', desc: 'Start automating #1.', effects: [{ type: 'automation', target: '#1' }], costCurrency: 'R', costFormula: (lvl) => 3e7, maxLevel: 1 },
-            { id: 'AU03', type: 'upgrade', code: 'AU03', name: 'Automate(2)', coords: [3, -1], reqs: [
-                    [3, 0]
-                ], borderColor: 'green', desc: 'Start automating #2.', effects: [{ type: 'automation', target: '#2' }], costCurrency: 'R', costFormula: (lvl) => 2e7, maxLevel: 1 },
-            { id: 'AU04', type: 'upgrade', code: 'AU04', name: 'Automate(3)', coords: [3, 1], reqs: [
-                    [3, 0]
-                ], borderColor: 'green', desc: 'Start automating #3.', effects: [{ type: 'automation', target: '#3' }], costCurrency: 'R', costFormula: (lvl) => 2e7, maxLevel: 1 },
-            { id: 'AU05', type: 'upgrade', code: 'AU05', name: 'Automate(4)', coords: [4, 1], reqs: [
-                    [4, 0]
-                ], borderColor: 'green', desc: 'Start automating #4.', effects: [{ type: 'automation', target: '#4' }], costCurrency: 'R', costFormula: (lvl) => 4.5e7, maxLevel: 1 },
-            { id: 'AU06', type: 'upgrade', code: 'AU06', name: 'Automate(5)', coords: [4, -1], reqs: [
-                    [4, 0]
-                ], borderColor: 'green', desc: 'Start automating #5.', effects: [{ type: 'automation', target: '#5' }], costCurrency: 'R', costFormula: (lvl) => 6e7, maxLevel: 1 },
-            { id: 'AU07', type: 'upgrade', code: 'AU07', name: 'Automate(6)', coords: [3, 2], reqs: [
-                    [3, 1]
-                ], borderColor: 'green', desc: 'Start automating #6.', effects: [{ type: 'automation', target: '#6' }], costCurrency: 'R', costFormula: (lvl) => 1e8, maxLevel: 1 },
-            { id: 'AU08', type: 'upgrade', code: 'AU08', name: 'Automate(7)', coords: [3, -2], reqs: [
-                    [3, -1]
-                ], borderColor: 'green', desc: 'Start automating #7.', effects: [{ type: 'automation', target: '#7' }], costCurrency: 'R', costFormula: (lvl) => 1e8, maxLevel: 1 },
-            { id: 'AU09', type: 'upgrade', code: 'AU09', name: 'Autogain(p)', coords: [5, 0], reqs: [
-                    [4, 0]
-                ], borderColor: 'green', desc: 'Gain 1% of research/s/lvl.', effects: [{ type: 'base_gain', currency: 'R', formula: (lvl) => 0.01 * lvl * getResetGain('R') }], costCurrency: 'R', costFormula: (lvl) => 1e8 * Math.pow(5, Math.pow(lvl, 0.75)), maxLevel: 100 },
-            { id: 'AU10', type: 'upgrade', code: 'AU10', name: 'Auto(8,9)', coords: [4, -2], reqs: [
-                    [3, -2]
-                ], borderColor: 'green', desc: 'Start automating #8,#9.', effects: [{ type: 'automation', target: '#8' }, { type: 'automation', target: '#9' }], costCurrency: 'R', costFormula: (lvl) => 1e9, maxLevel: 1 },
-            { id: 'AU11', type: 'upgrade', code: 'AU11', name: 'Auto(10,11)', coords: [4, 2], reqs: [
-                    [3, 2]
-                ], borderColor: 'green', desc: 'Start automating #10,#11.', effects: [{ type: 'automation', target: '#10' }, { type: 'automation', target: '#11' }], costCurrency: 'R', costFormula: (lvl) => 2e9, maxLevel: 1 },
-            { id: 'AU12', type: 'upgrade', code: 'AU12', name: 'Auto(12,13)', coords: [5, -1], reqs: [
-                    [4, -1]
-                ], borderColor: 'green', desc: 'Start automating #12,#13', effects: [{ type: 'automation', target: '#12' }, { type: 'automation', target: '#13' }], costCurrency: 'R', costFormula: (lvl) => 5e9, maxLevel: 1 },
-            { id: 'AU13', type: 'upgrade', code: 'AU13', name: 'Auto(14,15)', coords: [5, 1], reqs: [
-                    [4, 1]
-                ], borderColor: 'green', desc: 'Start automating #14,#15.', effects: [{ type: 'automation', target: '#14' }, { type: 'automation', target: '#15' }], costCurrency: 'R', costFormula: (lvl) => 1.25e10, maxLevel: 1 },
-            { id: 'AU14', type: 'upgrade', code: 'AU14', name: 'Auto(16)', coords: [6, 0], reqs: [
-                    [5, 0]
-                ], borderColor: 'green', desc: 'Start automating #16.', effects: [{ type: 'automation', target: '#16' }], costCurrency: 'R', costFormula: (lvl) => 2e10, maxLevel: 1 },
-            { id: 'EXP', type: 'upgrade', code: 'EXP', name: 'Experienced', coords: [-3, 8], reqs: [
-                    [0, 10]
-                ], borderColor: 'green', desc: 'Start generating experience at a rate of 1/s.', effects: [{ type: 'base_gain', currency: 'XP', formula: (lvl) => lvl * 1 }], costCurrency: 'XP', costFormula: (lvl) => 0, maxLevel: 1 },
-            { id: 'Lvlreset', type: 'reset', code: 'Level', name: 'Convert experience to rescarch points!', coords: [-4, 8], reqs: [
-                    [-3, 8]
-                ], desc: 'Reset Previous progress for research points!', targetCurrency: 'L', resetCurrencies: ['XP'], resettedCoords: [], calculateGain: (lvl, getCurr, getLvl) => { return Math.min(5 * (1 + 0.5 * getLevel('EX03')), (getCurr('XP') >= 10) * (getCurr('XP') / 10)); } },
-            { id: 'Linfo', type: 'info', code: 'Tip', name: 'Level reset.', coords: [-3, 9], reqs: [
-                    [-3, 8]
-                ], desc: 'Central point generator.', getInfoText: () => '(per 10 xp -> 1 level, capped at 5 per conversion)' },
-            { id: 'EX01', type: 'upgrade', code: 'EX01', name: 'Leveled', coords: [-5, 8], reqs: [
-                    [-3, 8]
-                ], borderColor: 'green', desc: '+0.25EXP/s/lvl', effects: [{ type: 'base_gain', currency: 'XP', formula: (lvl) => lvl * 0.25 }], costCurrency: 'L', costFormula: (lvl) => 0.25 * lvl, maxLevel: 76 },
-            { id: 'EX02', type: 'upgrade', code: 'EX02', name: 'Alternatively', coords: [-5, 9], reqs: [
-                    [-5, 8]
-                ], borderColor: 'orange', desc: '+25% Level gain/lvl', effects: [{ type: 'reset_gain_mult', targetCurrency: 'L', formula: (lvl) => 1 + lvl * 0.25 }], costCurrency: 'L', costFormula: (lvl) => 3 + 1 * Math.pow(lvl, 1.75), maxLevel: 76 },
-            { id: 'EX03', type: 'upgrade', code: 'EX03', name: 'Expansion', coords: [-6, 8], reqs: [
-                    [-5, 8]
-                ], borderColor: 'green', desc: '+50% level conversion limit per level.', effects: [], costCurrency: 'L', costFormula: (lvl) => 50 * Math.pow(1.5, Math.pow(lvl, 0.7)), maxLevel: 76 },
-            { id: 'EX04', type: 'upgrade', code: 'EX04', name: 'Related', coords: [-4, 9], reqs: [
-                    [-5, 9]
-                ], borderColor: 'green', desc: '+20% research per level.', effects: [{ type: 'reset_gain_mult', targetCurrency: 'R', formula: (lvl) => 1 + 0.2 * lvl }], costCurrency: 'L', costFormula: (lvl) => 80 * Math.pow(1.5, 0.25 * Math.pow(lvl + 4, 1.5)), maxLevel: 76 },
-            { id: 'B0', type: 'upgrade', code: 'Bonus', name: 'Bonus!!', coords: [0, -2], reqs: [], borderColor: 'green', desc: '+Unlock Bonus Basepate.', effects: [], costCurrency: 'P', costFormula: (lvl) => 100, maxLevel: 1 },
-            { id: 'Info1', type: 'info', code: 'Extra', name: 'Bonus baseplate', coords: [0, -3], reqs: [
-                    [0, -2]
-                ], desc: 'Central point generator.', getInfoText: () => `Note that this part of the game does not boost main progress!` },
-            { id: 'B01', type: 'upgrade', code: 'B01', name: 'Gen(erate) alpha', coords: [0, -4], reqs: [
-                    [0, -2]
-                ], borderColor: 'green', desc: '+1α/s.', effects: [{ type: 'base_gain', currency: 'α', formula: (lvl) => lvl }], costCurrency: 'P', costFormula: (lvl) => 0, maxLevel: 1 },
-            { id: 'B02', type: 'upgrade', code: 'B02', name: 'More alpha!!', coords: [1, -4], reqs: [
-                    [0, -4]
-                ], borderColor: 'green', desc: '+1α/s per level', effects: [{ type: 'base_gain', currency: 'α', formula: (lvl) => lvl * 1 }], costCurrency: 'α', costFormula: (lvl, getLvl) => Math.floor(3 * Math.pow(lvl + 1, 2) * Math.pow(1.015, lvl) / Math.pow(5, getLvl('B04'))), maxLevel: 1000 },
-            { id: 'B03', type: 'upgrade', code: 'B03', name: 'More alpha!!', coords: [-1, -4], reqs: [
-                    [0, -4]
-                ], borderColor: 'orange', desc: 'x1.5α per level', effects: [{ type: 'currency_mult', currency: 'α', formula: (lvl) => Math.pow(1.5, lvl) }], costCurrency: 'α', costFormula: (lvl, getLvl) => Math.floor(25 * Math.pow(3 + Math.max(0, (0.05 * (lvl - 20))), lvl) / Math.pow(5, getLvl('B04'))), maxLevel: 100 },
-            { id: 'B04', type: 'upgrade', code: 'B04', name: 'Cost reduction', coords: [0, -5], reqs: [
-                    [0, -4]
-                ], borderColor: 'red', desc: 'Cost of B03 and B02 /5 per level', effects: [], costCurrency: 'α', costFormula: (lvl) => Math.floor(1250 * Math.pow(4 + 0.25 * lvl, lvl)), maxLevel: 100 },
-            { id: 'B05', type: 'upgrade', code: 'B05', name: 'Connected', coords: [1, -5], reqs: [
-                    [0, -5]
-                ], borderColor: 'orange', desc: 'Points and this upgs level boost alpha.', effects: [{ type: 'currency_mult', currency: 'α', formula: (lvl, getlvl, getCurr) => (1 + (lvl >= 1) * (Math.log2(Math.log2(getCurr('P') + 2) + 2)) * Math.pow(1.05, lvl)) }], costCurrency: 'α', costFormula: (lvl) => Math.floor(16000000 * Math.pow(1.1 + 0.0001 * lvl, lvl)), maxLevel: 100 },
-            { id: 'B06', type: 'upgrade', code: 'B06', name: 'Crititcal', coords: [-1, -5], reqs: [
-                    [0, -5]
-                ], borderColor: 'orange', desc: 'Each tick get +1% chance/lvl to 25x alpha that tick.', effects: [{ type: 'currency_mult', currency: 'α', formula: (lvl) => 1 + 24 * (Math.random() > 1 - 0.01 * lvl) }], costCurrency: 'α', costFormula: (lvl) => Math.floor(16000000000 * Math.pow(10, Math.pow(lvl, 0.5))), maxLevel: 100 },
-            { id: 'B07', type: 'upgrade', code: 'B07', name: 'αααααα', coords: [-2, -4], reqs: [
-                    [-1, -4]
-                ], borderColor: 'orange', desc: 'x1.02α per level. get softcapped at 100 lvls', effects: [{ type: 'currency_mult', currency: 'α', formula: (lvl) => Math.pow(1.02, lvl) }], costCurrency: 'α', costFormula: (lvl, getLvl) => Math.floor(2e13 * Math.pow(1.02 + Math.max(0, (0.0001 * (lvl - 100))), lvl)), maxLevel: 800 },
-            { id: 'B08', type: 'upgrade', code: 'B08', name: 'α -> α', coords: [-2, -5], reqs: [
-                    [-2, -4]
-                ], borderColor: 'orange', desc: 'Alpha boost itself.', effects: [{ type: 'currency_mult', currency: 'α', formula: (lvl, getLevel, getCurr) => 1 + (lvl >= 1) * Math.pow(1 + (1 + 0.25 * lvl) * Math.log10(Math.max((getCurr('α')), 1e18) / 1e18 + 10), 1.75) }], costCurrency: 'α', costFormula: (lvl) => Math.floor(1e18 * Math.pow(1.45, lvl)), maxLevel: 100 },
-            { id: 'B09', type: 'upgrade', code: 'B09', name: 'Satisfaction', coords: [2, -4], reqs: [
-                    [-2, -4]
-                ], borderColor: 'orange', desc: '+1x alpha (^1.2) per level.', effects: [{ type: 'currency_mult', currency: 'α', formula: (lvl) => Math.pow((1 + (lvl * 1)), 1.2) }], costCurrency: 'α', costFormula: (lvl) => Math.floor(1e27 * Math.pow(10, Math.pow(lvl, 0.375))), maxLevel: 1000 },
-            { id: 'B10', type: 'upgrade', code: 'B10', name: 'Universes', coords: [1, -3], reqs: [
-                    [0, -2]
-                ], borderColor: 'green', desc: 'Unlock even more bonus content (bottom of this plate).', effects: [], costCurrency: 'α', costFormula: (lvl) => 5, maxLevel: 1 },
-            { id: 'B11', type: 'upgrade', code: 'B11', name: 'Plate I', coords: [1, -6], reqs: [
-                    [1, -3]
-                ], borderColor: 'green', desc: 'Unlock infinity plate and gain infinity.', effects: [{ type: 'base_gain', currency: '∞', formula: (lvl) => 0.01 * lvl }], costCurrency: 'α', costFormula: (lvl) => 25, maxLevel: 1 },
-            { id: 'InfoInf', type: 'info', code: 'Infinity', name: 'Infinity baseplate', coords: [3, -3], reqs: [
-                    [0, -2]
-                ], desc: 'Central point generator.', getInfoText: () => `For upgrades I.xx, you only pay for the last level!` },
-            { bulkFinalCost: true, id: 'I01', type: 'upgrade', code: 'I01', name: 'Infinite', coords: [4, -3], reqs: [
-                    [1, -6]
-                ], borderColor: 'green', desc: 'Gain 0.01∞/s/level', effects: [{ type: 'base_gain', currency: '∞', formula: (lvl) => 0.01 * lvl }, { type: 'max_level_mod', target: 'I01', amount: (lvl) => 10 * lvl }], costCurrency: '∞', costFormula: (lvl) => (lvl >= 2) * 0.000001 * (Math.pow(lvl + 9, 5) - 1e5) / (Math.pow(1.5, getLevel('I06')) * Math.pow(5, getLevel('IF03'))), maxLevel: 1000 },
-            { bulkFinalCost: true, id: 'I02', type: 'upgrade', code: 'I02', name: 'Multiplier', coords: [3, -4], reqs: [
-                    [4, -3]
-                ], borderColor: 'orange', desc: 'x(lvl)^2∞/s', effects: [{ type: 'currency_mult', currency: '∞', formula: (lvl) => Math.pow(lvl + 1, 2) }, { type: 'max_level_mod', target: 'I02', amount: (lvl) => 10 * lvl }], costCurrency: '∞', costFormula: (lvl, getLvl, getCurr) => 1 * Math.pow(5, Math.pow(lvl - 1, 0.5)) / Math.pow(10000, getLvl('IF02')), maxLevel: 1000 },
-            { bulkFinalCost: true, id: 'I03', type: 'upgrade', code: 'I03', name: 'Linear', coords: [4, -4], reqs: [
-                    [3, -4]
-                ], borderColor: 'orange', desc: 'x∞/s based on level', effects: [{ type: 'currency_mult', currency: '∞', formula: (lvl) => 1 + Math.pow(50 * lvl, 0.11) / 2 }, { type: 'max_level_mod', target: 'I03', amount: (lvl) => 100 * lvl }], costCurrency: '∞', costFormula: (lvl) => 1000 * lvl, maxLevel: 1000 },
-            { bulkFinalCost: true, id: 'I04', type: 'upgrade', code: 'I04', name: 'Sub-linear?', coords: [3, -5], reqs: [
-                    [3, -4]
-                ], borderColor: 'orange', desc: 'x∞/s based on level.', effects: [{ type: 'currency_mult', currency: '∞', formula: (lvl) => Math.pow(1 + 500 * lvl, 0.05) }, { type: 'max_level_mod', target: 'I04', amount: (lvl) => Math.min(1000 * Math.pow(lvl, 2), 1e308) }], costCurrency: '∞', costFormula: (lvl) => 1000000 * Math.pow(lvl, 0.5), maxLevel: 1000 },
-            { bulkFinalCost: true, id: 'I05', type: 'upgrade', code: 'I05', name: 'Mult', coords: [5, -3], reqs: [
-                    [3, -5]
-                ], borderColor: 'orange', desc: 'x3∞/s per level.', effects: [{ type: 'currency_mult', currency: '∞', formula: (lvl) => Math.pow(3, lvl) }, { type: 'max_level_mod', target: 'I05', amount: (lvl) => 10 * lvl }], costCurrency: '∞', costFormula: (lvl) => 2e6 * Math.pow(10 + 1.5 * lvl - 1.50, lvl), maxLevel: 1000 },
-            { bulkFinalCost: true, id: 'I06', type: 'upgrade', code: 'I06', name: 'Mult', coords: [5, -4], reqs: [
-                    [3, -4],
-                    [5, -3]
-                ], borderColor: 'red', desc: 'Divide I01s cost per level.', effects: [{ type: 'max_level_mod', target: 'I06', amount: (lvl) => 10 * lvl }], costCurrency: '∞', costFormula: (lvl) => 1.25e8 * Math.pow(2 + 0.25 * (lvl - 1), lvl / 10), maxLevel: 1000 },
-            { bulkFinalCost: true, id: 'I07', type: 'upgrade', code: 'I07', name: 'Fuel', coords: [4, -5], reqs: [
-                    [3, -4],
-                    [5, -3]
-                ], borderColor: 'orange', desc: 'Infinity boost itself, softcapped ~50.', effects: [{ type: 'currency_mult', currency: '∞', formula: (lvl, getLvl, getCurr) => Math.min(50 + Math.pow(Math.pow(lvl, 1.3) * Math.pow(getCurr('∞') / 1e27, 0.05), 0.5), 1 + Math.pow(lvl, 1.3) * Math.pow(getCurr('∞') / 1e27, 0.05)) }, { type: 'max_level_mod', target: 'I07', amount: (lvl) => 10 * lvl }], costCurrency: '∞', costFormula: (lvl) => 1e33 * Math.pow(10, lvl - 1), maxLevel: 1000 },
-            { bulkFinalCost: true, id: 'I08', type: 'upgrade', code: 'I08', name: 'Expander', coords: [5, -5], reqs: [
-                    [4, -5]
-                ], borderColor: 'green', desc: 'Unlock new content below. Also +1% infinity per level', effects: [{ type: 'currency_mult', currency: '∞', formula: (lvl) => 1 + 0.01 * lvl }, { type: 'max_level_mod', target: 'I08', amount: (lvl) => 1 * lvl }], costCurrency: '∞', costFormula: (lvl) => 1e45 * Math.pow(2, Math.pow(lvl - 1, 0.7)), maxLevel: 1000 },
-            { id: 'infinite', type: 'reset', code: 'Fragmentation', name: 'Reset prev. infinity progress except I08 for fragments.', coords: [3, -6], reqs: [
-                    [5, -5]
-                ], desc: '', targetCurrency: '♦', resetCurrencies: ['∞'], resettedCoords: [
-                    [4, -3],
-                    [5, -3],
-                    [3, -4],
-                    [4, -4],
-                    [5, -4],
-                    [3, -5],
-                    [4, -5]
-                ], calculateGain: (lvl, getCurr, getLvl) => Math.floor(Math.pow(getCurr('∞') / 1e45, 0.175) * 100) / 100 },
-            { id: 'IF01', type: 'upgrade', code: 'IF01', name: 'Recovery', coords: [4, -6], reqs: [
-                    [5, -5]
-                ], borderColor: 'orange', desc: 'x3∞/s.', effects: [{ type: 'currency_mult', currency: '∞', formula: (lvl) => Math.pow(3, lvl) }, { type: 'max_level_mod', target: 'IF01', amount: (lvl) => 10 * lvl }], costCurrency: '♦', costFormula: (lvl) => Math.floor(Math.pow(2 + 0.25 * lvl, lvl)), maxLevel: 1000 },
-            { id: 'IF02', type: 'upgrade', code: 'IF02', name: 'Ultra Cheap', coords: [5, -6], reqs: [
-                    [4, -6]
-                ], borderColor: 'red', desc: '/10K to I02s cost per level.', effects: [{ type: 'max_level_mod', target: 'IF02', amount: (lvl) => 10 * lvl }], costCurrency: '♦', costFormula: (lvl) => 3 * Math.floor(Math.pow(1.25 * lvl, lvl)), maxLevel: 1000 },
-            { id: 'IF03', type: 'upgrade', code: 'IF03', name: 'Auto', coords: [3, -7], reqs: [
-                    [4, -6]
-                ], borderColor: 'red', desc: 'Automate I01 & /5 its cost/lvl.', effects: [{ type: 'automation', target: 'I01' }, { type: 'max_level_mod', target: 'IF03', amount: (lvl) => 10 * lvl }], costCurrency: '♦', costFormula: (lvl) => Math.floor(1000 * Math.pow(1.5 * lvl, lvl)), maxLevel: 1000 },
-            { id: 'IF04', type: 'upgrade', code: 'IF04', name: 'Auto II', coords: [4, -7], reqs: [
-                    [3, -7]
-                ], borderColor: 'red', desc: 'Automate I02 and +20% fragments additive per level.', effects: [{ type: 'automation', target: 'I02' }, { type: 'reset_gain_mult', targetCurrency: '♦', formula: (lvl) => 1 + 0.2 * lvl }], costCurrency: '♦', costFormula: (lvl) => Math.floor(1e7 * Math.pow(1.25, lvl)), maxLevel: 1000 }
-        ];
+    //point
+    { id: 'INFO_CORE', type: 'info', code: 'Start', name: 'The start. You can pan the screen! There is buy max in the settings.', coords: [0, 0], reqs: [], desc: 'Central point generator.', getInfoText: () => `Rate: +${formatNum(calculateGainRate('P'))}/s` },
+    { id: '#1', type: 'upgrade', code: '#01', name: 'Another Beginning', coords: [0, 1], reqs: [], borderColor: 'green', desc: '+1 Base point/s.', effects: [{ type: 'base_gain', currency: 'P', formula: (lvl) => lvl * 1 }], costCurrency: 'P', costFormula: (lvl) => 0, maxLevel: 1 },
+    { id: '#2', type: 'upgrade', code: '#02', name: 'A bigger increase', coords: [1, 1], reqs: [[0, 1]], borderColor: 'green', desc: '+2p/s', effects: [{ type: 'base_gain', currency: 'P', formula: (lvl) => lvl * 2 }], costCurrency: 'P', costFormula: (lvl) => 5, maxLevel: 1 },
+    { id: '#3', type: 'upgrade', code: '#03', name: 'Multipliers', coords: [1, 0], reqs: [[1, 1]], borderColor: 'orange', desc: 'x2 p/s.', effects: [{ type: 'currency_mult', currency: 'P', formula: (lvl) => Math.pow(2.0, lvl) }], costCurrency: 'P', costFormula: (lvl) => 24, maxLevel: 1 },
+    { id: '#4', type: 'upgrade', code: '#04', name: 'More points', coords: [-1, 1], reqs: [[0, 1]], borderColor: 'green', desc: '+1 p/s per level.', effects: [{ type: 'base_gain', currency: 'P', formula: (lvl) => 1 * lvl }], costCurrency: 'P', costFormula: (lvl) => Math.ceil(Math.pow(1.25, Math.min(lvl, 10 + ((lvl - 10) / 6))) * 50), maxLevel: 10 },
+    { id: '#5', type: 'upgrade', code: '#05', name: 'More mult', coords: [1, -1], reqs: [[1, 0]], borderColor: 'orange', desc: 'x1.1 p/s per level.', effects: [{ type: 'currency_mult', currency: 'P', formula: (lvl) => Math.pow(1.1, lvl) }], costCurrency: 'P', costFormula: (lvl) => Math.ceil(Math.pow(1.4, lvl) * 60), maxLevel: 8 },
+    { id: '#6', type: 'upgrade', code: '#06', name: 'Point boost', coords: [-1, 0], reqs: [[-1, 1]], borderColor: 'orange', desc: '+5% p/s per level additive.', effects: [{ type: 'currency_mult', currency: 'P', formula: (lvl) => 1 + 0.05 * lvl }], costCurrency: 'P', costFormula: (lvl) => Math.ceil(Math.pow(1.125, lvl) * (225 * (lvl >= 40) + 25)), maxLevel: 40 },
+    { id: '#7', type: 'upgrade', code: '#07', name: 'Another mult', coords: [-1, -1], reqs: [[-1, 0]], borderColor: 'orange', desc: 'x2.5 p/s.', effects: [{ type: 'currency_mult', currency: 'P', formula: (lvl) => Math.pow(2.5, lvl) }], costCurrency: 'P', costFormula: (lvl) => 1250, maxLevel: 1 },
+    { id: '#8', type: 'upgrade', code: '#08', name: 'Research', coords: [0, -1], reqs: [[-1, -1]], borderColor: 'orange', desc: 'Unlock research (on top of #1)', effects: [{}], costCurrency: 'P', costFormula: (lvl) => 5000, maxLevel: 1 },
+    { id: '#9', type: 'upgrade', code: '#09', name: 'Self-boost', coords: [-2, -1], reqs: [[-1, 4], [-1, -1]], borderColor: 'orange', desc: 'Points boost itself. p^0.08', effects: [{ type: 'currency_mult', currency: 'P', formula: (lvl, getcurr) => Math.pow(getCurr('P'), 0.08 * lvl) }], costCurrency: 'P', costFormula: (lvl) => 12500, maxLevel: 1 },
+    { id: '#10', type: 'upgrade', code: '#10', name: 'Uncapped', coords: [-2, 0], reqs: [[-1, 4], [-1, 0]], borderColor: 'red', desc: '#4 cap +5/level', effects: [{ type: 'max_level_mod', target: '#4', amount: (lvl) => 5 * lvl }], costCurrency: 'P', costFormula: (lvl) => Math.floor(75000 * Math.pow(1.075, lvl)), maxLevel: 98 },
+    { id: '#11', type: 'upgrade', code: '#11', name: 'Many', coords: [2, 0], reqs: [[-1, 4], [1, 0]], borderColor: 'orange', desc: 'x1.03 p/s per level.', effects: [{ type: 'currency_mult', currency: 'P', formula: (lvl) => Math.pow(1.03, lvl) }], costCurrency: 'P', costFormula: (lvl) => Math.floor(45000 * (1 + 0.025 * lvl) * Math.pow(1.083367, lvl)), maxLevel: 125 },
+    { id: '#12', type: 'upgrade', code: '#12', name: 'yes!', coords: [2, -1], reqs: [[-1, 5], [1, -1]], borderColor: 'orange', desc: 'x1.25 resc/lvl.', effects: [{ type: 'reset_gain_mult', targetCurrency: 'R', formula: (lvl) => Math.pow(1.25, lvl) }], costCurrency: 'P', costFormula: (lvl) => Math.floor(5e9 * Math.pow(2.5, lvl)), maxLevel: 5 },
+    { id: '#13', type: 'upgrade', code: '#13', name: 'woah!', coords: [1, -2], reqs: [[-1, 5], [1, -1]], borderColor: 'orange', desc: 'increase max.lvl to #6 per level.', effects: [{ type: 'max_level_mod', target: '#6', amount: (lvl) => Math.floor(5 * Math.pow(lvl, 1.8)) }], costCurrency: 'P', costFormula: (lvl) => Math.floor(3e9 * Math.pow(1.65, lvl)), maxLevel: 10 },
+    { id: '#14', type: 'upgrade', code: '#14', name: 'this too', coords: [0, 2], reqs: [[-1, 5], [-2, 4], [0, 1]], borderColor: 'orange', desc: '+50% energy per level', effects: [{ type: 'currency_mult', currency: 'E', formula: (lvl) => 1 + 0.5 * lvl }], costCurrency: 'P', costFormula: (lvl) => Math.floor(1e10 * Math.pow(2, Math.pow(lvl, 0.75))), maxLevel: 18 },
+    { id: '#15', type: 'upgrade', code: '#15', name: 'Reversed', coords: [1, 2], reqs: [[-1, 5], [1, 1]], borderColor: 'orange', desc: 'Unspent resc boost points.', effects: [{ type: 'currency_mult', currency: 'P', formula: (lvl) => 1 + lvl * Math.pow((getCurr('R') / 1000) + 3, 0.2) }], costCurrency: 'P', costFormula: (lvl) => Math.floor(3.5e11 * Math.pow(2, Math.pow(lvl, 0.75))), maxLevel: 1 },
+    { id: '#16', type: 'upgrade', code: '#16', name: 'Infinite', coords: [2, 1], reqs: [[-1, 5], [1, 1]], borderColor: 'orange', desc: '+2% points additive/lvl. There is no max.', effects: [{ type: 'currency_mult', currency: 'P', formula: (lvl) => 1 + 0.02 * (lvl) }, { type: 'max_level_mod', target: '#16', amount: (lvl) => 2 * lvl }], costCurrency: 'P', costFormula: (lvl) => Math.floor(1e9 * Math.pow(1.05, lvl)), maxLevel: 1 },
+    { id: '#17', type: 'upgrade', code: '#17', name: 'Uncapped^2', coords: [-2, 1], reqs: [[-2, 0], [-2, 10]], borderColor: 'red', desc: '#10 cap +5/lvl.', effects: [{ type: 'max_level_mod', target: '#10', amount: (lvl) => 5 * (lvl) }], costCurrency: 'P', costFormula: (lvl) => Math.floor(1e15 * Math.pow(2, Math.pow(lvl, 0.7))), maxLevel: 100 },
+    { id: '#18', type: 'upgrade', code: '#18', name: 'Simplify', coords: [-1, 2], reqs: [[-1, 1], [-2, 10]], borderColor: 'orange', desc: 'x3 points.', effects: [{ type: 'currency_mult', currency: 'P', formula: (lvl) => 1 + 2 * lvl }], costCurrency: 'P', costFormula: (lvl) => 1.25e17, maxLevel: 1 },
+    { id: '#19', type: 'upgrade', code: '#19', name: 'Hi!', coords: [-2, 2], reqs: [[-1, 2], [-2, 10]], borderColor: 'orange', desc: 'Boost decoration power by x10/lvl.', effects: [{ type: 'currency_mult', currency: '¤', formula: (lvl) => Math.pow(10, lvl) }], costCurrency: 'P', costFormula: (lvl) => 1.5e17 * Math.pow(1.35, Math.pow(lvl + 2, 1.5)), maxLevel: 15 },
+    { id: '#20', type: 'upgrade', code: '#20', name: 'Twenty!', coords: [2, 2], reqs: [[2, 1], [-2, 10]], borderColor: 'orange', desc: 'Boost resc generate rate by x1.25/lvl.', effects: [{ type: 'currency_mult', currency: 'R', formula: (lvl) => Math.pow(1.25, lvl) }], costCurrency: 'P', costFormula: (lvl) => 1e18 * Math.pow(2.5, Math.pow(lvl, 1.25)), maxLevel: 15 },
+    //resc
+    { id: 'Resc_hint', type: 'info', code: 'Tips', name: 'Autobuy limits', coords: [1, 3], reqs: [[0, -1]], desc: 'Central point generator.', getInfoText: () => `Consider changing autobuy to 1 to avoid accidentally buying muitiple resc.upgs!` },
+    { id: 'Resc', type: 'reset', code: 'Research', name: 'Reset prev. progress for research points!', coords: [0, 3], reqs: [[0, -1]], desc: 'Reset Previous progress for research points!', targetCurrency: 'R', resetCurrencies: ['P'], resettedCoords: [[2, 2], [-2, 2], [-1, 2], [-2, 1], [2, 1], [1, 2], [0, 2], [1, -2], [2, -1], [-2, 0], [2, 0], [0, 1], [1, 0], [-1, 0], [1, 1], [1, -1], [-1, -1], [-1, 1], [-2, -1], [-2, 0]], calculateGain: () => { const p = gameState.currencies.P; if (p < 2500) return 0; return Math.floor(1 + Math.pow(p / 1000, 0.4) * 100) / 100; } },
+    { id: 'R1', type: 'upgrade', code: 'R1', name: 'Start-off', coords: [0, 4], reqs: [[0, -1]], borderColor: 'green', desc: '+10p/s per level.', effects: [{ type: 'base_gain', currency: 'P', formula: (lvl) => 10 * lvl }], costCurrency: 'R', costFormula: (lvl) => 2 + 1 * lvl, maxLevel: 5 },
+    { id: 'R2', type: 'upgrade', code: 'R2', name: 'Boosting', coords: [0, 5], reqs: [[0, 4]], borderColor: 'green', desc: 'x1.5 points per level.', effects: [{ type: 'currency_mult', currency: 'P', formula: (lvl) => Math.pow(1.5, lvl) }], costCurrency: 'R', costFormula: (lvl) => 3 + 2 * lvl, maxLevel: 5 },
+    { id: 'R3', type: 'upgrade', code: 'R3', name: 'Double', coords: [1, 4], reqs: [[0, 4]], borderColor: 'green', desc: 'x1.2 points per level, +7pt/s per level.', effects: [{ type: 'currency_mult', currency: 'P', formula: (lvl) => Math.pow(1.2, lvl) }, { type: 'base_gain', currency: 'P', formula: (lvl) => 7 * lvl }], costCurrency: 'R', costFormula: (lvl) => 2 + 3 * lvl, maxLevel: 5 },
+    { id: 'R4', type: 'upgrade', code: 'R4', name: 'Content', coords: [-1, 4], reqs: [[0, 4]], borderColor: 'green', desc: 'Unlock MORE point upgrades.', effects: [], costCurrency: 'R', costFormula: (lvl) => 5, maxLevel: 1 },
+    { id: 'R5', type: 'upgrade', code: 'R5', name: 'This too', coords: [2, 4], reqs: [[1, 4]], desc: '+0.5x resc.gain, first lvl start with x2 research.', effects: [{ type: 'reset_gain_mult', targetCurrency: 'R', formula: (lvl) => 1 + 0.5 * Math.min(lvl, 1) + 0.5 * lvl }], costCurrency: 'R', costFormula: (lvl) => Math.floor(50 * Math.pow(1.35, lvl)), maxLevel: 3 },
+    { id: 'R6', type: 'upgrade', code: 'R6', name: 'Both too!', coords: [2, 5], reqs: [[2, 4]], desc: '+0.2x resc.gain/lvl, +1x pt.gain/lvl.', effects: [{ type: 'reset_gain_mult', targetCurrency: 'R', formula: (lvl) => 1 + 0 * Math.min(lvl, 1) + 0.2 * lvl }, { type: 'currency_mult', currency: 'P', formula: (lvl) => 1 + 1 * lvl }], costCurrency: 'R', costFormula: (lvl) => Math.floor(300 * Math.pow(1.35, lvl)), maxLevel: 3 },
+    { id: 'R7', type: 'upgrade', code: 'R7', name: 'More content!', coords: [-2, 4], reqs: [[-1, 4]], desc: 'Unlock new content.', effects: [], costCurrency: 'R', costFormula: (lvl) => 500, maxLevel: 1 },
+    { id: 'R8', type: 'upgrade', code: 'R8', name: 'Extra content!', coords: [-1, 5], reqs: [[-1, 4]], desc: 'Unlock even More point upgrades.', effects: [], costCurrency: 'R', costFormula: (lvl) => 5000, maxLevel: 1 },
+    { id: 'R9', type: 'upgrade', code: 'R9', name: 'Point = good', coords: [-1, 3], reqs: [[-1, 4]], borderColor: 'orange', desc: 'x1.5 research if points is above 1M', effects: [{ type: 'reset_gain_mult', targetCurrency: 'R', formula: (lvl, getLvl, getCurr) => 1 + 0.5 * lvl * (getCurr('P') > 1000000) }], costCurrency: 'R', costFormula: (lvl) => 20, maxLevel: 1 },
+    { id: 'R10', type: 'upgrade', code: 'R10', name: 'Better beginnings', coords: [-2, 3], reqs: [[-1, 3], [-2, 4]], borderColor: 'orange', desc: 'x2 points if points is below 1B, else x1.2', effects: [{ type: 'currency_mult', currency: 'P', formula: (lvl, getLvl, getCurr) => 1 + 1 * lvl - 0.8 * lvl * (getCurr('P') > 1000000000) }], costCurrency: 'R', costFormula: (lvl) => 2000, maxLevel: 1 },
+    { id: 'R11', type: 'upgrade', code: 'R11', name: 'Its time!!!', coords: [0, 6], reqs: [[-2, 4], [-1, 5]], desc: 'Unlock a new reset layer.', effects: [], costCurrency: 'R', costFormula: (lvl) => 1e6, maxLevel: 1 },
+    { id: 'R12', type: 'upgrade', code: 'R12', name: 'Prettier', coords: [2, 3], reqs: [[2, 4]], desc: 'Unlock decorator. (have progression)', effects: [], costCurrency: 'R', costFormula: (lvl) => 75, maxLevel: 1 },
+    { id: 'R13', type: 'upgrade', code: 'R13', name: 'Infinite+', coords: [1, 5], reqs: [[-1, 5], [0, 5], [2, 5], [1, 4]], borderColor: 'orange', desc: 'Muitiply points based on #16 levels', effects: [{ type: 'reset_gain_mult', targetCurrency: 'R', formula: (lvl, getLvl, getCurr) => 1 + 0.005 * lvl * (getLevel('#16')) }], costCurrency: 'R', costFormula: (lvl) => 100000, maxLevel: 1 },
+    { id: 'Dinfo', type: 'info', code: 'Tip', name: 'Decorators', coords: [3, 3], reqs: [[2, 3]], desc: 'Central point generator.', getInfoText: () => `Amount: +${formatNum(getCurr('¤'))}¤, Rate: +${formatNum(calculateGainRate('¤'))}/s` },
+    //deco
+    { id: 'D1', type: 'upgrade', code: 'D1', name: 'Boost #1', coords: [4, 3], reqs: [[2, 3]], desc: 'Decoration power boost points.', effects: [{ type: 'currency_mult', currency: 'P', formula: (lvl, getLvl, getCurr) => 1 + 0.1 * Math.pow((lvl * Math.log10(getCurr('¤') + 1)), 1.8) }], costCurrency: 'R', costFormula: (lvl) => 100, maxLevel: 1 },
+    { id: 'D2', type: 'upgrade', code: 'D2', name: 'Boost #2', coords: [5, 3], reqs: [[4, 3], [2, 3]], desc: 'Decoration power boost research.', effects: [{ type: 'reset_gain_mult', targetCurrency: 'R', formula: (lvl, getLvl, getCurr) => 1 + 0.08 * Math.pow((lvl * Math.log10(getCurr('¤') + 1)), 1.2) }], costCurrency: 'R', costFormula: (lvl) => 1000, maxLevel: 1 },
+    { id: 'D6', type: 'upgrade', code: 'D6', name: 'Flowers', coords: [3, 4], reqs: [[2, 3]], desc: 'Deco pt.baseplate. +1 deco power/s.', effects: [{ type: 'base_gain', currency: '¤', formula: (lvl) => lvl * 1 }], costCurrency: 'P', costFormula: (lvl) => 1e6, maxLevel: 1 },
+    { id: 'D7', type: 'upgrade', code: 'D7', name: 'Background', coords: [4, 4], reqs: [[2, 3]], desc: 'Deco pt.baseplate. +4 deco power/s.', effects: [{ type: 'base_gain', currency: '¤', formula: (lvl) => lvl * 4 }], costCurrency: 'P', costFormula: (lvl) => 1e7, maxLevel: 1 },
+    { id: 'D8', type: 'upgrade', code: 'D8', name: 'Garden', coords: [5, 4], reqs: [[2, 3]], desc: 'Deco pt.baseplate. +15 deco power/s.', effects: [{ type: 'base_gain', currency: '¤', formula: (lvl) => lvl * 15 }], costCurrency: 'P', costFormula: (lvl) => 2e8, maxLevel: 1 },
+    { id: 'D9', type: 'upgrade', code: 'D9', name: 'Background 2', coords: [6, 4], reqs: [[2, 3]], desc: 'Deco pt.baseplate. +80 deco power/s.', effects: [{ type: 'base_gain', currency: '¤', formula: (lvl) => lvl * 80 }], costCurrency: 'P', costFormula: (lvl) => 5e9, maxLevel: 1 },
+    { id: 'D10', type: 'upgrade', code: 'D10', name: 'Description', coords: [7, 4], reqs: [[2, 3]], desc: 'Deco pt.baseplate. +200 deco power/s.', effects: [{ type: 'base_gain', currency: '¤', formula: (lvl) => lvl * 200 }], costCurrency: 'P', costFormula: (lvl) => 1.25e11, maxLevel: 1 },
+    { id: 'D11', type: 'upgrade', code: 'D11', name: 'Background', coords: [3, 5], reqs: [[2, 3]], desc: 'Deco resc.bp. x1.5 deco power/s.', effects: [{ type: 'currency_mult', currency: '¤', formula: (lvl) => 1 + lvl * 0.5 }], costCurrency: 'R', costFormula: (lvl) => 50, maxLevel: 1 },
+    { id: 'D12', type: 'upgrade', code: 'D12', name: 'Background 2', coords: [4, 5], reqs: [[2, 3]], desc: 'Deco resc.bp. x2 deco power/s.', effects: [{ type: 'currency_mult', currency: '¤', formula: (lvl) => 1 + lvl * 1 }], costCurrency: 'R', costFormula: (lvl) => 1e3, maxLevel: 1 },
+    { id: 'D13', type: 'upgrade', code: 'D13', name: 'Fence', coords: [5, 5], reqs: [[2, 3]], desc: 'Deco resc.bp. x2.5 deco power/s.', effects: [{ type: 'currency_mult', currency: '¤', formula: (lvl) => 1 + lvl * 1.5 }], costCurrency: 'R', costFormula: (lvl) => 2e4, maxLevel: 1 },
+    { id: 'D14', type: 'upgrade', code: 'D14', name: 'Bg lines', coords: [6, 5], reqs: [[2, 3]], desc: 'Deco resc.bp. x3 deco power/s.', effects: [{ type: 'currency_mult', currency: '¤', formula: (lvl) => 1 + lvl * 2 }], costCurrency: 'R', costFormula: (lvl) => 5e6, maxLevel: 1 },
+    { id: 'D15', type: 'upgrade', code: 'D15', name: 'Description', coords: [7, 5], reqs: [[2, 3]], desc: 'Deco resc.bp. x4 deco power/s.', effects: [{ type: 'currency_mult', currency: '¤', formula: (lvl) => 1 + lvl * 3 }], costCurrency: 'R', costFormula: (lvl) => 1.25e8, maxLevel: 1 },
+    { id: 'E01', type: 'upgrade', code: 'E1', name: 'Energetic', coords: [-3, 4], reqs: [[-2, 4]], borderColor: 'green', desc: 'Start generating energy at a rate of 1/s.', effects: [{ type: 'base_gain', currency: 'E', formula: (lvl) => lvl * 1 }], costCurrency: 'E', costFormula: (lvl) => 0, maxLevel: 1 },
+    { id: 'E02', type: 'upgrade', code: 'E2', name: 'factor I', coords: [-4, 4], reqs: [[-3, 4]], borderColor: 'orange', desc: '+0.2x energy per level.', effects: [{ type: 'currency_mult', currency: 'E', formula: (lvl) => 1 + lvl * 0.2 }], costCurrency: 'P', costFormula: (lvl) => Math.round(1e7 * Math.pow(1.8, Math.pow(lvl, 0.6))), maxLevel: 100 },
+    { id: 'E03', type: 'upgrade', code: 'E3', name: 'factor II', coords: [-5, 4], reqs: [[-3, 4]], borderColor: 'orange', desc: '+0.2x energy per level.', effects: [{ type: 'currency_mult', currency: 'E', formula: (lvl) => 1 + lvl * 0.2 }], costCurrency: 'R', costFormula: (lvl) => Math.round(12500 * Math.pow(1.5, lvl)), maxLevel: 100 },
+    { id: 'E04', type: 'upgrade', code: 'E4', name: 'factor III', coords: [-6, 4], reqs: [[-3, 4]], borderColor: 'orange', desc: '+0.2x energy per level.', effects: [{ type: 'currency_mult', currency: 'E', formula: (lvl) => 1 + lvl * 0.2 }], costCurrency: 'E', costFormula: (lvl) => Math.round(2500 * Math.pow(1.5, lvl)), maxLevel: 100 },
+    { id: 'E05', type: 'upgrade', code: 'E5', name: 'Energy upg 1', coords: [-3, 5], reqs: [[-3, 4]], borderColor: 'orange', desc: 'x1.2 points per level.', effects: [{ type: 'currency_mult', currency: 'P', formula: (lvl) => Math.pow(1.2, lvl) }], costCurrency: 'E', costFormula: (lvl) => Math.round((10 + 10 * Math.min(5, lvl)) * Math.pow(2, lvl)), maxLevel: 25 },
+    { id: 'E06', type: 'upgrade', code: 'E6', name: 'Energy upg 2', coords: [-4, 5], reqs: [[-3, 5]], borderColor: 'orange', desc: 'x2 energy per level.', effects: [{ type: 'currency_mult', currency: 'E', formula: (lvl) => Math.pow(2, lvl) }], costCurrency: 'E', costFormula: (lvl) => Math.round(750 * Math.pow(10 + lvl - 1, lvl)), maxLevel: 25 },
+    { id: 'E07', type: 'upgrade', code: 'E7', name: 'Energy upg 3', coords: [-5, 5], reqs: [[-4, 5]], borderColor: 'orange', desc: 'x1.1 resc per level.', effects: [{ type: 'reset_gain_mult', targetCurrency: 'R', formula: (lvl) => Math.pow(1.1, lvl) }], costCurrency: 'E', costFormula: (lvl) => Math.round(500 * Math.pow(3, lvl)), maxLevel: 25 },
+    { id: 'E08', type: 'upgrade', code: 'E8', name: 'Energy upg 4', coords: [-4, 6], reqs: [[-4, 5]], borderColor: 'orange', desc: 'x3 energy if its less than 1k, x2 threshold/lvl after', effects: [{ type: 'currency_mult', currency: 'E', formula: (lvl, getLvl, getCurr) => 1 + 2 * (lvl > 0) * (getCurr('E') < Math.pow(2, lvl - 1) * 1000) }], costCurrency: 'E', costFormula: (lvl) => Math.round(250 * Math.pow(2.1, lvl)), maxLevel: 25 },
+    { id: 'E09', type: 'upgrade', code: 'E9', name: 'Energy upg 5', coords: [-4, 7], reqs: [[-4, 6], [-1, 10]], borderColor: 'orange', desc: 'x1.5 energy.', effects: [{ type: 'currency_mult', currency: 'E', formula: (lvl) => Math.pow(1.5, lvl) }], costCurrency: 'E', costFormula: (lvl) => Math.round(1e7 * Math.pow(2.5, (Math.pow(lvl + 7, 2) - 49) * 0.05)), maxLevel: 25 },
+    { id: 'E10', type: 'upgrade', code: 'E10', name: 'factor IV', coords: [-7, 4], reqs: [[-6, 4], [-1, 10]], borderColor: 'orange', desc: '+0.2x energy per level. note: it cost €!', effects: [{ type: 'currency_mult', currency: 'E', formula: (lvl) => 1 + lvl * 0.2 }], costCurrency: '€', costFormula: (lvl) => 0.25 + 0.25 * lvl, maxLevel: 45 },
+    { id: 'E11', type: 'upgrade', code: 'E11', name: 'Energy upg 6', coords: [-6, 5], reqs: [[-5, 5], [-1, 10]], borderColor: 'orange', desc: '+5% prestige per level.', effects: [{ type: 'reset_gain_mult', targetCurrency: '€', formula: (lvl) => 1 + lvl * 0.05 }], costCurrency: 'E', costFormula: (lvl) => 1e8 * Math.pow(10, 0.5 * Math.pow(lvl, 0.7)), maxLevel: 80 },
+    //prestige
+    { id: 'Prestige', type: 'reset', code: 'Prestige', name: 'Reset all prev. progress for prestige!', coords: [0, 8], reqs: [[0, 6]], desc: 'Reset Previous progress for research points!', targetCurrency: '€', resetCurrencies: ['P', 'R', 'E'], resettedCoords: [[2, 2], [-2, 2], [-1, 2], [-2, 1], [-6, 5], [-7, 4], [-4, 7], [0, 1], [1, 1], [1, 0], [-1, 1], [1, -1], [-1, 0], [-1, -1], [0, -1], [-2, -1], [-2, 0], [2, 0], [2, -1], [1, -2], [0, 2], [1, 2], [2, 1], [0, 4], [0, 5], [1, 4], [-1, 4], [2, 4], [2, 5], [-2, 4], [-1, 5], [-1, 3], [-2, 3], [2, 3], [1, 5], [-3, 4], [-4, 4], [-5, 4], [-6, 4], [-3, 5], [-4, 5], [-5, 5], [-4, 6]], calculateGain: () => { const p = gameState.currencies.R; if (p < 1000000) return 0; return Math.floor(Math.pow(p / 1000000, 0.32) * 100) / 100; } },
+    { id: 'P01', type: 'upgrade', code: 'P01', name: 'Another beginning', coords: [0, 9], reqs: [[0, 6]], borderColor: 'orange', desc: 'x4 points, x3 prestige, x2 energy.', effects: [{ type: 'currency_mult', currency: 'P', formula: (lvl) => lvl * 4 }, { type: 'reset_gain_mult', targetCurrency: 'R', formula: (lvl) => 1 + 2 * lvl }, { type: 'currency_mult', currency: 'E', formula: (lvl) => lvl * 2 }], costCurrency: '€', costFormula: (lvl) => 1, maxLevel: 1 },
+    { id: 'P02', type: 'upgrade', code: 'P02', name: 'Passive yay!', coords: [1, 9], reqs: [[0, 9]], borderColor: 'green', desc: '+5 research (yes, research) per second (when <= 100)', effects: [{ type: 'base_gain', currency: 'R', formula: (lvl, getLvl, getCurr) => lvl * (getCurr('R') <= 100) * 5 }], costCurrency: '€', costFormula: (lvl) => 3, maxLevel: 1 },
+    { id: 'P03', type: 'upgrade', code: 'P03', name: 'Beginning', coords: [-1, 9], reqs: [[0, 9]], borderColor: 'orange', desc: 'x5 energy.', effects: [{ type: 'currency_mult', currency: 'E', formula: (lvl) => lvl * 5 }], costCurrency: '€', costFormula: (lvl) => 2, maxLevel: 1 },
+    { id: 'P04', type: 'upgrade', code: 'P04', name: 'Content', coords: [0, 10], reqs: [[0, 9]], borderColor: 'green', desc: 'Unlock the experience (leveling) baseplate.', effects: [], costCurrency: '€', costFormula: (lvl) => 5, maxLevel: 1 },
+    { id: 'P05', type: 'upgrade', code: 'P05', name: 'Automated', coords: [1, 10], reqs: [[1, 9]], borderColor: 'green', desc: 'Unlock automation!!', effects: [], costCurrency: '€', costFormula: (lvl) => 6, maxLevel: 1 },
+    { id: 'P06', type: 'upgrade', code: 'P06', name: 'Energy+', coords: [-1, 10], reqs: [[0, 10]], borderColor: 'green', desc: 'Unlock more energy upgrades (reset on prestige!!).', effects: [], costCurrency: '€', costFormula: (lvl) => 12, maxLevel: 1 },
+    { id: 'P07', type: 'upgrade', code: 'P07', name: 'Point++', coords: [-2, 10], reqs: [[0, 10]], borderColor: 'green', desc: 'Unlock more point upgrades.', effects: [], costCurrency: '€', costFormula: (lvl) => 30, maxLevel: 1 },
+    { id: 'P08', type: 'upgrade', code: 'P08', name: 'Automated+', coords: [2, 10], reqs: [[1, 10]], borderColor: 'green', desc: 'Unlock more automation!!', effects: [], costCurrency: '€', costFormula: (lvl) => 30, maxLevel: 1 },
+    { id: 'P09', type: 'upgrade', code: 'P09', name: 'Operators!', coords: [2, 9], reqs: [[2, 10]], borderColor: 'green', desc: 'Unlock a new baseplate.', effects: [], costCurrency: '€', costFormula: (lvl) => 125, maxLevel: 1 },
+    { id: 'P10', type: 'upgrade', code: 'P10', name: 'More operators', coords: [2, 8], reqs: [[2, 9]], borderColor: 'green', desc: 'Unlock Muitiply in generator baseplate.', effects: [], costCurrency: '€', costFormula: (lvl) => 300, maxLevel: 1 },
+    //Generators
+    { id: 'G01', type: 'upgrade', code: 'G01', name: 'Start!', coords: [3, 8], reqs: [[2, 9]], borderColor: 'green', desc: 'Start generating plus.', effects: [{ type: 'base_gain', currency: '+', formula: (lvl) => lvl}], costCurrency: '+', costFormula: (lvl) => 0, maxLevel: 1 },
+    { id: 'G02', type: 'upgrade', code: 'G02', name: 'Confusion', coords: [4, 8], reqs: [[3, 8]], borderColor: 'green', desc: '+1+/s/[+2].', effects: [{ type: 'base_gain', currency: '+', formula: (lvl) => lvl}], costCurrency: '+', costFormula: (lvl) => lvl+10, maxLevel: 250 },
+    { id: 'G03', type: 'upgrade', code: 'G03', name: 'More Confusion', coords: [5, 8], reqs: [[4, 8]], borderColor: 'orange', desc: '+0.1×->+/s/[+3].', effects: [{ type: 'currency_mult', currency: '+', formula: (lvl) => 1+0.1*lvl}], costCurrency: '+', costFormula: (lvl) => 100*Math.pow(10,Math.sqrt(lvl+4)-2), maxLevel: 25 },
+    { id: 'G04', type: 'upgrade', code: 'G04', name: 'Extra Confusion', coords: [6, 8], reqs: [[5, 8]], borderColor: 'orange', desc: '(1+(+/e2)) ^(.2+.05/[+4]+) ->×+/s.', effects: [{ type: 'currency_mult', currency: '+', formula: (lvl, getLvl, getCurr) => Math.pow((getCurr('+')/1e2)+1, 0.2+0.05*lvl)}], costCurrency: '+', costFormula: (lvl) => 3e3*Math.pow(2+0.5*lvl,lvl), maxLevel: 5 },
+    { id: 'G05', type: 'upgrade', code: 'G05', name: 'Huh?', coords: [7, 8], reqs: [[6, 8]], borderColor: 'red', desc: '+25(+✓<+×)->[+2,+3]/[+5].', effects: [{ type: 'max_level_mod', target: 'G02', amount: (lvl) => 25*lvl},{ type: 'max_level_mod', target: 'G03', amount: (lvl) => 25*lvl}], costCurrency: '+', costFormula: (lvl) => 1e5*Math.pow(3,Math.pow(lvl,0.55)), maxLevel: 1000 },
+    { id: 'G06', type: 'upgrade', code: 'G06', name: 'Boosts!', coords: [3, 9], reqs: [[3, 8]], borderColor: 'orange', desc: '+0.01×[P,R,€]/s/[+6].', effects: [{ type: 'currency_mult', currency: 'P', formula: (lvl) => 1+0.01*lvl},{ type: 'reset_gain_mult', targetCurrency: 'R', formula: (lvl) => 1+0.01*lvl},{ type: 'reset_gain_mult', targetCurrency: '€', formula: (lvl) => 1+0.01*lvl}], costCurrency: '+', costFormula: (lvl) => 10*Math.pow(3, Math.pow(lvl, 0.7)), maxLevel: 250 },
+    { id: 'G07', type: 'upgrade', code: 'G07', name: 'Reversed!', coords: [4, 9], reqs: [[3, 9]], borderColor: 'orange', desc: '+0.05×+/s/[+7].', effects: [{ type: 'currency_mult', currency: '+', formula: (lvl) => 1+0.05*lvl}], costCurrency: 'P', costFormula: (lvl) => 1e17*Math.pow(1.25,Math.pow(lvl,1.5)), maxLevel: 250 },
+    { id: 'G08', type: 'upgrade', code: 'G08', name: 'Double again', coords: [5, 9], reqs: [[5, 8],[6,10]], borderColor: 'orange', desc: '+0.2×[+,×][/s,R/g].', effects: [{ type: 'currency_mult', currency: '+', formula: (lvl) => 1+0.2*lvl},{ type: 'reset_gain_mult', targetCurrency: '×', formula: (lvl) => 1+0.2*lvl}], costCurrency: '+', costFormula: (lvl) => 1e15*Math.pow(2,Math.pow(lvl,0.8)), maxLevel: 250 },
+    { id: 'G09', type: 'upgrade', code: 'G09', name: 'Dynamic max???', coords: [6, 9], reqs: [[6, 8],[6,10]], borderColor: 'orange', desc: '+floor(100×[+9]× [log10((+/1e15)+10)](+✓<+×)->[+2].', effects: [{ type: 'max_level_mod', target: 'G02', amount: (lvl,getLvl,getCurr) => Math.floor(100*lvl*Math.log10(getCurr('+')/1e15+10))}], costCurrency: '+', costFormula: (lvl) => 5e16*Math.pow(2,Math.pow(lvl,0.8)), maxLevel: 250 },
+    { id: 'G10', type: 'upgrade', code: 'G10', name: 'the classic!', coords: [7, 9], reqs: [[7, 8],[6,10]], borderColor: 'orange', desc: 'x1.25+/[+10].', effects: [{ type: 'currency_mult', currency: '+', formula: (lvl) => Math.pow(1.25,lvl)}], costCurrency: '+', costFormula: (lvl) => 1e17*Math.pow(1.25+0.01*lvl,lvl), maxLevel: 250 },
+
+
+    
+    
+    { id: 'Multreset', type: 'reset', code: 'Mult', name: 'Reset lower G.xx upgs and get multiply based on +.', coords: [3, 10], reqs: [[2, 8]], desc: '', targetCurrency: '×', resetCurrencies: ['+'], resettedCoords: [[3,8],[4,8],[5,8],[6,8],[7,8],[3,9],[4,9],[5,9],[6,9],[7,9]], calculateGain: (lvl, getCurr, getLvl) => { return (getCurr('+')>=1000000)*(Math.pow(getCurr('+')/1e6,0.28)); } },
+    { id: 'G11', type: 'upgrade', code: 'G11', name: 'Multiply!', coords: [4, 10], reqs: [[2, 8]], borderColor: 'orange', desc: '+1×+/s/[+11].', effects: [{ type: 'currency_mult', currency: '+', formula: (lvl) => 1+1*lvl}], costCurrency: '×', costFormula: (lvl) => 0.25*Math.pow(1.25,lvl), maxLevel: 250 },
+    { id: 'G12', type: 'upgrade', code: 'G12', name: 'very op', coords: [5, 10], reqs: [[4, 10]], borderColor: 'orange', desc: '+(×)×+/s. (max 100)', effects: [{ type: 'currency_mult', currency: '+', formula: (lvl,getLvl,getCurr) => 1+lvl*Math.min(getCurr('×'),100)}], costCurrency: '×', costFormula: (lvl) => 5, maxLevel: 1 },
+    { id: 'G13', type: 'upgrade', code: 'G13', name: 'Additional', coords: [6, 10], reqs: [[5, 10]], borderColor: 'green', desc: 'new +upgs', effects: [], costCurrency: '×', costFormula: (lvl) => 125, maxLevel: 1 },
+    //auto
+    { id: 'AU01', type: 'upgrade', code: 'AU01', name: 'Start()', coords: [3, 0], reqs: [[1, 10]], borderColor: 'green', desc: 'Unlock upgrades. Note that all automation made (NOT UPGRADES) cost nothing (i.e cost become requirement)', effects: [], costCurrency: 'R', costFormula: (lvl) => 0, maxLevel: 1 },
+    { id: 'AU02', type: 'upgrade', code: 'AU02', name: 'Automate(1)', coords: [4, 0], reqs: [[3, 0]], borderColor: 'green', desc: 'Start automating #1.', effects: [{ type: 'automation', target: '#1' }], costCurrency: 'R', costFormula: (lvl) => 3e7, maxLevel: 1 },
+    { id: 'AU03', type: 'upgrade', code: 'AU03', name: 'Automate(2)', coords: [3, -1], reqs: [[3, 0]], borderColor: 'green', desc: 'Start automating #2.', effects: [{ type: 'automation', target: '#2' }], costCurrency: 'R', costFormula: (lvl) => 2e7, maxLevel: 1 },
+    { id: 'AU04', type: 'upgrade', code: 'AU04', name: 'Automate(3)', coords: [3, 1], reqs: [[3, 0]], borderColor: 'green', desc: 'Start automating #3.', effects: [{ type: 'automation', target: '#3' }], costCurrency: 'R', costFormula: (lvl) => 2e7, maxLevel: 1 },
+    { id: 'AU05', type: 'upgrade', code: 'AU05', name: 'Automate(4)', coords: [4, 1], reqs: [[4, 0]], borderColor: 'green', desc: 'Start automating #4.', effects: [{ type: 'automation', target: '#4' }], costCurrency: 'R', costFormula: (lvl) => 4.5e7, maxLevel: 1 },
+    { id: 'AU06', type: 'upgrade', code: 'AU06', name: 'Automate(5)', coords: [4, -1], reqs: [[4, 0]], borderColor: 'green', desc: 'Start automating #5.', effects: [{ type: 'automation', target: '#5' }], costCurrency: 'R', costFormula: (lvl) => 6e7, maxLevel: 1 },
+    { id: 'AU07', type: 'upgrade', code: 'AU07', name: 'Automate(6)', coords: [3, 2], reqs: [[3, 1]], borderColor: 'green', desc: 'Start automating #6.', effects: [{ type: 'automation', target: '#6' }], costCurrency: 'R', costFormula: (lvl) => 1e8, maxLevel: 1 },
+    { id: 'AU08', type: 'upgrade', code: 'AU08', name: 'Automate(7)', coords: [3, -2], reqs: [[3, -1]], borderColor: 'green', desc: 'Start automating #7.', effects: [{ type: 'automation', target: '#7' }], costCurrency: 'R', costFormula: (lvl) => 1e8, maxLevel: 1 },
+    { id: 'AU09', type: 'upgrade', code: 'AU09', name: 'Autogain(p)', coords: [5, 0], reqs: [[4, 0]], borderColor: 'green', desc: 'Gain 1% of research/s/lvl.', effects: [{ type: 'base_gain', currency: 'R', formula: (lvl) => 0.01 * lvl * getResetGain('R') }], costCurrency: 'R', costFormula: (lvl) => 1e8 * Math.pow(5, Math.pow(lvl, 0.75)), maxLevel: 100 },
+    { id: 'AU10', type: 'upgrade', code: 'AU10', name: 'Auto(8,9)', coords: [4, -2], reqs: [[3, -2]], borderColor: 'green', desc: 'Start automating #8,#9.', effects: [{ type: 'automation', target: '#8' }, { type: 'automation', target: '#9' }], costCurrency: 'R', costFormula: (lvl) => 1e9, maxLevel: 1 },
+    { id: 'AU11', type: 'upgrade', code: 'AU11', name: 'Auto(10,11)', coords: [4, 2], reqs: [[3, 2]], borderColor: 'green', desc: 'Start automating #10,#11.', effects: [{ type: 'automation', target: '#10' }, { type: 'automation', target: '#11' }], costCurrency: 'R', costFormula: (lvl) => 2e9, maxLevel: 1 },
+    { id: 'AU12', type: 'upgrade', code: 'AU12', name: 'Auto(12,13)', coords: [5, -1], reqs: [[4, -1]], borderColor: 'green', desc: 'Start automating #12,#13', effects: [{ type: 'automation', target: '#12' }, { type: 'automation', target: '#13' }], costCurrency: 'R', costFormula: (lvl) => 5e9, maxLevel: 1 },
+    { id: 'AU13', type: 'upgrade', code: 'AU13', name: 'Auto(14,15)', coords: [5, 1], reqs: [[4, 1]], borderColor: 'green', desc: 'Start automating #14,#15.', effects: [{ type: 'automation', target: '#14' }, { type: 'automation', target: '#15' }], costCurrency: 'R', costFormula: (lvl) => 1.25e10, maxLevel: 1 },
+    { id: 'AU14', type: 'upgrade', code: 'AU14', name: 'Auto(16)', coords: [6, 0], reqs: [[5, 0]], borderColor: 'green', desc: 'Start automating #16.', effects: [{ type: 'automation', target: '#16' }], costCurrency: 'R', costFormula: (lvl) => 2e10, maxLevel: 1 },
+    { id: 'EXP', type: 'upgrade', code: 'EXP', name: 'Experienced', coords: [-3, 8], reqs: [[0, 10]], borderColor: 'green', desc: 'Start generating experience at a rate of 1/s.', effects: [{ type: 'base_gain', currency: 'XP', formula: (lvl) => lvl * 1 }], costCurrency: 'XP', costFormula: (lvl) => 0, maxLevel: 1 },
+    { id: 'Lvlreset', type: 'reset', code: 'Level', name: 'Convert experience to rescarch points!', coords: [-4, 8], reqs: [[-3, 8]], desc: 'Reset Previous progress for research points!', targetCurrency: 'L', resetCurrencies: ['XP'], resettedCoords: [], calculateGain: (lvl, getCurr, getLvl) => { return Math.min(5 * (1 + 0.5 * getLevel('EX03')), (getCurr('XP') >= 10) * (getCurr('XP') / 10)); } },
+    { id: 'Linfo', type: 'info', code: 'Tip', name: 'Level reset.', coords: [-3, 9], reqs: [[-3, 8]], desc: 'Central point generator.', getInfoText: () => '(per 10 xp -> 1 level, capped at 5 per conversion)' },
+    //auto II
+    { id: 'AU15', type: 'upgrade', code: 'AU15', name: 'Auto(17)', coords: [6, 1], reqs: [[2, 10],[6,0]], borderColor: 'green', desc: 'Start automating #17.', effects: [{ type: 'automation', target: '#17' }], costCurrency: 'R', costFormula: (lvl) => 3e10, maxLevel: 1 },
+    { id: 'AU16', type: 'upgrade', code: 'AU16', name: 'Auto(18)', coords: [6, -1], reqs: [[2, 10],[6,0]], borderColor: 'green', desc: 'Start automating #18.', effects: [{ type: 'automation', target: '#18' }], costCurrency: 'R', costFormula: (lvl) => 4e10, maxLevel: 1 },
+    { id: 'AU17', type: 'upgrade', code: 'AU17', name: 'Auto(19)', coords: [5, 2], reqs: [[2, 10],[4,2]], borderColor: 'green', desc: 'Start automating #19.', effects: [{ type: 'automation', target: '#19' }], costCurrency: 'R', costFormula: (lvl) => 5e10, maxLevel: 1 },
+    { id: 'AU18', type: 'upgrade', code: 'AU18', name: 'Auto(20)', coords: [5, -2], reqs: [[2, 10],[4,-2]], borderColor: 'green', desc: 'Start automating #20.', effects: [{ type: 'automation', target: '#20' }], costCurrency: 'R', costFormula: (lvl) => 6e10, maxLevel: 1 },
+    { id: 'AU19', type: 'upgrade', code: 'AU19', name: 'Auto++', coords: [7, 0], reqs: [[2,10],[6,0]], borderColor: 'green', desc: 'Unlock even MORE automations.', effects: [], costCurrency: 'R', costFormula: (lvl) => 2e11, maxLevel: 1 },
+    //auto+ II
+    { id: 'AU20', type: 'upgrade', code: 'AU20', name: 'Auto(R1,R2,R3)', coords: [8, 0], reqs: [[7,0]], borderColor: 'green', desc: 'Start automating R1,R2,R3.', effects: [{ type: 'automation', target: 'R1' },{ type: 'automation', target: 'R2' },{ type: 'automation', target: 'R3' }], costCurrency: '€', costFormula: (lvl) => 2, maxLevel: 1 },
+    { id: 'AU21', type: 'upgrade', code: 'AU21', name: 'Auto(R4,R5,R6)', coords: [8, 1], reqs: [[8,0]], borderColor: 'green', desc: 'Start automating R4,R5,R6.', effects: [{ type: 'automation', target: 'R4' },{ type: 'automation', target: 'R5' },{ type: 'automation', target: 'R6' }], costCurrency: '€', costFormula: (lvl) => 3, maxLevel: 1 },
+    { id: 'AU22', type: 'upgrade', code: 'AU22', name: 'Auto(R7,R8,R9)', coords: [8, -1], reqs: [[8,0]], borderColor: 'green', desc: 'Start automating R7,R8,R9.', effects: [{ type: 'automation', target: 'R7' },{ type: 'automation', target: 'R8' },{ type: 'automation', target: 'R9' }], costCurrency: '€', costFormula: (lvl) => 5, maxLevel: 1 },
+    { id: 'AU23', type: 'upgrade', code: 'AU23', name: 'Auto(R10,R11)', coords: [9, 0], reqs: [[8,0]], borderColor: 'green', desc: 'Start automating R10,R11.', effects: [{ type: 'automation', target: 'R10' },{ type: 'automation', target: 'R11' }], costCurrency: '€', costFormula: (lvl) => 7, maxLevel: 1 },
+    { id: 'AU24', type: 'upgrade', code: 'AU24', name: 'Auto(R12,R13)', coords: [10, 0], reqs: [[9,0]], borderColor: 'green', desc: 'Start automating R12,R13.', effects: [{ type: 'automation', target: 'R12' },{ type: 'automation', target: 'R13' }], costCurrency: '€', costFormula: (lvl) => 11, maxLevel: 1 },
+    { id: 'AU25', type: 'upgrade', code: 'AU25', name: 'Auto(E1,E2,E3,E4,E10)', coords: [9, 1], reqs: [[9,0]], borderColor: 'green', desc: 'Start automating E1,E2,E3,E4,E10.', effects: [{ type: 'automation', target: 'E01' },{ type: 'automation', target: 'E02' },{ type: 'automation', target: 'E03' },{ type: 'automation', target: 'E04' },{ type: 'automation', target: 'E10' }], costCurrency: '€', costFormula: (lvl) => 50, maxLevel: 1 },
+    { id: 'AU26', type: 'upgrade', code: 'AU26', name: 'Auto(E5,E6,E7,E8,E9,E11)', coords: [9, -1], reqs: [[9,0]], borderColor: 'green', desc: 'Start automating E5,E6,E7,E8,E9,E11.', effects: [{ type: 'automation', target: 'E05' },{ type: 'automation', target: 'E06' },{ type: 'automation', target: 'E07' },{ type: 'automation', target: 'E08' },{ type: 'automation', target: 'E09' },{ type: 'automation', target: 'E11' }], costCurrency: '€', costFormula: (lvl) => 50, maxLevel: 1 },
+    
+    //experiene
+    { id: 'EX01', type: 'upgrade', code: 'EX01', name: 'Leveled', coords: [-5, 8], reqs: [[-3, 8]], borderColor: 'green', desc: '+0.25EXP/s/lvl', effects: [{ type: 'base_gain', currency: 'XP', formula: (lvl) => lvl * 0.25 }], costCurrency: 'L', costFormula: (lvl) => 0.25 * lvl, maxLevel: 76 },
+    { id: 'EX02', type: 'upgrade', code: 'EX02', name: 'Alternatively', coords: [-5, 9], reqs: [[-5, 8]], borderColor: 'orange', desc: '+25% Level gain/lvl', effects: [{ type: 'reset_gain_mult', targetCurrency: 'L', formula: (lvl) => 1 + lvl * 0.25 }], costCurrency: 'L', costFormula: (lvl) => 3 + 1 * Math.pow(lvl, 1.75), maxLevel: 76 },
+    { id: 'EX03', type: 'upgrade', code: 'EX03', name: 'Expansion', coords: [-6, 8], reqs: [[-5, 8]], borderColor: 'green', desc: '+50% level conversion limit per level.', effects: [], costCurrency: 'L', costFormula: (lvl) => 50 * Math.pow(1.5, Math.pow(lvl, 0.7)), maxLevel: 76 },
+    { id: 'EX04', type: 'upgrade', code: 'EX04', name: 'Related', coords: [-4, 9], reqs: [[-5, 9]], borderColor: 'green', desc: '+20% research per level.', effects: [{ type: 'reset_gain_mult', targetCurrency: 'R', formula: (lvl) => 1 + 0.2 * lvl }], costCurrency: 'L', costFormula: (lvl) => 8 * Math.pow(1.5, 0.25 * Math.pow(lvl + 4, 1.5)), maxLevel: 76 },
+    //bonus
+    { id: 'B0', type: 'upgrade', code: 'Bonus', name: 'Bonus!!', coords: [0, -2], reqs: [], borderColor: 'green', desc: '+Unlock Bonus Basepate.', effects: [], costCurrency: 'P', costFormula: (lvl) => 100, maxLevel: 1 },
+    { id: 'Info1', type: 'info', code: 'Extra', name: 'Bonus baseplate', coords: [0, -3], reqs: [[0, -2]], desc: 'Central point generator.', getInfoText: () => `Note that this part of the game does not boost main progress!` },
+    { id: 'B01', type: 'upgrade', code: 'B01', name: 'Gen(erate) alpha', coords: [0, -4], reqs: [[0, -2]], borderColor: 'green', desc: '+1α/s.', effects: [{ type: 'base_gain', currency: 'α', formula: (lvl) => lvl }], costCurrency: 'P', costFormula: (lvl) => 0, maxLevel: 1 },
+    { id: 'B02', type: 'upgrade', code: 'B02', name: 'More alpha!!', coords: [1, -4], reqs: [[0, -4]], borderColor: 'green', desc: '+1α/s per level', effects: [{ type: 'base_gain', currency: 'α', formula: (lvl) => lvl * 1 }], costCurrency: 'α', costFormula: (lvl, getLvl) => Math.floor(3 * Math.pow(lvl + 1, 2) * Math.pow(1.015, lvl) / Math.pow(5, getLvl('B04'))), maxLevel: 1000 },
+    { id: 'B03', type: 'upgrade', code: 'B03', name: 'More alpha!!', coords: [-1, -4], reqs: [[0, -4]], borderColor: 'orange', desc: 'x1.5α per level', effects: [{ type: 'currency_mult', currency: 'α', formula: (lvl) => Math.pow(1.5, lvl) }], costCurrency: 'α', costFormula: (lvl, getLvl) => Math.floor(25 * Math.pow(3 + Math.max(0, (0.05 * (lvl - 20))), lvl) / Math.pow(5, getLvl('B04'))), maxLevel: 100 },
+    { id: 'B04', type: 'upgrade', code: 'B04', name: 'Cost reduction', coords: [0, -5], reqs: [[0, -4]], borderColor: 'red', desc: 'Cost of B03 and B02 /5 per level', effects: [], costCurrency: 'α', costFormula: (lvl) => Math.floor(1250 * Math.pow(4 + 0.25 * lvl, lvl)), maxLevel: 100 },
+    { id: 'B05', type: 'upgrade', code: 'B05', name: 'Connected', coords: [1, -5], reqs: [[0, -5]], borderColor: 'orange', desc: 'Points and this upgs level boost alpha.', effects: [{ type: 'currency_mult', currency: 'α', formula: (lvl, getlvl, getCurr) => (1 + (lvl >= 1) * (Math.log2(Math.log2(getCurr('P') + 2) + 2)) * Math.pow(1.05, lvl)) }], costCurrency: 'α', costFormula: (lvl) => Math.floor(16000000 * Math.pow(1.1 + 0.0001 * lvl, lvl)), maxLevel: 100 },
+    { id: 'B06', type: 'upgrade', code: 'B06', name: 'Crititcal', coords: [-1, -5], reqs: [[0, -5]], borderColor: 'orange', desc: 'Each tick get +1% chance/lvl to 25x alpha that tick.', effects: [{ type: 'currency_mult', currency: 'α', formula: (lvl) => 1 + 24 * (Math.random() > 1 - 0.01 * lvl) }], costCurrency: 'α', costFormula: (lvl) => Math.floor(16000000000 * Math.pow(10, Math.pow(lvl, 0.5))), maxLevel: 100 },
+    { id: 'B07', type: 'upgrade', code: 'B07', name: 'αααααα', coords: [-2, -4], reqs: [[-1, -4]], borderColor: 'orange', desc: 'x1.02α per level. get softcapped at 100 lvls', effects: [{ type: 'currency_mult', currency: 'α', formula: (lvl) => Math.pow(1.02, lvl) }], costCurrency: 'α', costFormula: (lvl, getLvl) => Math.floor(2e13 * Math.pow(1.02 + Math.max(0, (0.0001 * (lvl - 100))), lvl)), maxLevel: 800 },
+    { id: 'B08', type: 'upgrade', code: 'B08', name: 'α -> α', coords: [-2, -5], reqs: [[-2, -4]], borderColor: 'orange', desc: 'Alpha boost itself.', effects: [{ type: 'currency_mult', currency: 'α', formula: (lvl, getLevel, getCurr) => 1 + (lvl >= 1) * Math.pow(1 + (1 + 0.25 * lvl) * Math.log10(Math.max((getCurr('α')), 1e18) / 1e18 + 10), 1.75) }], costCurrency: 'α', costFormula: (lvl) => Math.floor(1e18 * Math.pow(1.45, lvl)), maxLevel: 100 },
+    { id: 'B09', type: 'upgrade', code: 'B09', name: 'Satisfaction', coords: [2, -4], reqs: [[-2, -4]], borderColor: 'orange', desc: '+1x alpha (^1.2) per level.', effects: [{ type: 'currency_mult', currency: 'α', formula: (lvl) => Math.pow((1 + (lvl * 1)), 1.2) }], costCurrency: 'α', costFormula: (lvl) => Math.floor(1e27 * Math.pow(10, Math.pow(lvl, 0.375))), maxLevel: 1000 },
+    { id: 'B10', type: 'upgrade', code: 'B10', name: 'Universes', coords: [1, -3], reqs: [[0, -2]], borderColor: 'green', desc: 'Unlock even more bonus content (bottom of this plate).', effects: [], costCurrency: 'α', costFormula: (lvl) => 5, maxLevel: 1 },
+    { id: 'B11', type: 'upgrade', code: 'B11', name: 'Plate I', coords: [1, -6], reqs: [[1, -3]], borderColor: 'green', desc: 'Unlock infinity plate and gain infinity.', effects: [{ type: 'base_gain', currency: '∞', formula: (lvl) => 0.01 * lvl }], costCurrency: 'α', costFormula: (lvl) => 25, maxLevel: 1 },
+    //infinity
+    { id: 'InfoInf', type: 'info', code: 'Infinity', name: 'Infinity baseplate', coords: [3, -3], reqs: [[0, -2]], desc: 'Central point generator.', getInfoText: () => `For upgrades I.xx, you only pay for the last level!` },
+    { bulkFinalCost: true, id: 'I01', type: 'upgrade', code: 'I01', name: 'Infinite', coords: [4, -3], reqs: [[1, -6]], borderColor: 'green', desc: 'Gain 0.01∞/s/level', effects: [{ type: 'base_gain', currency: '∞', formula: (lvl) => 0.01 * lvl }, { type: 'max_level_mod', target: 'I01', amount: (lvl) => 10 * lvl }], costCurrency: '∞', costFormula: (lvl) => (lvl >= 2) * 0.000001 * (Math.pow(lvl + 9, 5) - 1e5) / (Math.pow(1.5, getLevel('I06')) * Math.pow(5, getLevel('IF03'))), maxLevel: 1000 },
+    { bulkFinalCost: true, id: 'I02', type: 'upgrade', code: 'I02', name: 'Multiplier', coords: [3, -4], reqs: [[4, -3]], borderColor: 'orange', desc: 'x(lvl)^2∞/s', effects: [{ type: 'currency_mult', currency: '∞', formula: (lvl) => Math.pow(lvl + 1, 2) }, { type: 'max_level_mod', target: 'I02', amount: (lvl) => 10 * lvl }], costCurrency: '∞', costFormula: (lvl, getLvl, getCurr) => 1 * Math.pow(5, Math.pow(lvl - 1, 0.5)) / Math.pow(10000, getLvl('IF02')), maxLevel: 1000 },
+    { bulkFinalCost: true, id: 'I03', type: 'upgrade', code: 'I03', name: 'Linear', coords: [4, -4], reqs: [[3, -4]], borderColor: 'orange', desc: 'x∞/s based on level', effects: [{ type: 'currency_mult', currency: '∞', formula: (lvl) => 1 + Math.pow(50 * lvl, 0.11) / 2 }, { type: 'max_level_mod', target: 'I03', amount: (lvl) => 100 * lvl }], costCurrency: '∞', costFormula: (lvl) => 1000 * lvl, maxLevel: 1000 },
+    { bulkFinalCost: true, id: 'I04', type: 'upgrade', code: 'I04', name: 'Sub-linear?', coords: [3, -5], reqs: [[3, -4]], borderColor: 'orange', desc: 'x∞/s based on level.', effects: [{ type: 'currency_mult', currency: '∞', formula: (lvl) => Math.pow(1 + 500 * lvl, 0.05) }, { type: 'max_level_mod', target: 'I04', amount: (lvl) => Math.min(1000 * Math.pow(lvl, 2), 1e308) }], costCurrency: '∞', costFormula: (lvl) => 1000000 * Math.pow(lvl, 0.5), maxLevel: 1000 },
+    { bulkFinalCost: true, id: 'I05', type: 'upgrade', code: 'I05', name: 'Mult', coords: [5, -3], reqs: [[3, -5]], borderColor: 'orange', desc: 'x3∞/s per level.', effects: [{ type: 'currency_mult', currency: '∞', formula: (lvl) => Math.pow(3, lvl) }, { type: 'max_level_mod', target: 'I05', amount: (lvl) => 10 * lvl }], costCurrency: '∞', costFormula: (lvl) => 2e6 * Math.pow(10 + 1.5 * lvl - 1.50, lvl), maxLevel: 1000 },
+    { bulkFinalCost: true, id: 'I06', type: 'upgrade', code: 'I06', name: 'Mult', coords: [5, -4], reqs: [[3, -4], [5, -3]], borderColor: 'red', desc: 'Divide I01s cost per level.', effects: [{ type: 'max_level_mod', target: 'I06', amount: (lvl) => 10 * lvl }], costCurrency: '∞', costFormula: (lvl) => 1.25e8 * Math.pow(2 + 0.25 * (lvl - 1), lvl / 10), maxLevel: 1000 },
+    { bulkFinalCost: true, id: 'I07', type: 'upgrade', code: 'I07', name: 'Fuel', coords: [4, -5], reqs: [[3, -4], [5, -3]], borderColor: 'orange', desc: 'Infinity boost itself, softcapped ~50.', effects: [{ type: 'currency_mult', currency: '∞', formula: (lvl, getLvl, getCurr) => Math.min(50 + Math.pow(Math.pow(lvl, 1.3) * Math.pow(getCurr('∞') / 1e27, 0.05), 0.5), 1 + Math.pow(lvl, 1.3) * Math.pow(getCurr('∞') / 1e27, 0.05)) }, { type: 'max_level_mod', target: 'I07', amount: (lvl) => 10 * lvl }], costCurrency: '∞', costFormula: (lvl) => 1e33 * Math.pow(10, lvl - 1), maxLevel: 1000 },
+    { bulkFinalCost: true, id: 'I08', type: 'upgrade', code: 'I08', name: 'Expander', coords: [5, -5], reqs: [[4, -5]], borderColor: 'green', desc: 'Unlock new content below. Also +1% infinity per level', effects: [{ type: 'currency_mult', currency: '∞', formula: (lvl) => 1 + 0.01 * lvl }, { type: 'max_level_mod', target: 'I08', amount: (lvl) => 1 * lvl }], costCurrency: '∞', costFormula: (lvl) => 1e45 * Math.pow(2, Math.pow(lvl - 1, 0.7)), maxLevel: 1000 },
+    { id: 'Inifnity!', type: 'reset', code: 'Fragmentation', name: 'Reset prev. infinity progress except I08 for fragments.', coords: [3, -6], reqs: [[5, -5]], desc: '', targetCurrency: '♦', resetCurrencies: ['∞'], resettedCoords: [[4, -3], [5, -3], [3, -4], [4, -4], [5, -4], [3, -5], [4, -5]], calculateGain: (lvl, getCurr, getLvl) => Math.floor(Math.pow(getCurr('∞') / 1e45, 0.175) * 100) / 100 },
+    //infinity fragments
+    { id: 'IF01', type: 'upgrade', code: 'IF01', name: 'Recovery', coords: [4, -6], reqs: [[5, -5]], borderColor: 'orange', desc: 'x3∞/s.', effects: [{ type: 'currency_mult', currency: '∞', formula: (lvl) => Math.pow(3, lvl) }, { type: 'max_level_mod', target: 'IF01', amount: (lvl) => 10 * lvl }], costCurrency: '♦', costFormula: (lvl) => Math.floor(Math.pow(2 + 0.25 * lvl, lvl)), maxLevel: 1000 },
+    { id: 'IF02', type: 'upgrade', code: 'IF02', name: 'Ultra Cheap', coords: [5, -6], reqs: [[4, -6]], borderColor: 'red', desc: '/10K to I02s cost per level.', effects: [{ type: 'max_level_mod', target: 'IF02', amount: (lvl) => 10 * lvl }], costCurrency: '♦', costFormula: (lvl) => 3 * Math.floor(Math.pow(1.25 * lvl, lvl)), maxLevel: 1000 },
+    { id: 'IF03', type: 'upgrade', code: 'IF03', name: 'Auto', coords: [3, -7], reqs: [[4, -6]], borderColor: 'red', desc: 'Automate I01 & /5 its cost/lvl.', effects: [{ type: 'automation', target: 'I01' }, { type: 'max_level_mod', target: 'IF03', amount: (lvl) => 10 * lvl }], costCurrency: '♦', costFormula: (lvl) => Math.floor(1000 * Math.pow(1.5 * lvl, lvl)), maxLevel: 1000 },
+    { id: 'IF04', type: 'upgrade', code: 'IF04', name: 'Auto II', coords: [4, -7], reqs: [[3, -7]], borderColor: 'red', desc: 'Automate I02 and +20% fragments additive per level.', effects: [{ type: 'automation', target: 'I02' }, { type: 'reset_gain_mult', targetCurrency: '♦', formula: (lvl) => 1 + 0.2 * lvl }], costCurrency: '♦', costFormula: (lvl) => Math.floor(1e7 * Math.pow(1.25, lvl)), maxLevel: 1000 }
+];
         const CURRENCY_EFFECT_INDEX = {};
         Object.keys(CURRENCIES).forEach(c => CURRENCY_EFFECT_INDEX[c] = []);
         TREE_NODES.forEach(node => { if (node.type !== 'upgrade' || !node.effects) return;
@@ -844,7 +586,7 @@
 
         function renderWrappedTitle(text) {
             const words = text.split(/\s+/).filter(Boolean);
-            if (words.length <= 1 || text.length <= 12) { return `<span class="text-[9px] font-normal text-zinc-300 text-right truncate max-w-[65px]">${text}</span>`; }
+            if (text.length <= 12) { return `<span class="text-[9px] font-normal text-zinc-300 text-right truncate max-w-[65px]">${text}</span>`; }
             let lines = 2;
             if (text.length > 30) lines = 3;
             if (text.length > 40) lines = 4;
