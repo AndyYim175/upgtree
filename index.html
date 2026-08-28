@@ -600,7 +600,7 @@
                 ], borderColor: 'green', desc: 'Unlock more point upgrades.', effects: [], costCurrency: '€', costFormula: (lvl) => 30, maxLevel: 1 },
             { id: 'AU01', type: 'upgrade', code: 'AU01', name: 'Start()', coords: [3, 0], reqs: [
                     [1, 10]
-                ], borderColor: 'green', desc: 'Unlock upgrades. Note that all automation cost nothing (i.e cost become requirement)', effects: [], costCurrency: 'R', costFormula: (lvl) => 0, maxLevel: 1 },
+                ], borderColor: 'green', desc: 'Unlock upgrades. Note that all automation made (NOT AUTOMATION UPGRADES) cost nothing (i.e cost become requirement)', effects: [], costCurrency: 'R', costFormula: (lvl) => 0, maxLevel: 1 },
             { id: 'AU02', type: 'upgrade', code: 'AU02', name: 'Automate(1)', coords: [4, 0], reqs: [
                     [3, 0]
                 ], borderColor: 'green', desc: 'Start automating #1.', effects: [{ type: 'automation', target: '#1' }], costCurrency: 'R', costFormula: (lvl) => 3e7, maxLevel: 1 },
@@ -1338,7 +1338,7 @@
                         <div class="w-full flex items-end justify-between gap-1 text-[9px] leading-tight">
                             <div class="flex flex-col items-start min-w-0">
                                 <span class="node-level-text text-zinc-400 font-mono font-normal">${formatLevel(displayLvl)}/${formatLevel(effectiveMax)}</span>
-                                ${effectSummary ? renderWrappedEffectSummary(effectSummary) : ''}
+                                ${effectSummary ? `<div class="node-effect-text">${renderWrappedEffectSummary(effectSummary)}</div>` : ''}
                             </div>
                             <div class="text-right whitespace-nowrap">
                                 <span class="node-cost-text font-normal ${canAfford ? 'text-emerald-400' : 'text-zinc-400'}">${isMax ? 'MAX' : formatNum(cost) + ' ' + node.costCurrency}</span>
@@ -1369,6 +1369,10 @@
                     if (costEl) { costEl.textContent = isMax ? 'MAX' : formatNum(cost) + ' ' + node.costCurrency;
                         costEl.className =
                         `node-cost-text font-normal ${canAfford ? 'text-emerald-400' : 'text-zinc-400'}`; }
+                    const effectEl = cached.content.querySelector('.node-effect-text');
+                    if (effectEl && node.type === 'upgrade') {
+                        effectEl.innerHTML = renderWrappedEffectSummary(getNodeEffectSummary(node, curLevel));
+                    }
                 } else if (node.type === 'reset') {
                     const gain = getEffectiveResetGain(node);
                     canAfford = gain > 0;
