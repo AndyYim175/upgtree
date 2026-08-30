@@ -548,6 +548,26 @@
                 ].includes(eff.type)) { CURRENCY_EFFECT_INDEX[target].push({ nodeId: node.id, type: eff.type,
                     formula: eff.formula }); } }); });
         const NODE_MAP = new Map();
+        const STATIC_NODES = new Map();
+const isNodeStatic = (node) => {
+    if (node.type !== 'upgrade') return false;
+    // Static if: fixed maxLevel (no max_level_mod targets it), cost doesn't use getCurr/getLevel,
+    // and all effects don't use getCurr/getLevel or Math.random
+    if (node.costFormula.toString().includes('getCurr') || node.costFormula.toString().includes('getLevel')) return false;
+    if (node.effects?.some(e => {
+        const fnStr = e.formula?.toString() || e.amount?.toString() || '';
+        return fnStr.includes('getCurr') || fnStr.includes('getLevel') || fnStr.includes('Math.random');
+    })) return false;
+    // Check if any node modifies this node's max level
+    for (const other of TREE_NODES) {
+        if (other.effects?.some(e => e.type === 'max_level_mod' && 
+            (Array.isArray(e.target) ? e.target.includes(node.id) : e.target === node.id))) {
+            return false;
+        }
+    }
+    return node.bulkFinalCost === undefined || !node.bulkFinalCost;
+};
+TREE_NODES.forEach(n => STATIC_NODES.set(n.id, isNodeStatic(n)));
         const COORD_MAP = new Map();
         TREE_NODES.forEach(n => { NODE_MAP.set(n.id, n);
             COORD_MAP.set(`${n.coords[0]},${n.coords[1]}`, n); });
@@ -1085,6 +1105,7 @@
         }
 
         function updateNodeCard(node, cached) {
+            
             const curLevel = getLevel(node.id);
             const displayLvl = getDisplayLevel(node.id);
             const effectiveMax = getMaxLevel(node);
@@ -1142,44 +1163,47 @@
                         </div>`;
             }
             cached.card.classList.toggle('afford-glow', canAfford);
+            // Mark static nodes so updateDynamicNodeVisuals skips them
+            cached.isStatic = STATIC_NODES.get(node.id);
         }
 
         function updateDynamicNodeVisuals() {
-            for (const [id, cached] of nodeDOMCache) {
-                const node = NODE_MAP.get(id);
-                if (!node || node.type === 'info') continue;
-                const curLevel = getLevel(node.id);
-                const displayLvl = getDisplayLevel(node.id);
-                const effectiveMax = getMaxLevel(node);
-                const isMax = curLevel >= effectiveMax;
-                let progressPct = 0,
-                    canAfford = false;
-                if (node.type === 'upgrade') {
-                    const cost = getDisplayCost(node);
-                    const curr = gameState.currencies[node.costCurrency] || 0;
-                    canAfford = !isMax && curr >= cost;
-                    progressPct = isMax ? 100 : Math.min(100, Math.max(0, (curr / cost) * 100));
-                    const levelEl = cached.content.querySelector('.node-level-text');
-                    if (levelEl) levelEl.textContent = `${formatLevel(displayLvl)}/${formatLevel(effectiveMax)}`;
-                    const costEl = cached.content.querySelector('.node-cost-text');
-                    if (costEl) { costEl.textContent = isMax ? 'MAX' : formatNum(cost) + ' ' + node.costCurrency;
+    for (const [id, cached] of nodeDOMCache) {
+        const node = NODE_MAP.get(id);
+        if (cached.isStatic) continue;
+        if (!node || node.type === 'info') continue;
+        const curLevel = getLevel(node.id);
+        const displayLvl = getDisplayLevel(node.id);
+        const effectiveMax = getMaxLevel(node);
+        const isMax = curLevel >= effectiveMax;
+        let progressPct = 0,
+            canAfford = false;
+        if (node.type === 'upgrade') {
+            const cost = getDisplayCost(node);
+            const curr = gameState.currencies[node.costCurrency] || 0;
+            canAfford = !isMax && curr >= cost;
+            progressPct = isMax ? 100 : Math.min(100, Math.max(0, (curr / cost) * 100));
+            const levelEl = cached.content.querySelector('.node-level-text');
+            if (levelEl) levelEl.textContent = `${formatLevel(displayLvl)}/${formatLevel(effectiveMax)}`;
+            const costEl = cached.content.querySelector('.node-cost-text');
+            if (costEl) { costEl.textContent = isMax ? 'MAX' : formatNum(cost) + ' ' + node.costCurrency;
                         costEl.className =
-                        `node-cost-text font-normal ${canAfford ? 'text-emerald-400' : 'text-zinc-400'}`; }
-                    const effectEl = cached.content.querySelector('.node-effect-text');
-                    if (effectEl && node.type === 'upgrade') {
-                        effectEl.innerHTML = renderWrappedEffectSummary(getNodeEffectSummary(node, curLevel));
-                    }
-                } else if (node.type === 'reset') {
-                    const gain = getEffectiveResetGain(node);
-                    canAfford = gain > 0;
-                    progressPct = canAfford ? 100 : 0;
-                    const gainEl = cached.content.querySelector('.reset-gain-text');
-                    if (gainEl) gainEl.textContent = `+${formatNum(gain)} ${node.targetCurrency}`;
-                }
-                cached.fillEl.style.height = progressPct + '%';
-                cached.card.classList.toggle('afford-glow', canAfford);
+                `node-cost-text font-normal ${canAfford ? 'text-emerald-400' : 'text-zinc-400'}`; }
+            const effectEl = cached.content.querySelector('.node-effect-text');
+            if (effectEl && node.type === 'upgrade') {
+                effectEl.innerHTML = renderWrappedEffectSummary(getNodeEffectSummary(node, curLevel));
             }
+        } else if (node.type === 'reset') {
+            const gain = getEffectiveResetGain(node);
+            canAfford = gain > 0;
+            progressPct = canAfford ? 100 : 0;
+            const gainEl = cached.content.querySelector('.reset-gain-text');
+            if (gainEl) gainEl.textContent = `+${formatNum(gain)} ${node.targetCurrency}`;
         }
+        cached.fillEl.style.height = progressPct + '%';
+        cached.card.classList.toggle('afford-glow', canAfford);
+    }
+}
         // ==================== CURRENCY BAR ====================
         function renderCurrencyBar() {
             const bar = document.getElementById('currency-bar');
