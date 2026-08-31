@@ -205,6 +205,7 @@
             { coords: [[0, 2.5], [2.5, 3.5]], thickness: 6, color: 'lightblue', opacity: 0.2, requirements: ['D14'], type: 'line' },
             { coords: [[1.25, 2.5], [2.5, 3]], thickness: 6, color: 'lightblue', opacity: 0.2, requirements: ['D14'], type: 'line' },
             { type: 'rect', coords: [-2.5, -2.5], width: 800, height: 800, fillColor: 'green', fillOpacity: 0.3, strokeColor: '#34d399', strokeOpacity: 0.9, strokeWidth: 2, requirements: ['#1'] },
+            { type: 'rect', coords: [-7.5, -2.5], width: 800, height: 800, fillColor: 'green', fillOpacity: 0.3, strokeColor: '#34d399', strokeOpacity: 0.9, strokeWidth: 2, requirements: ['P11'] },
             { type: 'rect', coords: [-7.5, -7.5], width: 800, height: 800, fillColor: '#06402B', fillOpacity: 0.3, strokeColor: '#34d399', strokeOpacity: 0.9, strokeWidth: 2, requirements: ['B12'] },
             { type: 'rect', coords: [2.5, -2.5], width: 800, height: 800, fillColor: '#f9bfbf', fillOpacity: 0.3, strokeColor: '#f9bfbf', strokeOpacity: 0.9, strokeWidth: 2, requirements: ['P05'] },
             { type: 'rect', coords: [7.5, -2.5], width: 800, height: 800, fillColor: '#750d37', fillOpacity: 0.3, strokeColor: '#750d37', strokeOpacity: 0.9, strokeWidth: 2, requirements: ['AU19'] },
@@ -239,6 +240,7 @@
             { type: 'text', coords: [-2.5, -2.35], text: 'The start of everything.', alignment: 'Bottom-left', color: 'lightgreen', fontSize: 14, opacity: 1, requirements: ['D10'] },
             { type: 'text', coords: [-2.5, 2.65], text: 'Your first reset layer.', alignment: 'Bottom-left', color: 'lightblue', fontSize: 14, opacity: 1, requirements: ['D15'] },
             { type: 'text', coords: [-2.5, -2.5], text: 'Point baseplate', alignment: 'Bottom-left', color: 'lightgreen', fontSize: 28, opacity: 1, requirements: ['#1'] },
+            { type: 'text', coords: [-7.5, -2.5], text: 'Point baseplate: extension', alignment: 'Bottom-left', color: 'lightgreen', fontSize: 28, opacity: 1, requirements: ['P11'] },
             { type: 'text', coords: [2.5, -2.5], text: 'Automation baseplate', alignment: 'Bottom-left', color: '#f9bfbf', fontSize: 28, opacity: 1, requirements: ['P05'] },
             { type: 'text', coords: [7.5, -2.5], text: 'Automation+ baseplate', alignment: 'Bottom-left', color: '#750d37', fontSize: 28, opacity: 1, requirements: ['AU19'] },
             { type: 'text', coords: [-2.5, -7.5], text: 'Bonus baseplate', alignment: 'Bottom-left', color: 'lightgreen', fontSize: 28, opacity: 0.9, requirements: ['B01'] },
@@ -367,6 +369,16 @@
     { id: '#18', type: 'upgrade', code: '#18', name: 'Simplify', coords: [-1, 2], reqs: [[-1, 1], [-2, 10]], borderColor: 'orange', desc: 'x3 points.', effects: [{ type: 'currency_mult', currency: 'P', formula: (lvl) => 1 + 2 * lvl }], costCurrency: 'P', costFormula: (lvl) => 1.25e17, maxLevel: 1 },
     { id: '#19', type: 'upgrade', code: '#19', name: 'Hi!', coords: [-2, 2], reqs: [[-1, 2], [-2, 10]], borderColor: 'orange', desc: 'Boost decoration power by x10/lvl.', effects: [{ type: 'currency_mult', currency: '¤', formula: (lvl) => Math.pow(10, lvl) }], costCurrency: 'P', costFormula: (lvl) => 1.5e17 * Math.pow(1.35, Math.pow(lvl + 2, 1.5)), maxLevel: 15 },
     { id: '#20', type: 'upgrade', code: '#20', name: 'Twenty!', coords: [2, 2], reqs: [[2, 1], [-2, 10]], borderColor: 'orange', desc: 'Boost resc generate rate by x1.25/lvl.', effects: [{ type: 'currency_mult', currency: 'R', formula: (lvl) => Math.pow(1.25, lvl) }], costCurrency: 'P', costFormula: (lvl) => 1e18 * Math.pow(2.5, Math.pow(lvl, 1.25)), maxLevel: 15 },
+    { id: '#21', type: 'upgrade', code: '#21', name: 'Expanded again...', coords: [2, -2], reqs: [[2, -1], [-2, 9]], borderColor: 'orange', desc: '+2% prestige per level.', effects: [{ type: 'reset_gain_mult', targetCurrency: '€', formula: (lvl) => 1+0.02*lvl }], costCurrency: 'P', costFormula: (lvl) => 1e21 * Math.pow(2.5, Math.pow(lvl, 0.8)), maxLevel: 15 },
+    //pt.expansion
+    { id: '#22', type: 'upgrade', code: '#22', name: 'new plate!', coords: [-3, 0], reqs: [[-2, 9]], borderColor: 'orange', desc: 'Double energy per level.', effects: [{ type: 'currency_mult', currency: 'E', formula: (lvl) => Math.pow(2,lvl) }], costCurrency: 'P', costFormula: (lvl) => 1e20 * Math.pow(10, Math.pow(lvl, 1.15)), maxLevel: 15 },
+    { id: '#23', type: 'upgrade', code: '#23', name: 'weak boost', coords: [-3, 1], reqs: [[-3, 0], [-2, 9]], borderColor: 'orange', desc: 'Boost points, but gets weaker with more points, stronger with more levels.', effects: [{ type: 'currency_mult', currency: 'P', formula: (lvl, getLvl, getCurr) => Math.max(1, 20/Math.pow(getCurr('P')/(1e18*Math.pow(10, lvl)), 0.2)) }], costCurrency: 'P', costFormula: (lvl) => 1e21 * Math.pow(10, Math.pow(lvl, 1.15)), maxLevel: 15 },
+    { id: '#24', type: 'upgrade', code: '#24', name: 'Straight to the point', coords: [-3, -1], reqs: [[-3, 0], [-2, 9]], borderColor: 'orange', desc: 'x5 points.', effects: [{ type: 'currency_mult', currency: 'P', formula: (lvl) => 1+4*lvl }], costCurrency: 'P', costFormula: (lvl) => 1e22, maxLevel: 1 },
+    { id: '#25', type: 'upgrade', code: '#25', name: 'Bonus boost.', coords: [-3, -2], reqs: [[-3, 0], [-2, 9]], borderColor: 'orange', desc: 'x1.1 cash, infinity, alpha per level.', effects: [{ type: 'currency_mult', currency: 'C', formula: (lvl) => Math.pow(1.1, lvl) },{ type: 'currency_mult', currency: 'α', formula: (lvl) => Math.pow(1.1, lvl) },{ type: 'currency_mult', currency: '∞', formula: (lvl) => Math.pow(1.1, lvl) }], costCurrency: 'P', costFormula: (lvl) => 1e21*Math.pow(5, Math.pow(lvl, 1.2)), maxLevel: 7 },
+    { id: '#26', type: 'upgrade', code: '#26', name: 'alternating', coords: [-4, -1], reqs: [[-3, 0], [-2, 9]], borderColor: 'orange', desc: 'x3 points', effects: [{ type: 'currency_mult', currency: 'P', formula: (lvl) => 1+4*lvl }], costCurrency: 'P', costFormula: (lvl) => 1e22, maxLevel: 1 },
+    
+    
+    
     //resc
     { id: 'Resc_hint', type: 'info', code: 'Tips', name: 'Autobuy limits', coords: [1, 3], reqs: [[0, -1]], desc: 'Central point generator.', getInfoText: () => `Consider changing autobuy to 1 to avoid accidentally buying muitiple resc.upgs!` },
     { id: 'Resc', type: 'reset', code: 'Research', name: 'Reset prev. progress for research points!', coords: [0, 3], reqs: [[0, -1]], desc: 'Reset Previous progress for research points!', targetCurrency: 'R', resetCurrencies: ['P'], resettedCoords: [[2, 2], [-2, 2], [-1, 2], [-2, 1], [2, 1], [1, 2], [0, 2], [1, -2], [2, -1], [-2, 0], [2, 0], [0, 1], [1, 0], [-1, 0], [1, 1], [1, -1], [-1, -1], [-1, 1], [-2, -1], [-2, 0]], calculateGain: () => { const p = gameState.currencies.P; if (p < 2500) return 0; return Math.floor(1 + Math.pow(p / 1000, 0.4) * 100) / 100; } },
@@ -1421,28 +1433,88 @@ TREE_NODES.forEach(n => STATIC_NODES.set(n.id, isNodeStatic(n)));
     const input = document.createElement('input');
     input.type = 'file';
     input.accept = '.json';
+    input.style.display = 'none';
+    document.body.appendChild(input); // attach to DOM for reliable file dialog
+
     input.onchange = (e) => {
         const file = e.target.files[0];
         if (!file) return;
+
         const reader = new FileReader();
-        reader.onload = (e) => {
+        reader.onload = (ev) => {
             try {
-                const data = JSON.parse(e.target.result);
-                // Validate that the data has the expected shape
-                if (!data.currencies || !data.levels) {
-                    throw new Error('Invalid save format');
+                const data = JSON.parse(ev.target.result);
+
+                // Validate essential fields
+                if (!data.currencies || typeof data.currencies !== 'object') {
+                    throw new Error('Missing currencies');
                 }
-                localStorage.setItem(SAVE_KEY, JSON.stringify(data));
-                showToast('Save imported! Reloading…');
-                setTimeout(() => location.reload(), 500);
-            } catch(err) {
+
+                // Apply the imported data to the live game state
+                Object.assign(gameState, data);
+
+                // Ensure default arrays exist
+                if (!gameState.hiddenCurrencies) gameState.hiddenCurrencies = [];
+                if (!gameState.unlockedDecorations) gameState.unlockedDecorations = [];
+                if (!gameState.skipResetConfirm) gameState.skipResetConfirm = {};
+                if (!gameState.currencyOrder) gameState.currencyOrder = ['P'];
+
+                // Update camera
+                if (gameState.camera) {
+                    panX = gameState.camera.panX || 0;
+                    panY = gameState.camera.panY || 0;
+                    scale = gameState.camera.scale || 1;
+                }
+
+                // Update buy mode
+                if (gameState.buyMode !== undefined) {
+                    buyMode = gameState.buyMode;
+                    document.getElementById('buy-mode-label').textContent = `BUY: x${buyMode}`;
+                }
+
+                // Clear all caches and animations
+                nodeDOMCache.clear();
+                currencyBarCache.clear();
+                for (const sid in stepAnimations) {
+                    cancelAnimationFrame(stepAnimations[sid].rafId);
+                    delete stepAnimations[sid];
+                }
+                for (const id in levelAnimations) delete levelAnimations[id];
+                displayLevels = {};
+
+                // Persist to localStorage (so it survives a manual reload)
+                localStorage.setItem(SAVE_KEY, JSON.stringify(gameState));
+
+                // Rebuild UI
+                updateNodesInPlace();
+                renderCurrencyBar();
+                renderDecorations();
+                updateTransform();
+
+                // Update pause button state
+                if (gameState.paused) {
+                    document.getElementById('pause-icon').setAttribute('data-lucide', 'play');
+                    document.getElementById('pause-label').textContent = 'Continue';
+                } else {
+                    document.getElementById('pause-icon').setAttribute('data-lucide', 'pause');
+                    document.getElementById('pause-label').textContent = 'Stop';
+                }
+                lucide.createIcons();
+
+                showToast('✅ Save imported successfully!');
+                playSound('buy');
+            } catch (err) {
+                console.error(err);
                 playSound('fail');
-                showToast('Invalid save file!');
+                showToast('❌ Invalid save file: ' + err.message);
             }
+
+            // Clean up
+            document.body.removeChild(input);
         };
         reader.readAsText(file);
     };
-        
+
     input.click();
     document.getElementById('settings-menu').classList.add('hidden');
 };
