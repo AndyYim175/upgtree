@@ -216,6 +216,7 @@
             { type: 'rect', coords: [2.5, -7.5], width: 800, height: 800, fillColor: '#d1d0d0', fillOpacity: 0.35, strokeColor: 'lightyellow', strokeOpacity: 0.9, strokeWidth: 2, requirements: ['B01'] },
             { type: 'rect', coords: [2.5, 2.5], width: 800, height: 800, fillColor: 'darkorchid', fillOpacity: 0.35, strokeColor: 'purple', strokeOpacity: 0.9, strokeWidth: 2, requirements: ['R12'] },
             { type: 'rect', coords: [-2.5, 7.5], width: 800, height: 800, fillColor: 'lightyellow', fillOpacity: 0.5, strokeColor: 'lightyellow', strokeOpacity: 0.9, strokeWidth: 2, requirements: ['R11'] },
+            { type: 'rect', coords: [-2.5, 12.5], width: 800, height: 800, fillColor: '#D9544D', fillOpacity: 0.5, strokeColor: '#FF7F7F', strokeOpacity: 0.9, strokeWidth: 2, requirements: ['P16'] },
             { type: 'rect', coords: [2.5, 7.5], width: 800, height: 800, fillColor: 'blue', fillOpacity: 0.15, strokeColor: 'lightyellow', strokeOpacity: 0.9, strokeWidth: 2, requirements: ['P09'] },
             { type: 'rect', coords: [-7.5, 7.5], width: 800, height: 800, fillColor: 'lightgrey', fillOpacity: 0.3, strokeColor: 'grey', strokeOpacity: 0.9, strokeWidth: 2, requirements: ['P04'] },
             { type: 'text', coords: [-2.5, -2.5], text: '⚘⚘⚘⚘⚘⚘⚘⚘⚘⚘⚘⚘⚘⚘⚘⚘⚘⚘⚘⚘⚘⚘⚘⚘⚘⚘⚘⚘⚘⚘⚘⚘⚘⚘⚘⚘⚘⚘⚘⚘⚘⚘⚘⚘', alignment: 'Bottom-left', color: 'green', fontSize: 28, opacity: 0.8, requirements: ['D6'] },
@@ -249,6 +250,7 @@
             { type: 'text', coords: [-2.5, 2.5], text: 'Research baseplate', alignment: 'Bottom-left', color: 'lightblue', fontSize: 28, opacity: 0.9, requirements: ['R1'] },
             { type: 'text', coords: [-7.5, 2.5], text: 'Energy baseplate', alignment: 'Bottom-left', color: 'orange', fontSize: 28, opacity: 0.9, requirements: ['R7'] },
             { type: 'text', coords: [-2.5, 7.5], text: 'Prestige baseplate', alignment: 'Bottom-left', color: 'lightyellow', fontSize: 28, opacity: 0.9, requirements: ['R11'] },
+            { type: 'text', coords: [-2.5, 12.5], text: 'Ascension baseplate', alignment: 'Bottom-left', color: '#FF7F7F', fontSize: 28, opacity: 0.9, requirements: ['P16'] },
             { type: 'text', coords: [-2.5, 7.65], text: 'Reset all your progress again!', alignment: 'Bottom-left', color: 'lightyellow', fontSize: 15, opacity: 0.9, requirements: ['D16'] },
             { type: 'text', coords: [2.5, 7.5], text: 'Operation baseplate', alignment: 'Bottom-left', color: 'turquoise', fontSize: 28, opacity: 0.9, requirements: ['P09'] },
             { type: 'text', coords: [-7.5, 7.5], text: 'Experience baseplate', alignment: 'Bottom-left', color: 'lightgrey', fontSize: 28, opacity: 0.9, requirements: ['P04'] }
@@ -315,6 +317,8 @@
             P: { id: 'P', name: 'Points', color: 'text-grey-400', fillBg: 'rgba(34,197,94,0.25)' }, 
             R: { id: 'R', name: 'Research', color: 'text-cyan-400', fillBg: 'rgba(0,150,250,0.25)' }, 
             '€': { id: '€', name: 'Prestige', color: 'text-yellow-400', fillBg: 'rgba(245,158,11,0.25)' }, 
+            A: { id: 'A', name: 'Ascension', color: 'text-red-400', fillBg: 'rgba(255,0,0,0.25)' }, 
+            
             '+': { id: '+', name: 'Additions', color: 'text-blue-400', fillBg: 'rgba(0,128,255,0.25)' }, 
             '×': { id: '×', name: 'Multiplications', color: 'text-red-400', fillBg: 'rgba(0,128,255,0.25)' }, 
             XP: { id: 'XP', name: 'Experience', color: 'text-grey-400', fillBg: 'rgba(128,128,128,0.25)' }, 
@@ -409,7 +413,7 @@
     { id: 'R11', type: 'upgrade', code: 'R11', name: 'Its time!!!', coords: [0, 6], reqs: [[-2, 4], [-1, 5]], desc: 'Unlock a new reset layer.', effects: [], costCurrency: 'R', costFormula: (lvl) => 1e6, maxLevel: 1 },
     { id: 'R12', type: 'upgrade', code: 'R12', name: 'Prettier', coords: [2, 3], reqs: [[2, 4]], desc: 'Unlock decorator. (have progression)', effects: [], costCurrency: 'R', costFormula: (lvl) => 75, maxLevel: 1 },
     { id: 'R13', type: 'upgrade', code: 'R13', name: 'Infinite+', coords: [1, 5], reqs: [[-1, 5], [0, 5], [2, 5], [1, 4]], borderColor: 'orange', desc: 'Muitiply points based on #16 levels', effects: [{ type: 'reset_gain_mult', targetCurrency: 'R', formula: (lvl, getLvl, getCurr) => 1 + 0.005 * lvl * (getLevel('#16')) }], costCurrency: 'R', costFormula: (lvl) => 100000, maxLevel: 1 },
-    { id: 'Dinfo', type: 'info', code: 'Tip', name: 'Decorators', coords: [3, 3], reqs: [[2, 3]], desc: 'Central point generator.', getInfoText: () => `Amount: +${formatNum(getCurr('¤'))}¤, Rate: +${formatNum(calculateGainRate('¤'))}/s` },
+    { id: 'Dinfo', type: 'info', code: 'Tip', name: 'Decorators (non-progression boost ones) in this plate will not be reset.', coords: [3, 3], reqs: [[2, 3]], desc: 'Central point generator.', getInfoText: () => `Amount: +${formatNum(getCurr('¤'))}¤, Rate: +${formatNum(calculateGainRate('¤'))}/s` },
     //deco
     { id: 'D1', type: 'upgrade', code: 'D1', name: 'Boost #1', coords: [4, 3], reqs: [[2, 3]], desc: 'Decoration power boost points.', effects: [{ type: 'currency_mult', currency: 'P', formula: (lvl, getLvl, getCurr) => 1 + 0.1 * Math.pow((lvl * Math.log10(getCurr('¤') + 1)), 1.8) }], costCurrency: 'R', costFormula: (lvl) => 100, maxLevel: 1 },
     { id: 'D2', type: 'upgrade', code: 'D2', name: 'Boost #2', coords: [5, 3], reqs: [[4, 3], [2, 3]], desc: 'Decoration power boost research.', effects: [{ type: 'reset_gain_mult', targetCurrency: 'R', formula: (lvl, getLvl, getCurr) => 1 + 0.08 * Math.pow((lvl * Math.log10(getCurr('¤') + 1)), 1.2) }], costCurrency: 'R', costFormula: (lvl) => 1000, maxLevel: 1 },
@@ -441,6 +445,7 @@
     { id: 'E10', type: 'upgrade', code: 'E10', name: 'factor IV', coords: [-7, 4], reqs: [[-6, 4], [-1, 10]], borderColor: 'orange', desc: '+0.2x energy per level. note: it cost €!', effects: [{ type: 'currency_mult', currency: 'E', formula: (lvl) => 1 + lvl * 0.2 }], costCurrency: '€', costFormula: (lvl) => 0.25 + 0.25 * lvl, maxLevel: 45 },
     { id: 'E11', type: 'upgrade', code: 'E11', name: 'Energy upg 6', coords: [-6, 5], reqs: [[-5, 5], [-1, 10]], borderColor: 'orange', desc: '+5% prestige per level.', effects: [{ type: 'reset_gain_mult', targetCurrency: '€', formula: (lvl) => 1 + lvl * 0.05 }], costCurrency: 'E', costFormula: (lvl) => 1e8 * Math.pow(10, 0.5 * Math.pow(lvl, 0.7)), maxLevel: 80 },
     //prestige
+    { id: 'Prestige_hint', type: 'info', code: 'Tips', name: 'Reset amount', coords: [1, 8], reqs: [[0, 6]], desc: 'Central point generator.', getInfoText: () => `Recommond first reset amount: 1` },
     { id: 'Prestige', type: 'reset', code: 'Prestige', name: 'Reset all prev. progress for prestige!', coords: [0, 8], reqs: [[0, 6]], desc: 'Reset Previous progress for research points!', targetCurrency: '€', resetCurrencies: ['P', 'R', 'E'], resettedCoords: [[-3, 0], [-3, 1], [-3, -1], [-3, -2], [-4, -1], [-4, 0], [-4, 1], [-4, 2], [-3, 2], [-4, -2], [-5, -2], [-5, -1], [-5, 0], [-6, -1], [-5, 2],[2, 2], [-2, 2], [-1, 2], [-2, 1], [-6, 5], [-7, 4], [-4, 7], [0, 1], [1, 1], [1, 0], [-1, 1], [1, -1], [-1, 0], [-1, -1], [0, -1], [-2, -1], [-2, 0], [2, 0], [2, -1], [1, -2], [0, 2], [1, 2], [2, 1], [0, 4], [0, 5], [1, 4], [-1, 4], [2, 4], [2, 5], [-2, 4], [-1, 5], [-1, 3], [-2, 3], [2, 3], [1, 5], [-3, 4], [-4, 4], [-5, 4], [-6, 4], [-3, 5], [-4, 5], [-5, 5], [-4, 6]], calculateGain: () => { const p = gameState.currencies.R; if (p < 1000000) return 0; return Math.floor(Math.pow(p / 1000000, 0.32) * 100) / 100; } },
     { id: 'P01', type: 'upgrade', code: 'P01', name: 'Another beginning', coords: [0, 9], reqs: [[0, 6]], borderColor: 'orange', desc: 'x4 points, x3 prestige, x2 energy.', effects: [{ type: 'currency_mult', currency: 'P', formula: (lvl) => lvl * 4 }, { type: 'reset_gain_mult', targetCurrency: 'R', formula: (lvl) => 1 + 2 * lvl }, { type: 'currency_mult', currency: 'E', formula: (lvl) => lvl * 2 }], costCurrency: '€', costFormula: (lvl) => 1, maxLevel: 1 },
     { id: 'P02', type: 'upgrade', code: 'P02', name: 'Passive yay!', coords: [1, 9], reqs: [[0, 9]], borderColor: 'green', desc: '+5 research (yes, research) per second (when <= 100)', effects: [{ type: 'base_gain', currency: 'R', formula: (lvl, getLvl, getCurr) => lvl * (getCurr('R') <= 100) * 5 }], costCurrency: '€', costFormula: (lvl) => 3, maxLevel: 1 },
@@ -457,7 +462,12 @@
     { id: 'P13', type: 'upgrade', code: 'P13', name: 'Choose', coords: [-1, 11], reqs: [[-2, 11]], borderColor: 'orange', desc: 'x5 points. make P14&P15 2x expensive', effects: [{type: 'currency_mult', currency: 'P', formula: (lvl)=>5}], costCurrency: '€', costFormula: (lvl, getLvl, getCurr) => 100e3*(1+getLevel('P14'))*(1+getLevel('P15')), maxLevel: 1 },
     { id: 'P14', type: 'upgrade', code: 'P14', name: 'Your', coords: [0, 11], reqs: [[-2, 11]], borderColor: 'orange', desc: 'x3 research. make P13&P15 2x expensive', effects: [{type: 'reset_gain_mult', targetCurrency: 'R', formula: (lvl)=>3}], costCurrency: '€', costFormula: (lvl, getLvl) => 1e5*(1+getLevel('P13'))*(1+getLevel('P15')), maxLevel: 1 },
     { id: 'P15', type: 'upgrade', code: 'P15', name: 'Path', coords: [1, 11], reqs: [[-2, 11]], borderColor: 'orange', desc: 'x1.8 prestige. make P13&P14 2x expensive', effects: [{type: 'reset_gain_mult', targetCurrency: '€', formula: (lvl)=>1.8}], costCurrency: '€', costFormula: (lvl, getLvl) => 1e5*(1+getLevel('P13'))*(1+getLevel('P14')), maxLevel: 1 },
+    { id: 'ASC', type: 'upgrade', code: 'ASC', name: 'Its time again!', coords: [0, 12], reqs: [[0, 11],[1,11],[-1,11]], borderColor: 'green', desc: 'Unlock a new reset layer.', effects: [], costCurrency: '€', costFormula: (lvl) => 0, maxLevel: 1 },
     
+    //Ascension
+    { id: 'Ascension_hint', type: 'info', code: 'Tips', name: 'Reset amount', coords: [1, 13], reqs: [[0, 12]], desc: 'Central point generator.', getInfoText: () => `Recommond first reset amount: 1` },
+    { id: 'Ascension', type: 'reset', code: 'Ascension', name: 'Reset all prev. progress for ascension (includes the progression boost upgs in deco plate)!', coords: [0, 13], reqs: [[0, 12]], desc: 'Reset Previous progress for ascension points!', targetCurrency: 'A', resetCurrencies: ['P', 'R', 'E', 'G', 'XP', 'L', '€','+','×'], resettedCoords: ['AU','D1','D2','#','R','E','G','P','EX','EXP'], calculateGain: () => { const p = getCurr('€'); if (p < 500000) return 0; return Math.floor(100*Math.pow((p/1e6),0.3))/100; } },
+    { id: 'A01', type: 'upgrade', code: 'A01', name: 'ALL MY PROGRESS! the boosts are worth it tho', coords: [0, 14], reqs: [[0,12]], borderColor: 'orange', desc: 'x5P, x2E, x3R, x2€, x2L, x2XP, x2+, x2×', effects: [{ type: 'currency_mult', currency: 'P', formula: (lvl) => 5 }, { type: 'currency_mult', currency: 'E', formula: (lvl) => 2 },{ type: 'reset_gain_mult', targetCurrency: 'R', formula: (lvl) => 3 },{ type: 'reset_gain_mult', targetCurrency: '€', formula: (lvl) => 2 },{ type: 'reset_gain_mult', targetCurrency: 'L', formula: (lvl) => 2 },{ type: 'currency_mult', currency: 'XP', formula: (lvl) => 2 },{ type: 'currency_mult', currency: '+', formula: (lvl) => 2 },{ type: 'reset_gain_mult', targetCurrency: '×', formula: (lvl) => 2 }], costCurrency: 'A', costFormula: (lvl) => 1, maxLevel: 1 },
     
     
     //Generators
@@ -1062,9 +1072,19 @@ TREE_NODES.forEach(n => STATIC_NODES.set(n.id, isNodeStatic(n)));
             const result = [];
             for (const item of list) {
                 if (typeof item === 'string') {
-                    const targetNode = NODE_MAP.get(item);
-                    if (targetNode) result.push({ type: 'id', id: item, coords: targetNode.coords });
-                } else if (Array.isArray(item) && item.length === 2 && typeof item[0] === 'number' && typeof item[
+    // 1) exact match?
+    if (NODE_MAP.has(item)) {
+        const targetNode = NODE_MAP.get(item);
+        result.push({ type: 'id', id: item, coords: targetNode.coords });
+    } else {
+        // 2) treat as prefix: find all nodes whose ID starts with `item`
+        for (const [id, node] of NODE_MAP) {
+            if (id.startsWith(item)) {
+                result.push({ type: 'id', id: id, coords: node.coords });
+            }
+        }
+    }
+} else if (Array.isArray(item) && item.length === 2 && typeof item[0] === 'number' && typeof item[
                     1] === 'number') {
                     const targetNode = COORD_MAP.get(`${item[0]},${item[1]}`);
                     if (targetNode) result.push({ type: 'coord', coords: item, id: targetNode.id });
