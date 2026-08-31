@@ -426,6 +426,9 @@
     { id: 'P08', type: 'upgrade', code: 'P08', name: 'Automated+', coords: [2, 10], reqs: [[1, 10]], borderColor: 'green', desc: 'Unlock more automation!!', effects: [], costCurrency: '€', costFormula: (lvl) => 30, maxLevel: 1 },
     { id: 'P09', type: 'upgrade', code: 'P09', name: 'Operators!', coords: [2, 9], reqs: [[2, 10]], borderColor: 'green', desc: 'Unlock a new baseplate.', effects: [], costCurrency: '€', costFormula: (lvl) => 125, maxLevel: 1 },
     { id: 'P10', type: 'upgrade', code: 'P10', name: 'More operators', coords: [2, 8], reqs: [[2, 9]], borderColor: 'green', desc: 'Unlock Muitiply in generator baseplate.', effects: [], costCurrency: '€', costFormula: (lvl) => 300, maxLevel: 1 },
+    { id: 'P11', type: 'upgrade', code: 'P11', name: 'Point+++', coords: [-2, 9], reqs: [[0, 10]], borderColor: 'green', desc: 'MORE POINT UPGRADES.', effects: [], costCurrency: '€', costFormula: (lvl) => 5000, maxLevel: 1 },
+    { id: 'P12', type: 'upgrade', code: 'P12', name: 'Not a unlock this time!', coords: [-2, 11], reqs: [[0, 10]], borderColor: 'orange', desc: 'x1.25 points and prestige per level.', effects: [{ type: 'currency_mult', currency: 'P', formula: (lvl) => 1+0.2*lvl},{ type: 'reset_gain_mult', targetCurrency: 'R', formula: (lvl) => 1+0.2*lvl}], costCurrency: '€', costFormula: (lvl) => 5000, maxLevel: 1 },
+    
     //Generators
     { id: 'G01', type: 'upgrade', code: 'G01', name: 'Start!', coords: [3, 8], reqs: [[2, 9]], borderColor: 'green', desc: 'Start generating plus.', effects: [{ type: 'base_gain', currency: '+', formula: (lvl) => lvl}], costCurrency: '+', costFormula: (lvl) => 0, maxLevel: 1 },
     { id: 'G02', type: 'upgrade', code: 'G02', name: 'Confusion', coords: [4, 8], reqs: [[3, 8]], borderColor: 'green', desc: '+1+/s/[+2].', effects: [{ type: 'base_gain', currency: '+', formula: (lvl) => lvl}], costCurrency: '+', costFormula: (lvl) => lvl+10, maxLevel: 250 },
@@ -490,7 +493,7 @@
     { id: 'EX02', type: 'upgrade', code: 'EX02', name: 'Alternatively', coords: [-5, 9], reqs: [[-5, 8]], borderColor: 'orange', desc: '+25% Level gain/lvl', effects: [{ type: 'reset_gain_mult', targetCurrency: 'L', formula: (lvl) => 1 + lvl * 0.25 }], costCurrency: 'L', costFormula: (lvl) => 3 + 1 * Math.pow(lvl, 1.75), maxLevel: 76 },
     { id: 'EX03', type: 'upgrade', code: 'EX03', name: 'Expansion', coords: [-6, 8], reqs: [[-5, 8]], borderColor: 'green', desc: '+50% level conversion limit per level.', effects: [], costCurrency: 'L', costFormula: (lvl) => 20 * Math.pow(2, Math.pow(lvl, 0.7)), maxLevel: 76 },
     { id: 'EX04', type: 'upgrade', code: 'EX04', name: 'Related', coords: [-4, 9], reqs: [[-5, 9]], borderColor: 'orange', desc: '+20% research per level.', effects: [{ type: 'reset_gain_mult', targetCurrency: 'R', formula: (lvl) => 1 + 0.2 * lvl }], costCurrency: 'L', costFormula: (lvl) => 8 * Math.pow(1.5, 0.25 * Math.pow(lvl + 4, 1.5)), maxLevel: 76 },
-    { id: 'EX05', type: 'upgrade', code: 'EX05', name: 'Related', coords: [-5, 10], reqs: [[-5, 9],[4,11]], borderColor: 'orange', desc: '+100% experience per level, yes.', effects: [{ type: 'currency_mult', Currency: 'XP', formula: (lvl) => 1 + 1 * lvl }], costCurrency: 'L', costFormula: (lvl) => 15 * Math.pow(2, Math.pow(lvl,0.7)), maxLevel: 76 },
+    { id: 'EX05', type: 'upgrade', code: 'EX05', name: 'Related', coords: [-5, 10], reqs: [[-5, 9],[4,11]], borderColor: 'orange', desc: '+100% experience per level, yes.', effects: [{ type: 'currency_mult', currency: 'XP', formula: (lvl) => 1 + 1 * lvl }], costCurrency: 'L', costFormula: (lvl) => 15 * Math.pow(2, Math.pow(lvl,0.7)), maxLevel: 76 },
     { id: 'EX06', type: 'upgrade', code: 'EX06', name: 'the best', coords: [-6, 9], reqs: [[-5, 9],[4,11]], borderColor: 'ornage', desc: 'Experience boost experinece, level boost level.', effects: [{ type: 'currency_mult', currency: 'XP', formula: (lvl,getLvl,getCurr) => 1+Math.pow(getCurr('XP'),0.12) },{ type: 'reset_gain_mult', targetCurrency: 'L', formula: (lvl,getLvl,getCurr) => Math.pow(getCurr('L'),0.15) }], costCurrency: 'L', costFormula: (lvl) => 50 * Math.pow(2, Math.pow(lvl,0.7)), maxLevel: 1 },
     { id: 'EX07', type: 'upgrade', code: 'EX07', name: 'finally.', coords: [-7, 9], reqs: [[-6, 9],[4,11]], borderColor: 'green', desc: '+1% of level on reset/s/level.', effects: [{ type: 'base_gain', currency: 'L', formula: (lvl,getLvl,getCurr) => 0.01*lvl*getResetGain('L') }], costCurrency: 'L', costFormula: (lvl) => 500 * Math.pow(2, Math.pow(lvl,0.75)), maxLevel: 100 },
     
@@ -1415,28 +1418,34 @@ TREE_NODES.forEach(n => STATIC_NODES.set(n.id, isNodeStatic(n)));
             showToast('Save exported!');
         };
         document.getElementById('btn-import-save').onclick = () => {
-            const input = document.createElement('input');
-            input.type = 'file';
-            input.accept = '.json';
-            input.onchange = (e) => {
-                const file = e.target.files[0];
-                if (!file) return;
-                const reader = new FileReader();
-                reader.onload = (e) => {
-                    try {
-                        const data = JSON.parse(e.target.result);
-                        localStorage.setItem(SAVE_KEY, JSON.stringify(data));
-                        location.reload();
-                    } catch(err) {
-                        playSound('fail');
-                        showToast('Invalid save file!');
-                    }
-                };
-                reader.readAsText(file);
-            };
-            input.click();
-            document.getElementById('settings-menu').classList.add('hidden');
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.json';
+    input.onchange = (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            try {
+                const data = JSON.parse(e.target.result);
+                // Validate that the data has the expected shape
+                if (!data.currencies || !data.levels) {
+                    throw new Error('Invalid save format');
+                }
+                localStorage.setItem(SAVE_KEY, JSON.stringify(data));
+                showToast('Save imported! Reloading…');
+                setTimeout(() => location.reload(), 500);
+            } catch(err) {
+                playSound('fail');
+                showToast('Invalid save file!');
+            }
         };
+        reader.readAsText(file);
+    };
+        
+    input.click();
+    document.getElementById('settings-menu').classList.add('hidden');
+};
         document.getElementById('btn-zoom-in').onclick = (e) => { e.stopPropagation();
             scale = Math.min(2.5, scale * 1.25);
             updateTransform();
