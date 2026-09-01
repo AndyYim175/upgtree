@@ -1601,7 +1601,7 @@ TREE_NODES.forEach(n => STATIC_NODES.set(n.id, isNodeStatic(n)));
             updateTransform();
             playSound('buy'); };
         document.getElementById('btn-zoom-out').onclick = (e) => { e.stopPropagation();
-            scale = Math.max(0.4, scale / 1.25);
+            scale = Math.max(0.2, scale / 1.25);
             updateTransform();
             playSound('buy'); };
 
