@@ -1224,7 +1224,7 @@ TREE_NODES.forEach(n => STATIC_NODES.set(n.id, isNodeStatic(n)));
         function updateDynamicNodeVisuals() {
     for (const [id, cached] of nodeDOMCache) {
         const node = NODE_MAP.get(id);
-        if (cached.isStatic) continue;
+        //if (cached.isStatic) continue;
         if (!node || node.type === 'info') continue;
         const curLevel = getLevel(node.id);
         const displayLvl = getDisplayLevel(node.id);
