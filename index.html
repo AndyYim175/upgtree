@@ -173,6 +173,7 @@
             { type: 'rect', coords: [-7.5, -2.5], width: 800, height: 800, fillColor: 'green', fillOpacity: 0.3, strokeColor: '#34d399', strokeOpacity: 0.9, strokeWidth: 2, requirements: ['P11'] },
             { type: 'rect', coords: [-7.5, -7.5], width: 800, height: 800, fillColor: '#06402B', fillOpacity: 0.3, strokeColor: '#34d399', strokeOpacity: 0.9, strokeWidth: 2, requirements: ['B12'] },
             { type: 'rect', coords: [2.5, -2.5], width: 800, height: 800, fillColor: '#f9bfbf', fillOpacity: 0.3, strokeColor: '#f9bfbf', strokeOpacity: 0.9, strokeWidth: 2, requirements: ['P05'] },
+            { type: 'rect', coords: [2.5, 12.5], width: 800, height: 800, fillColor: '#650000', fillOpacity: 0.3, strokeColor: '#650000', strokeOpacity: 0.9, strokeWidth: 2, requirements: ['A09'] },
             { type: 'rect', coords: [7.5, -2.5], width: 800, height: 800, fillColor: '#750d37', fillOpacity: 0.3, strokeColor: '#750d37', strokeOpacity: 0.9, strokeWidth: 2, requirements: ['AU19'] },
             { type: 'rect', coords: [-2.4, -2.4], width: 288, height: 128, fillColor: 'lightgreen', fillOpacity: 0.5, strokeColor: '#34d399', strokeOpacity: 0.9, strokeWidth: 0, requirements: ['D8'] },
             { type: 'rect', coords: [-2.5, -7.5], width: 800, height: 800, fillColor: 'lightgreen', fillOpacity: 0.3, strokeColor: '#34d399', strokeOpacity: 0.9, strokeWidth: 2, requirements: ['B01'] },
@@ -210,6 +211,7 @@
             { type: 'text', coords: [-7.5, -2.5], text: 'Point baseplate: extension', alignment: 'Bottom-left', color: 'lightgreen', fontSize: 28, opacity: 1, requirements: ['P11'] },
             { type: 'text', coords: [2.5, -2.5], text: 'Automation baseplate', alignment: 'Bottom-left', color: '#f9bfbf', fontSize: 28, opacity: 1, requirements: ['P05'] },
             { type: 'text', coords: [7.5, -2.5], text: 'Automation+ baseplate', alignment: 'Bottom-left', color: '#750d37', fontSize: 28, opacity: 1, requirements: ['AU19'] },
+            { type: 'text', coords: [2.5, 12.5], text: 'Automation++ baseplate', alignment: 'Bottom-left', color: '#650000', fontSize: 28, opacity: 1, requirements: ['A09'] },
             { type: 'text', coords: [-2.5, -7.5], text: 'Bonus baseplate', alignment: 'Bottom-left', color: 'lightgreen', fontSize: 28, opacity: 0.9, requirements: ['B01'] },
             { type: 'text', coords: [-7.5, -7.5], text: 'Cash baseplate', alignment: 'Bottom-left', color: 'green', fontSize: 28, opacity: 0.9, requirements: ['B12'] },
             { type: 'text', coords: [2.5, -7.5], text: 'Infinity baseplate', alignment: 'Bottom-left', color: '#d1d0d0', fontSize: 28, opacity: 0.9, requirements: ['B01'] },
@@ -423,10 +425,26 @@
     
     //Ascension
     { id: 'Ascension_hint', type: 'info', code: 'Tips', name: 'Reset amount', coords: [1, 13], reqs: [[0, 12]], desc: 'Dont get discouraged, you will make it back very soon.', getInfoText: () => `Recommond first reset amount: 1` },
-    { id: 'Ascension', type: 'reset', code: 'Ascension', name: 'Reset all prev. progress for ascension (includes the progression boost upgs in deco plate)!', coords: [0, 13], reqs: [[0, 12]], desc: 'Reset Previous progress for ascension points!', targetCurrency: 'A', resetCurrencies: ['P', 'R', 'E', 'G', 'XP', 'L', '€','+','×'], resettedCoords: ['AU','D1','D2','#','R','E','G','P','EX','EXP'], calculateGain: () => { const p = getCurr('€'); if (p < 500000) return 0; return Math.floor(100*Math.pow((p/1e6),0.3))/100; } },
+    { id: 'Ascension', type: 'reset', code: 'Ascension', name: 'Reset', coords: [0, 13], reqs: [[0, 12]], desc: 'Reset Previous progress for ascension points!(also include deco.plates progress boosts)', targetCurrency: 'A', resetCurrencies: ['P', 'R', 'E', 'G', 'XP', 'L', '€','+','×'], resettedCoords: ['AU','D1','D2','#','R','E','G','P','EX','EXP'], calculateGain: () => { const p = getCurr('€'); if (p < 500000) return 0; return Math.floor(100*Math.pow((p/1e6),0.3))/100; } },
     { id: 'A01', type: 'upgrade', code: 'A01', name: 'ALL MY PROGRESS! the boosts are worth it tho', coords: [0, 14], reqs: [[0,12]], borderColor: 'orange', desc: 'x5P, x2E, x3R, x2€, x2L, x2XP, x5+, x2×', effects: [{ type: 'currency_mult', currency: 'P', formula: (lvl) => 5 }, { type: 'currency_mult', currency: 'E', formula: (lvl) => 2 },{ type: 'reset_gain_mult', targetCurrency: 'R', formula: (lvl) => 3 },{ type: 'reset_gain_mult', targetCurrency: '€', formula: (lvl) => 2 },{ type: 'reset_gain_mult', targetCurrency: 'L', formula: (lvl) => 2 },{ type: 'currency_mult', currency: 'XP', formula: (lvl) => 2 },{ type: 'currency_mult', currency: '+', formula: (lvl) => 5 },{ type: 'reset_gain_mult', targetCurrency: '×', formula: (lvl) => 2 }], costCurrency: 'A', costFormula: (lvl) => 1, maxLevel: 1 },
     { id: 'A02', type: 'upgrade', code: 'A02', name: 'Passive yay!', coords: [1, 14], reqs: [[0, 14]], borderColor: 'green', desc: '+1% prestige (yes, prestige) per second (no limit)', effects: [{ type: 'base_gain', currency: '€', formula: (lvl, getLvl, getCurr) => 0.01 * getResetGain('€') }], costCurrency: 'A', costFormula: (lvl) => 2, maxLevel: 1 },
     { id: 'A03', type: 'upgrade', code: 'A03', name: 'grow a garden', coords: [-1, 14], reqs: [[0, 14]], borderColor: 'green', desc: 'Unlock a new baseplate (next to decoration).', effects: [], costCurrency: 'A', costFormula: (lvl) => 2, maxLevel: 1 },
+    { id: 'A04', type: 'upgrade', code: 'A04', name: 'side layer+', coords: [-2, 14], reqs: [[-1, 14]], borderColor: 'orange', desc: 'x5 exp, add.', effects: [{ type: 'currency_mult', currency: 'XP', formula: (lvl) => 5 },{ type: 'currency_mult', currency: '+', formula: (lvl) => 5 }], costCurrency: 'A', costFormula: (lvl) => 1.5, maxLevel: 1 },
+    { id: 'A05', type: 'upgrade', code: 'A05', name: 'side layer++', coords: [-2, 13], reqs: [[-2, 14]], borderColor: 'orange', desc: 'x3 L, multiply.', effects: [{ type: 'reset_gain_mult', targetCurrency: 'L', formula: (lvl) => 3 },{ type: 'reset_gain_mult', targetCurrency: '×', formula: (lvl) => 3 }], costCurrency: 'A', costFormula: (lvl) => 3, maxLevel: 1 },
+    { id: 'A06', type: 'upgrade', code: 'A06', name: 'Before the auto', coords: [0, 15], reqs: [[0, 14]], borderColor: 'green', desc: '+5% resc per second per level (no limit)', effects: [{ type: 'base_gain', currency: 'R', formula: (lvl, getLvl, getCurr) => lvl*0.05 * getResetGain('R') }], costCurrency: 'A', costFormula: (lvl) => 2*Math.pow(5, lvl), maxLevel: 5 },
+    { id: 'A07', type: 'upgrade', code: 'A07', name: 'Every reset layer needs one', coords: [1, 15], reqs: [[1, 14]], borderColor: 'green', desc: '+10% × per second per level', effects: [{ type: 'base_gain', currency: '×', formula: (lvl, getLvl, getCurr) => lvl*0.1 * getResetGain('×') }], costCurrency: 'A', costFormula: (lvl) => 2.5*Math.pow(3, lvl), maxLevel: 10 },
+    { id: 'A08', type: 'upgrade', code: 'A08', name: 'Recovery', coords: [2, 14], reqs: [[1, 14]], borderColor: 'green', desc: '+1000 point/s base additionally', effects: [{ type: 'base_gain', currency: 'P', formula: (lvl, getLvl, getCurr) => 1000 }], costCurrency: 'A', costFormula: (lvl) => 4, maxLevel: 1 },
+    { id: 'A09', type: 'upgrade', code: 'A09', name: 'Auto+++', coords: [2, 13], reqs: [[2, 14]], borderColor: 'green', desc: 'More automation upgrades, they are not reset on ascension', effects: [], costCurrency: 'A', costFormula: (lvl) => 3, maxLevel: 1 },
+    
+    //automation+++
+    { id: 'AAU01', type: 'upgrade', code: 'AAU01', name: 'Automate+(€1,2,3)', coords: [3, 13], reqs: [[2, 13]], borderColor: 'green', desc: 'Start automating P01,2,3.', effects: [{ type: 'automation', target: 'P01' },{ type: 'automation', target: 'P02' },{ type: 'automation', target: 'P03' }], costCurrency: 'A', costFormula: (lvl) => 0.1, maxLevel: 1 },
+    { id: 'AAU02', type: 'upgrade', code: 'AAU02', name: 'Automate+(€4,6)', coords: [4, 13], reqs: [[3, 13]], borderColor: 'green', desc: 'Start automating P04,6.', effects: [{ type: 'automation', target: 'P04' },{ type: 'automation', target: 'P06' }], costCurrency: 'A', costFormula: (lvl) => 0.25, maxLevel: 1 },
+    { id: 'AAU03', type: 'upgrade', code: 'AAU03', name: 'Automate+(€5,8)', coords: [5, 13], reqs: [[4, 13]], borderColor: 'green', desc: 'Start automating P05,8.', effects: [{ type: 'automation', target: 'P05' },{ type: 'automation', target: 'P08' }], costCurrency: 'A', costFormula: (lvl) => 0.5, maxLevel: 1 },
+    { id: 'AAU04', type: 'upgrade', code: 'AAU04', name: 'Automate+(€9,10)', coords: [6, 13], reqs: [[5, 13]], borderColor: 'green', desc: 'Start automating P09,10.', effects: [{ type: 'automation', target: 'P09' },{ type: 'automation', target: 'P10' }], costCurrency: 'A', costFormula: (lvl) => 0.75, maxLevel: 1 },
+    { id: 'AAU05', type: 'upgrade', code: 'AAU05', name: 'Automate+(€7,11,12)', coords: [7, 13], reqs: [[6, 13]], borderColor: 'green', desc: 'Start automating P07,11,12.', effects: [{ type: 'automation', target: 'P07' },{ type: 'automation', target: 'P11' },{ type: 'automation', target: 'P12' }], costCurrency: 'A', costFormula: (lvl) => 1, maxLevel: 1 },
+    { id: 'AAU06', type: 'upgrade', code: 'AAU06', name: 'Automate+(+1,2)', coords: [3, 14], reqs: [[3, 13]], borderColor: 'green', desc: 'Start automating +1,2.', effects: [{ type: 'automation', target: 'G01' },{ type: 'automation', target: 'G02' }], costCurrency: 'A', costFormula: (lvl) => 0.5, maxLevel: 1 },
+    { id: 'AAU07', type: 'upgrade', code: 'AAU07', name: 'Automate+(+3,4,5)', coords: [4, 14], reqs: [[3, 14]], borderColor: 'green', desc: 'Start automating +3,4,5.', effects: [{ type: 'automation', target: 'G03' },{ type: 'automation', target: 'G04' },{ type: 'automation', target: 'G05' }], costCurrency: 'A', costFormula: (lvl) => 1, maxLevel: 1 },
+
     
     //garden
     { id: 'Tree_hint', type: 'info', code: 'Tips', name: 'Plate information', coords: [10, 5], reqs: [[-1, 14]], desc: 'Note.', getInfoText: () => `There is many upgrades in this plate/section.Note: does not reset on ascension- layers.` },
@@ -868,7 +886,7 @@
                         ctx.fillStyle = '#67e8f9';
                         ctx.font = '7px "Fira Code", monospace';
                         const effectLines = wrapText(effectSummary, width / 2, 7);
-                        const maxLines = 2;
+                        const maxLines = 6;
                         const visibleLines = effectLines.slice(0, maxLines);
                         visibleLines.forEach((line, i) => {
                             ctx.fillText(line, posX + padding, bottomY + 10 + i * 8);
