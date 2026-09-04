@@ -92,6 +92,14 @@
                     <button id="btn-zoom-in" class="w-6 h-6 bg-zinc-800 hover:bg-zinc-700 text-zinc-200 border border-zinc-700 flex items-center justify-center font-bold text-xs">+</button>
                 </div>
             </div>
+            <div class="flex items-center justify-between gap-1 w-full px-2.5 py-1.5 bg-zinc-950 border border-zinc-800 text-zinc-300 text-[11px]">
+                <span class="font-bold text-zinc-400">FONT SIZE</span>
+                <div class="flex items-center gap-1">
+                    <button id="btn-font-down" class="w-6 h-6 bg-zinc-800 hover:bg-zinc-700 text-zinc-200 border border-zinc-700 flex items-center justify-center font-bold text-xs">-</button>
+                    <span id="font-size-label" class="w-9 text-center text-[10px] font-mono text-zinc-300">11</span>
+                    <button id="btn-font-up" class="w-6 h-6 bg-zinc-800 hover:bg-zinc-700 text-zinc-200 border border-zinc-700 flex items-center justify-center font-bold text-xs">+</button>
+                </div>
+            </div>
             <button id="btn-buy-multiplier" class="w-full px-2.5 py-1.5 bg-zinc-950 hover:bg-zinc-800 text-amber-400 border border-zinc-800 transition text-left font-bold text-[11px]"><span id="buy-mode-label">BUY: x1</span></button>
             <button id="btn-toggle-effects" class="w-full px-2.5 py-1.5 bg-zinc-950 hover:bg-zinc-800 text-cyan-400 border border-zinc-800 transition text-left font-bold text-[11px]"><span id="effects-mode-label">EFFECTS: ON</span></button>
             <div id="currency-toggles-container" class="border-t border-zinc-800 pt-1.5 mt-0.5">
@@ -303,7 +311,7 @@
             '♦': { id: '♦', name: 'Infinity fragments', color: 'text-purple-400', fillBg: 'rgba(34,197,94,0.18)' }, 
             E: { id: 'E', name: 'Energy', color: 'text-orange-400', fillBg: 'rgba(255,165,0,0.535)' } };
         // ==================== GAME STATE ====================
-        let gameState = { currencies: { P: 0, PR: 0, QT: 0, T: 0 }, discoveredCurrencies: ['P'], currencyOrder: ['P'], hiddenCurrencies: [], levels: {}, unlockedDecorations: [], camera: { panX: 0, panY: 0, scale: 1 }, soundMuted: false, showEffects: true, buyMode: 1, skipResetConfirm: {}, paused: false };
+        let gameState = { currencies: { P: 0, PR: 0, QT: 0, T: 0 }, discoveredCurrencies: ['P'], currencyOrder: ['P'], hiddenCurrencies: [], levels: {}, unlockedDecorations: [], camera: { panX: 0, panY: 0, scale: 1 }, soundMuted: false, showEffects: true, buyMode: 1, skipResetConfirm: {}, paused: false, currencyFontSize: 11 };
         let displayLevels = {},
             levelAnimations = {};
         const LEVEL_ANIM_DURATION = 350;
@@ -318,6 +326,7 @@
         const UI_UPDATE_INTERVAL_MS = 30; // ~30 FPS (canvas/nodes)
         const CURRENCY_UI_INTERVAL_MS = 30; // 0.25 seconds (currency bar)
         const PROGRESS_BAR_INTERVAL_MS = 100; // 0.25 seconds (progress bars)
+        let currencyFontSize = 11;
         
         // ---- PERFORMANCE CACHES ----
         const cache = {
@@ -1327,47 +1336,51 @@
         }
         // ==================== CURRENCY BAR ====================
         function renderCurrencyBar() {
-            const bar = document.getElementById('currency-bar');
-            const hidden = gameState.hiddenCurrencies || [];
-            const order = [...new Set([...(gameState.currencyOrder || []), ...(gameState.hiddenCurrencies || [])])];
-            const visibleKeys = [];
-            const toRemove = [];
-            for (const [key, cached] of currencyBarCache) { if (!order.includes(key) || hidden.includes(key)) toRemove.push(key); }
-            for (const key of toRemove) { const cached = currencyBarCache.get(key); if (cached) cached.line.remove();
-                currencyBarCache.delete(key); }
-            for (const key of order) {
-                if (hidden.includes(key)) continue;
-                const def = CURRENCIES[key];
-                if (!def) continue;
-                visibleKeys.push(key);
-                let cached = currencyBarCache.get(key);
-                if (!cached) {
-                    const line = document.createElement('div');
-                    line.className = 'flex items-center gap-1.5 font-mono text-[11px] tracking-wide text-zinc-300 drop-shadow-sm';
-                    const nameClass = def.rainbow ? 'rainbow-text rainbow-glow font-bold' : `${def.color} font-bold`;
-                    line.innerHTML =
-                        `<span class="${nameClass}">${def.name}</span><span class="font-semibold text-zinc-100 amount"></span><span class="text-zinc-400 text-[10px] rate"></span><span class="potential"></span>`;
-                    cached = { line, amount: line.querySelector('.amount'), rate: line.querySelector('.rate'),
-                        potential: line.querySelector('.potential') };
-                    currencyBarCache.set(key, cached);
-                    bar.appendChild(line);
-                }
-                const amt = gameState.currencies[key] || 0;
-                const rate = calculateGainRate(key);
-                cached.amount.textContent = formatNum(amt);
-                cached.rate.textContent = `(+${formatNum(rate)}/s)`;
-                let potentialText = '';
-                for (const node of TREE_NODES) {
-                    if (node.type !== 'reset' || node.targetCurrency !== key) continue;
-                    const g = getEffectiveResetGain(node);
-                    if (g > 0) { potentialText = ` (+${formatNum(g)} on reset)`;
-                        break; }
-                }
-                cached.potential.textContent = potentialText;
-                cached.potential.className = `text-cyan-400 font-semibold potential`;
-            }
+    const bar = document.getElementById('currency-bar');
+    const hidden = gameState.hiddenCurrencies || [];
+    const order = [...new Set([...(gameState.currencyOrder || []), ...(gameState.hiddenCurrencies || [])])];
+    const visibleKeys = [];
+    const toRemove = [];
+    for (const [key, cached] of currencyBarCache) { if (!order.includes(key) || hidden.includes(key)) toRemove.push(key); }
+    for (const key of toRemove) { const cached = currencyBarCache.get(key); if (cached) cached.line.remove();
+        currencyBarCache.delete(key); }
+    for (const key of order) {
+        if (hidden.includes(key)) continue;
+        const def = CURRENCIES[key];
+        if (!def) continue;
+        visibleKeys.push(key);
+        let cached = currencyBarCache.get(key);
+        if (!cached) {
+            const line = document.createElement('div');
+            line.className = 'flex items-center gap-1.5 font-mono tracking-wide text-zinc-300 drop-shadow-sm';
+            line.style.fontSize = `${currencyFontSize}px`;
+            const nameClass = def.rainbow ? 'rainbow-text rainbow-glow font-bold' : `${def.color} font-bold`;
+            line.innerHTML =
+    `<span class="${nameClass}">${def.name}</span><span class="font-semibold text-zinc-100 amount"></span><span class="text-zinc-400 rate" style="font-size:${Math.max(8, currencyFontSize - 1)}px"></span><span class="potential"></span>`;
+            cached = { line, amount: line.querySelector('.amount'), rate: line.querySelector('.rate'),
+                potential: line.querySelector('.potential') };
+            currencyBarCache.set(key, cached);
+            bar.appendChild(line);
         }
-
+        const amt = gameState.currencies[key] || 0;
+        const rate = calculateGainRate(key);
+        cached.line.style.fontSize = `${currencyFontSize}px`;
+        cached.amount.textContent = formatNum(amt);
+        cached.rate.textContent = `(+${formatNum(rate)}/s)`;
+        let potentialText = '';
+        for (const node of TREE_NODES) {
+            if (node.type !== 'reset' || node.targetCurrency !== key) continue;
+            const g = getEffectiveResetGain(node);
+            if (g > 0) { potentialText = ` (+${formatNum(g)} on reset)`;
+                break; }
+        }
+        cached.potential.textContent = potentialText;
+        cached.potential.className = 'text-cyan-400 font-semibold potential';
+        
+        // Fix the rate font size to match the main font size
+        cached.rate.style.fontSize = `${Math.max(8, currencyFontSize - 1)}px`;
+    }
+}
         function renderCurrencyToggles() {
             const list = document.getElementById('currency-toggles-list');
             if (!list) return;
@@ -1484,6 +1497,9 @@
             panX = 0;
             panY = 0;
             scale = 1;
+            currencyFontSize = 11;
+gameState.currencyFontSize = 11;
+document.getElementById('font-size-label').textContent = 11;
             document.getElementById('wipe-modal').classList.add('hidden');
             playSound('reset');
             showToast('All data wiped.');
@@ -1605,7 +1621,26 @@
             scale = Math.max(0.2, scale / 1.25);
             updateTransform();
             playSound('buy'); };
-
+        document.getElementById('btn-font-down').onclick = (e) => { 
+    e.stopPropagation();
+    if (currencyFontSize > 7) {
+        currencyFontSize--;
+        gameState.currencyFontSize = currencyFontSize;
+        document.getElementById('font-size-label').textContent = currencyFontSize;
+        renderCurrencyBar();
+        playSound('buy');
+    }
+};
+document.getElementById('btn-font-up').onclick = (e) => { 
+    e.stopPropagation();
+    if (currencyFontSize < 18) {
+        currencyFontSize++;
+        gameState.currencyFontSize = currencyFontSize;
+        document.getElementById('font-size-label').textContent = currencyFontSize;
+        renderCurrencyBar();
+        playSound('buy');
+    }
+};
         function showToast(msg) {
             const toast = document.getElementById('toast'),
                 text = document.getElementById('toast-text');
@@ -1799,6 +1834,12 @@ let touchCenterWorldY = 0;
                         panY = gameState.camera.panY || 0;
                         scale = gameState.camera.scale || 1; }
                     if (gameState.buyMode !== undefined) { buyMode = gameState.buyMode; }
+                    if (gameState.currencyFontSize !== undefined) {
+    currencyFontSize = gameState.currencyFontSize;
+} else {
+    currencyFontSize = 11;
+}
+document.getElementById('font-size-label').textContent = currencyFontSize;
                     document.getElementById('buy-mode-label').textContent = `BUY: x${buyMode}`;
                     if (gameState.paused) { document.getElementById('pause-icon').setAttribute('data-lucide', 'play');
                         document.getElementById('pause-label').textContent = 'Continue'; } else { document
