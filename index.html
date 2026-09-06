@@ -159,6 +159,21 @@
             <i data-lucide="info" class="w-4 h-4 text-emerald-400"></i><span id="toast-text"></span>
         </div>
     </div>
+    <!-- Offline progress modal -->
+    <div id="offline-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-xs p-4">
+        <div class="bg-zinc-900 border border-emerald-500/60 p-5 max-w-sm w-full shadow-2xl space-y-4">
+            <div class="flex items-center gap-2.5 text-emerald-400 border-b border-zinc-800 pb-2.5">
+                <i data-lucide="clock" class="w-5 h-5"></i><h2 class="font-bold text-sm uppercase tracking-wider">Welcome Back!</h2>
+            </div>
+            <p id="offline-duration" class="text-xs text-zinc-400"></p>
+            <div id="offline-gains-list" class="bg-zinc-950 p-3 border border-zinc-800 text-xs space-y-1 max-h-48 overflow-y-auto"></div>
+            <div class="flex justify-end pt-1">
+                <button id="offline-dismiss" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-zinc-950 font-bold text-xs flex items-center gap-1">
+                    <i data-lucide="check" class="w-3.5 h-3.5"></i><span>COLLECT</span>
+                </button>
+            </div>
+        </div>
+    </div>
     <script>
         // ==================== SOUND CONFIGURATION ====================
         const SOUND_CONFIG = { baseFreq: 392.00, freqMultiplier: 1.06, maxStreak: 21, comboResetTimeout: 2000, buyVolume: 0.25, buyMaxVolume: 0.125, autoVolume: 0, masterVolume: 0.2, minSoundInterval: 0.05, stepAnimInterval: 0.02 };
@@ -321,7 +336,7 @@
             '♦': { id: '♦', name: 'Infinity fragments', color: 'text-purple-400', fillBg: 'rgba(34,197,94,0.18)' }, 
             E: { id: 'E', name: 'Energy', color: 'text-orange-400', fillBg: 'rgba(255,165,0,0.535)' } };
         // ==================== GAME STATE ====================
-        let gameState = { currencies: { P: 0, PR: 0, QT: 0, T: 0 }, discoveredCurrencies: ['P'], currencyOrder: ['P'], hiddenCurrencies: [], levels: {}, unlockedDecorations: [], camera: { panX: 0, panY: 0, scale: 1 }, soundMuted: false, showEffects: true, buyMode: 1, skipResetConfirm: {}, paused: false, currencyFontSize: 11 };
+        let gameState = { currencies: { P: 0, PR: 0, QT: 0, T: 0 }, discoveredCurrencies: ['P'], currencyOrder: ['P'], hiddenCurrencies: [], levels: {}, unlockedDecorations: [], camera: { panX: 0, panY: 0, scale: 1 }, soundMuted: false, showEffects: true, buyMode: 1, skipResetConfirm: {}, paused: false, currencyFontSize: 11, offlineTimestamp: Date.now() };
         let displayLevels = {},
             levelAnimations = {};
         const LEVEL_ANIM_DURATION = 350;
@@ -1581,7 +1596,7 @@
             gameState = { currencies: { P: 0, PR: 0, QT: 0, T: 0 }, discoveredCurrencies: ['P'], currencyOrder: ['P'],
                 hiddenCurrencies: [], levels: {}, unlockedDecorations: [], camera: { panX: 0, panY: 0,
                     scale: 1 }, soundMuted: false, showEffects: true, buyMode: 1, skipResetConfirm: {},
-                paused: false };
+                paused: false, offlineTimestamp: Date.now() };
             panX = 0;
             panY = 0;
             scale = 1;
@@ -1939,6 +1954,7 @@ document.getElementById('btn-font-up').onclick = (e) => {
 
         function saveGame() { gameState.camera = { panX, panY, scale };
             gameState.buyMode = buyMode;
+            gameState.offlineTimestamp = Date.now();
             localStorage.setItem(SAVE_KEY, JSON.stringify(gameState)); }
 
         function loadGame() {
@@ -1971,6 +1987,51 @@ document.getElementById('font-size-label').textContent = currencyFontSize;
                 } catch (e) { console.warn('Save load error', e); }
             }
         }
+
+        function processOfflineProgress() {
+            const lastTime = gameState.offlineTimestamp;
+            if (!lastTime) return;
+            const elapsedMs = Date.now() - lastTime;
+            const maxOfflineMs = 120000; // 2 minutes max
+            const cappedMs = Math.min(elapsedMs, maxOfflineMs);
+            if (cappedMs < 1000) return; // less than 1s, skip
+            const dt = cappedMs / 1000;
+            // Recalculate gain rates for all known currencies
+            cacheDirty = true;
+            const gains = {};
+            for (const key of Object.keys(CURRENCIES)) {
+                const rate = calculateGainRate(key);
+                if (rate > 0 && (gameState.currencies[key] || 0) > 0) {
+                    const earned = rate * dt;
+                    if (earned > 0.01 || (key === 'P' && earned > 0)) {
+                        gains[key] = earned;
+                        gameState.currencies[key] = (gameState.currencies[key] || 0) + earned;
+                    }
+                }
+            }
+            if (Object.keys(gains).length === 0) return;
+            cacheDirty = true;
+            // Show popup
+            const durStr = elapsedMs >= maxOfflineMs ? '2+ minutes' : 
+                (cappedMs < 60000 ? `${Math.round(cappedMs/1000)} seconds` : `${Math.floor(cappedMs/60000)}m ${Math.round((cappedMs%60000)/1000)}s`);
+            document.getElementById('offline-duration').textContent = `You were away for ${durStr}. While you were gone:`;
+            const list = document.getElementById('offline-gains-list');
+            let html = '';
+            for (const [key, earned] of Object.entries(gains)) {
+                const def = CURRENCIES[key];
+                const name = def ? def.name : key;
+                const color = def ? def.color.replace('text-', '') : 'zinc-300';
+                html += `<div class="flex items-center justify-between py-0.5"><span class="text-zinc-400">${name}:</span><span class="font-bold text-emerald-400">+${formatNum(earned)}</span></div>`;
+            }
+            list.innerHTML = html;
+            document.getElementById('offline-modal').classList.remove('hidden');
+            playSound('buy');
+        }
+
+        document.getElementById('offline-dismiss').onclick = () => {
+            document.getElementById('offline-modal').classList.add('hidden');
+            playSound('buy');
+        };
         // ==================== MAIN LOOP ====================
         let lastTime = performance.now();
         const GAME_TICK_MS = 50;
@@ -2043,6 +2104,7 @@ document.getElementById('font-size-label').textContent = currencyFontSize;
 
         window.onload = () => {
             loadGame();
+            processOfflineProgress();
             if (gameState.showEffects === undefined) gameState.showEffects = true;
             if (!gameState.unlockedDecorations) gameState.unlockedDecorations = [];
             renderDecorationsUnlock();
