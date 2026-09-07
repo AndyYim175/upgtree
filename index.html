@@ -1992,10 +1992,25 @@ document.getElementById('font-size-label').textContent = currencyFontSize;
             const lastTime = gameState.offlineTimestamp;
             if (!lastTime) return;
             const elapsedMs = Date.now() - lastTime;
-            const maxOfflineMs = 120000; // 2 minutes max
-            const cappedMs = Math.min(elapsedMs, maxOfflineMs);
-            if (cappedMs < 1000) return; // less than 1s, skip
-            const dt = cappedMs / 1000;
+            if (elapsedMs < 1000) return; // less than 1s, skip
+            const offlineSeconds = Math.floor(elapsedMs / 1000);
+            
+            let effectiveSeconds;
+            let softCapNote = '';
+            
+            if (offlineSeconds < 120) {
+                // Under 2 minutes: 1:1
+                effectiveSeconds = offlineSeconds;
+            } else {
+                // 2+ minutes: softcap formula
+                const t = offlineSeconds;
+                effectiveSeconds = Math.floor(110 + Math.sqrt(100 + 20 * (t - 100)));
+                softCapNote = ` (capped from ${offlineSeconds}s)`;
+            }
+            
+            if (effectiveSeconds <= 0) return;
+            const dt = effectiveSeconds;
+            
             // Recalculate gain rates for all known currencies
             cacheDirty = true;
             const gains = {};
@@ -2012,9 +2027,11 @@ document.getElementById('font-size-label').textContent = currencyFontSize;
             if (Object.keys(gains).length === 0) return;
             cacheDirty = true;
             // Show popup
-            const durStr = elapsedMs >= maxOfflineMs ? '2+ minutes' : 
-                (cappedMs < 60000 ? `${Math.round(cappedMs/1000)} seconds` : `${Math.floor(cappedMs/60000)}m ${Math.round((cappedMs%60000)/1000)}s`);
-            document.getElementById('offline-duration').textContent = `You were away for ${durStr}. While you were gone:`;
+            const durStr = offlineSeconds < 60 ? `${offlineSeconds} seconds` : 
+                (offlineSeconds < 120 ? `${Math.floor(offlineSeconds/60)}m ${offlineSeconds%60}s` : 
+                 `${Math.floor(offlineSeconds/60)}m ${offlineSeconds%60}s`);
+            document.getElementById('offline-duration').textContent = 
+                `You were offline for ${durStr}, which gives ${dt}s of offline progress${softCapNote}. (if over 2m, gets softcapped) While you were gone:`;
             const list = document.getElementById('offline-gains-list');
             let html = '';
             for (const [key, earned] of Object.entries(gains)) {
