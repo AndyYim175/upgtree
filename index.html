@@ -349,9 +349,8 @@
         let rafId = null;
         let uiUpdateThrottle = 0;
         
-        const UI_UPDATE_INTERVAL_MS = 30; // ~30 FPS (canvas/nodes)
-        const CURRENCY_UI_INTERVAL_MS = 30; // 0.25 seconds (currency bar)
-        const PROGRESS_BAR_INTERVAL_MS = 100; // 0.25 seconds (progress bars)
+        const CURRENCY_UI_INTERVAL_MS = 100; // currency bar update interval (faster, cheaper now)
+        const CANVAS_UPDATE_INTERVAL_MS = 120; // canvas redraw interval
         let currencyFontSize = 11;
         
         // ---- PERFORMANCE CACHES ----
@@ -363,10 +362,30 @@
             format: new Map(),
         };
         let cacheDirty = true;
+        let cacheDirtyFrame = 0;
+        let frameCounter = 0;
+        
+        // Track previous currency values to avoid unnecessary redraws
+        let prevCurrencySnapshot = {};
+        let prevRateSnapshot = {};
 
         function getLevel(nodeId) { return gameState.levels[nodeId] || 0; }
 
         function getCurr(key) { return gameState.currencies[key] || 0; }
+        
+        function clearCaches() {
+            cacheDirty = true;
+            cacheDirtyFrame++;
+            cache.maxLevel.clear();
+            cache.displayCost.clear();
+            cache.gainRate.clear();
+            cache.resetGain.clear();
+            _maxLevelCache = {};
+            _displayCostCache = {};
+            _currencyRateCache = {};
+            _resetGainCache = {};
+            _formatCache = {};
+        }
         // ==================== NODE TREE DEFINITION ====================
         const TREE_NODES = [
         //point
@@ -557,7 +576,7 @@
     { id: 'W04', type: 'upgrade', code: 'W04', name: 'I ran out of names, water enhancement II i guess', coords: [12, 13], reqs: [[12, 12]], borderColor: 'orange', desc: 'x2 tree mass/s.', effects: [{ type: 'currency_mult', currency: 'TM', formula: lvl => 2}], costCurrency: 'water', costFormula: (lvl) => 50, maxLevel: 1 },
     { id: 'W05', type: 'upgrade', code: 'W05', name: 'This isnt auto water...', coords: [11, 10], reqs: [[12, 10]], borderColor: 'red', desc: '...but its auto upgrades. Get T01-T05 automation.', effects: [{ type: 'automation', target: 'T01' },{ type: 'automation', target: 'T02' },{ type: 'automation', target: 'T03' },{ type: 'automation', target: 'T04' },{ type: 'automation', target: 'T05' }], costCurrency: 'water', costFormula: (lvl) => 2, maxLevel: 1 },
     { id: 'W06', type: 'upgrade', code: 'W06', name: '...retaw otua tnsi sihT', coords: [10, 10], reqs: [[11, 10]], borderColor: 'orange', desc: 'x1.5 tree mass and x1.5 water.', effects: [{ type: 'currency_mult', currency: 'TM', formula: (lvl) => Math.pow(1.5, lvl)},{ type: 'currency_mult', targetCurrency: 'water', formula: (lvl) => Math.pow(1.5, lvl)}], costCurrency: 'water', costFormula: (lvl) => Math.floor(3*Math.pow(5+lvl, lvl)), maxLevel: 5 },
-    { id: 'W07', type: 'upgrade', code: 'W07', name: 'This - wait its auto water', coords: [9, 10], reqs: [[10, 10]], borderColor: 'green', desc: 'get 0.5% of water gain/s/lvl.', effects: [{ type: 'base_gain', currency: 'L', formula: (lvl) => 0.005*lvl*getResetGain('water')}], costCurrency: 'water', costFormula: (lvl) => Math.floor(8*Math.pow(3, Math.pow(lvl,0.7))), maxLevel: 5 },
+    { id: 'W07', type: 'upgrade', code: 'W07', name: 'This - wait its auto water', coords: [9, 10], reqs: [[10, 10]], borderColor: 'green', desc: 'get 0.5% of water gain/s/lvl.', effects: [{ type: 'base_gain', currency: 'water', formula: (lvl) => 0.005*lvl*getResetGain('water')}], costCurrency: 'water', costFormula: (lvl) => Math.floor(8*Math.pow(3, Math.pow(lvl,0.7))), maxLevel: 5 },
     { id: 'W08', type: 'upgrade', code: 'W08', name: 'Auto expander...', coords: [11, 11], reqs: [[11, 10]], borderColor: 'red', desc: 'auto T07,T08,T16,T24.', effects: [{ type: 'automation', target: 'T07' },{ type: 'automation', target: 'T08' },{ type: 'automation', target: 'T16' },{ type: 'automation', target: 'T24' }], costCurrency: 'water', costFormula: (lvl) => 4, maxLevel: 1 },
     { id: 'W09', type: 'upgrade', code: 'W09', name: 'Bulk Chopping', coords: [10, 11], reqs: [[11, 11]], borderColor: 'red', desc: '+1e15 max level to T06. basiclly buy max. caution: might get stuck due to neg mult', effects: [{ type: 'max_level_mod', target: ['T06'], amount: (lvl) => 1e15 }], costCurrency: 'water', costFormula: (lvl) => 6, maxLevel: 1 },
     
@@ -740,24 +759,38 @@
     
             ];
         // ==================== HELPER FUNCTIONS ====================
+        let _maxLevelCache = {};
+        let _maxLevelFrame = {};
+        let _maxLevelModEffects = null;
         function getMaxLevel(node) {
             if (!node || node.type !== 'upgrade') return 0;
-            if (cacheDirty || !cache.maxLevel.has(node.id)) {
-                let maxCap = node.maxLevel || 1;
+            if (_maxLevelFrame[node.id] === cacheDirtyFrame && _maxLevelCache[node.id] !== undefined) return _maxLevelCache[node.id];
+            if (!cacheDirty && cache.maxLevel.has(node.id)) return cache.maxLevel.get(node.id);
+            let maxCap = node.maxLevel || 1;
+            // Build index once
+            if (!_maxLevelModEffects) {
+                _maxLevelModEffects = [];
                 TREE_NODES.forEach(other => {
-                    if (other.type !== 'upgrade' || getLevel(other.id) <= 0) return;
-                    other.effects?.forEach(eff => {
+                    if (other.type !== 'upgrade' || !other.effects) return;
+                    other.effects.forEach(eff => {
                         if (eff.type === 'max_level_mod') {
-                            const targets = Array.isArray(eff.target) ? eff.target : [eff.target];
-                            if (targets.includes(node.id)) {
-                                maxCap += typeof eff.amount === 'function' ? eff.amount(getLevel(other.id), getLevel, getCurr) : (eff.amount || 0) * getLevel(other.id);
-                            }
+                            _maxLevelModEffects.push({ nodeId: other.id, targets: Array.isArray(eff.target) ? eff.target : [eff.target], amount: eff.amount });
                         }
                     });
                 });
-                cache.maxLevel.set(node.id, Math.max(1, maxCap));
             }
-            return cache.maxLevel.get(node.id);
+            for (const mod of _maxLevelModEffects) {
+                const lvl = getLevel(mod.nodeId);
+                if (lvl <= 0) continue;
+                if (mod.targets.includes(node.id)) {
+                    maxCap += typeof mod.amount === 'function' ? mod.amount(lvl, getLevel, getCurr) : (mod.amount || 0) * lvl;
+                }
+            }
+            maxCap = Math.max(1, maxCap);
+            cache.maxLevel.set(node.id, maxCap);
+            _maxLevelCache[node.id] = maxCap;
+            _maxLevelFrame[node.id] = cacheDirtyFrame;
+            return maxCap;
         }
 
         function isNodeUnlocked(node) {
@@ -766,12 +799,14 @@
             return node.reqs.every(([x, y]) => { const reqNode = COORD_MAP.get(`${x},${y}`); return reqNode && getLevel(reqNode.id) >= 1; });
         }
 
+        let _formatCache = {};
+        let _formatFrame = 0;
         function formatNum(num) {
             if (num === Infinity) return 'MAX';
             if (num === undefined || num === null || isNaN(num)) return '0';
             if (num === 0) return '0';
             const key = num;
-            if (cache.format.has(key)) return cache.format.get(key);
+            if (_formatCache[key] !== undefined) return _formatCache[key];
             const abs = Math.abs(num);
             let result;
             if (abs >= 1e45) { const exp = Math.floor(Math.log10(abs)); const mantissa = num / Math.pow(10, exp); result = mantissa.toPrecision(3) + 'e' + exp; }
@@ -790,7 +825,8 @@
             else if (abs >= 1e6) result = (num / 1e6).toPrecision(3) + 'M';
             else if (abs >= 1e3) result = (num / 1e3).toPrecision(3) + 'K';
             else result = parseFloat(Number(num).toPrecision(3)).toString();
-            cache.format.set(key, result);
+            _formatCache[key] = result;
+            _formatFrame = cacheDirtyFrame;
             return result;
         }
 
@@ -1142,6 +1178,11 @@
             
             ctx.restore();
         }
+        
+        // Force a canvas redraw next frame
+        function requestCanvasRedraw() {
+            needsNodeUpdate = true;
+        }
 
         // ==================== CAMERA TRANSFORM ====================
         let panX = 0,
@@ -1157,6 +1198,7 @@
                 document.getElementById('zoom-label').textContent = `${Math.round(scale*100)}%`;
                 resizeCanvas();
                 draw();
+                cacheDirty = false;
                 transformPending = false;
             });
         }
@@ -1165,23 +1207,28 @@
         function checkDecoRequirements(reqArray) { if (!reqArray || reqArray.length === 0) return true; return reqArray.every(id => getLevel(id) >= 1); }
 
         // ==================== GAME LOGIC ====================
+        let _currencyRateCache = {};
+        let _currencyRateFrame = {};
         function calculateGainRate(currency) {
-            if (cacheDirty || !cache.gainRate.has(currency)) {
-                let base = 0,
-                    mult = 1;
-                const effects = CURRENCY_EFFECT_INDEX[currency];
-                if (effects) {
-                    for (const eff of effects) {
-                        const lvl = getLevel(eff.nodeId);
-                        if (lvl <= 0) continue;
-                        const val = eff.formula(lvl, getLevel, getCurr);
-                        if (eff.type === 'base_gain') base += val;
-                        else mult *= val;
-                    }
+            if (_currencyRateFrame[currency] === cacheDirtyFrame && _currencyRateCache[currency] !== undefined) return _currencyRateCache[currency];
+            if (!cacheDirty && cache.gainRate.has(currency)) return cache.gainRate.get(currency);
+            let base = 0,
+                mult = 1;
+            const effects = CURRENCY_EFFECT_INDEX[currency];
+            if (effects) {
+                for (const eff of effects) {
+                    const lvl = getLevel(eff.nodeId);
+                    if (lvl <= 0) continue;
+                    const val = eff.formula(lvl, getLevel, getCurr);
+                    if (eff.type === 'base_gain') base += val;
+                    else mult *= val;
                 }
-                cache.gainRate.set(currency, base * mult);
             }
-            return cache.gainRate.get(currency);
+            const result = base * mult;
+            cache.gainRate.set(currency, result);
+            _currencyRateCache[currency] = result;
+            _currencyRateFrame[currency] = cacheDirtyFrame;
+            return result;
         }
 
         function getCost(node, levelOffset = 0) {
@@ -1192,37 +1239,64 @@
             return node.costFormula(curLvl, getLevel, getCurr);
         }
 
+        let _displayCostCache = {};
+        let _displayCostFrame = {};
         function getDisplayCost(node) {
-            if (cacheDirty || !cache.displayCost.has(node.id)) {
-                const curLvl = getLevel(node.id);
-                const max = getMaxLevel(node);
-                if (curLvl >= max) { cache.displayCost.set(node.id, Infinity); } else {
-                    const cost = getCost(node);
-                    cache.displayCost.set(node.id, cost);
-                }
+            if (_displayCostFrame[node.id] === cacheDirtyFrame && _displayCostCache[node.id] !== undefined) return _displayCostCache[node.id];
+            if (!cacheDirty && cache.displayCost.has(node.id)) return cache.displayCost.get(node.id);
+            const curLvl = getLevel(node.id);
+            const max = getMaxLevel(node);
+            let cost;
+            if (curLvl >= max) { cost = Infinity; } else {
+                cost = getCost(node);
             }
-            return cache.displayCost.get(node.id);
+            cache.displayCost.set(node.id, cost);
+            _displayCostCache[node.id] = cost;
+            _displayCostFrame[node.id] = cacheDirtyFrame;
+            return cost;
         }
 
+        let _resetGainCache = {};
+        let _resetGainFrame = {};
+        let _resetGainEffects = null;
         function getEffectiveResetGain(resetNode) {
-            if (cacheDirty || !cache.resetGain.has(resetNode.id)) {
-                const base = resetNode.calculateGain(getLevel, getCurr) || 0;
-                if (base <= 0) { cache.resetGain.set(resetNode.id, 0); } else {
-                    let add = 0,
-                        mult = 1;
-                    TREE_NODES.forEach(node => {
-                        if (node.type !== 'upgrade' || getLevel(node.id) <= 0) return;
-                        node.effects?.forEach(eff => {
-                            if (eff.targetCurrency === resetNode.targetCurrency) {
-                                if (eff.type === 'reset_gain_add') add += eff.formula(getLevel(node.id), getLevel, getCurr);
-                                if (eff.type === 'reset_gain_mult') mult *= eff.formula(getLevel(node.id), getLevel, getCurr);
-                            }
-                        });
+            if (_resetGainFrame[resetNode.id] === cacheDirtyFrame && _resetGainCache[resetNode.id] !== undefined) return _resetGainCache[resetNode.id];
+            if (!cacheDirty && cache.resetGain.has(resetNode.id)) return cache.resetGain.get(resetNode.id);
+            const base = resetNode.calculateGain(getLevel, getCurr) || 0;
+            if (base <= 0) { 
+                cache.resetGain.set(resetNode.id, 0);
+                _resetGainCache[resetNode.id] = 0;
+                return 0; 
+            }
+            // Build index of reset gain effects once
+            if (!_resetGainEffects) {
+                _resetGainEffects = {};
+                TREE_NODES.forEach(node => {
+                    if (node.type !== 'upgrade' || !node.effects) return;
+                    node.effects.forEach(eff => {
+                        if (eff.type === 'reset_gain_add' || eff.type === 'reset_gain_mult') {
+                            const key = eff.targetCurrency;
+                            if (!_resetGainEffects[key]) _resetGainEffects[key] = [];
+                            _resetGainEffects[key].push({ nodeId: node.id, type: eff.type, formula: eff.formula });
+                        }
                     });
-                    cache.resetGain.set(resetNode.id, (base + add) * mult);
+                });
+            }
+            let add = 0, mult = 1;
+            const effects = _resetGainEffects[resetNode.targetCurrency];
+            if (effects) {
+                for (const eff of effects) {
+                    const lvl = getLevel(eff.nodeId);
+                    if (lvl <= 0) continue;
+                    if (eff.type === 'reset_gain_add') add += eff.formula(lvl, getLevel, getCurr);
+                    if (eff.type === 'reset_gain_mult') mult *= eff.formula(lvl, getLevel, getCurr);
                 }
             }
-            return cache.resetGain.get(resetNode.id);
+            const result = (base + add) * mult;
+            cache.resetGain.set(resetNode.id, result);
+            _resetGainCache[resetNode.id] = result;
+            _resetGainFrame[resetNode.id] = cacheDirtyFrame;
+            return result;
         }
 
         function getResetGain(currency) {
@@ -1230,7 +1304,15 @@
             return node ? getEffectiveResetGain(node) : 0;
         }
         // ==================== BUY LOGIC ====================
-        function buyUpgrade(nodeId, isAutomated = false, isFree = false) {
+        function scheduleCanvasRedraw() {
+    needsNodeUpdate = true;
+}
+
+function requestCanvasRedraw() {
+    needsNodeUpdate = true;
+}
+
+function buyUpgrade(nodeId, isAutomated = false, isFree = false) {
             const node = NODE_MAP.get(nodeId);
             if (!node || node.type !== 'upgrade' || !isNodeUnlocked(node)) return false;
             const currentLvl = getLevel(node.id);
@@ -1269,7 +1351,7 @@
                 gameState.levels[node.id] = newLevel;
                 addCurrencyToOrder(node.costCurrency);
                 needsNodeUpdate = true;
-                cacheDirty = true;
+                clearCaches();
                 if (bought > 1 && !isAutomated && !node.bulkFinalCost) {
                     startStepAnimation(node.id, oldLevel, newLevel, isAutomated);
                     playSound('buy');
@@ -1277,7 +1359,7 @@
                     startLevelAnimation(node.id, oldLevel, newLevel);
                     playSound(isAutomated ? 'auto' : 'buy');
                 }
-                scheduleUIRefresh();
+                requestCanvasRedraw();
                 return true;
             } else { if (!isAutomated) playSound('fail'); }
             return false;
@@ -1300,7 +1382,7 @@
             const startTime = performance.now();
             let currentStep = 0;
             displayLevels[nodeId] = from;
-            scheduleUIRefresh();
+            requestCanvasRedraw();
 
             function tick() {
                 const elapsed = performance.now() - startTime;
@@ -1308,13 +1390,13 @@
                 currentStep = Math.floor(progress * totalSteps);
                 if (currentStep > totalSteps) currentStep = totalSteps;
                 displayLevels[nodeId] = from + currentStep;
-                scheduleUIRefresh();
+                requestCanvasRedraw();
                 if (currentStep < totalSteps) {
                     stepAnimations[nodeId] = { rafId: requestAnimationFrame(tick), currentStep, totalSteps, from,
                     to };
                 } else { displayLevels[nodeId] = to;
                     delete stepAnimations[nodeId];
-                    scheduleUIRefresh(); }
+                    requestCanvasRedraw(); }
             }
             stepAnimations[nodeId] = { rafId: requestAnimationFrame(tick), currentStep: 0, totalSteps, from, to };
         }
@@ -1322,7 +1404,7 @@
         function startLevelAnimation(nodeId, from, to) {
             levelAnimations[nodeId] = { start: from, target: to, startTime: performance.now(), duration: LEVEL_ANIM_DURATION };
             displayLevels[nodeId] = from;
-            scheduleUIRefresh();
+            requestCanvasRedraw();
         }
 
         function updateLevelAnimations() {
@@ -1337,13 +1419,10 @@
                 if (t >= 1) { displayLevels[nodeId] = anim.target;
                     delete levelAnimations[nodeId]; } else anyActive = true;
             }
-            if (anyActive) scheduleUIRefresh();
+            if (anyActive) requestCanvasRedraw();
         }
         
-        function renderProgressBars() {
-            // Only redraw progress bars on the canvas, not full UI
-            draw();
-        }
+        
 
         function getDisplayLevel(nodeId) {
             if (stepAnimations[nodeId]) return displayLevels[nodeId] !== undefined ? displayLevels[nodeId] : getLevel(nodeId);
@@ -1370,23 +1449,12 @@
         let uiRefreshScheduled = false;
         let pendingFullRefresh = false;
 
-        function scheduleUIRefresh(full = false) {
-    if (full) pendingFullRefresh = true;
-    if (uiRefreshScheduled) return;
-    uiRefreshScheduled = true;
-    requestAnimationFrame(() => {
-        if (pendingFullRefresh || needsNodeUpdate) { draw();
-            renderDecorationsUnlock();
-            pendingFullRefresh = false;
-            needsNodeUpdate = false; } else if (!needsNodeUpdate) { 
-            // Only draw if we haven't drawn recently via progress bar throttle
-            const now = performance.now();
-            if (now - lastProgressBarUpdateTime >= PROGRESS_BAR_INTERVAL_MS) {
-                renderProgressBars();
-            }
-        }
-        uiRefreshScheduled = false;
-    });
+        function requestCanvasRedraw(full = false) {
+    if (full) {
+        needsNodeUpdate = true;
+        cacheDirty = true;
+    }
+    // Just mark things dirty; the game loop's canvas throttle handles the actual draw
 }
 
         function renderDecorationsUnlock() {
@@ -1438,50 +1506,58 @@
             return resetIds;
         }
         // ==================== CURRENCY BAR ====================
-        function renderCurrencyBar() {
+        let _lastRenderedBarOrder = '';
+let _lastRenderedBarHidden = '';
+let _lastCurrencyBarFontSize = 0;
+function renderCurrencyBar() {
     const bar = document.getElementById('currency-bar');
+    if (!bar) return;
     const hidden = gameState.hiddenCurrencies || [];
     const order = [...new Set([...(gameState.currencyOrder || []), ...(gameState.hiddenCurrencies || [])])];
-    const visibleKeys = [];
-    const toRemove = [];
-    for (const [key, cached] of currencyBarCache) { if (!order.includes(key) || hidden.includes(key)) toRemove.push(key); }
-    for (const key of toRemove) { const cached = currencyBarCache.get(key); if (cached) cached.line.remove();
-        currencyBarCache.delete(key); }
-    for (const key of order) {
-        if (hidden.includes(key)) continue;
-        const def = CURRENCIES[key];
-        if (!def) continue;
-        visibleKeys.push(key);
-        let cached = currencyBarCache.get(key);
-        if (!cached) {
+    const orderKey = order.join(',');
+    const hiddenKey = hidden.join(',');
+    
+    // Only rebuild DOM structure when order or hidden currencies change
+    const needsRebuild = _lastRenderedBarOrder !== orderKey || _lastRenderedBarHidden !== hiddenKey || _lastCurrencyBarFontSize !== currencyFontSize;
+    
+    if (needsRebuild) {
+        // Clear and rebuild
+        bar.innerHTML = '';
+        currencyBarCache.clear();
+        for (const key of order) {
+            if (hidden.includes(key)) continue;
+            const def = CURRENCIES[key];
+            if (!def) continue;
             const line = document.createElement('div');
             line.className = 'flex items-center gap-1.5 font-mono tracking-wide text-zinc-300 drop-shadow-sm';
             line.style.fontSize = `${currencyFontSize}px`;
+            line.dataset.ckey = key;
             const nameClass = def.rainbow ? 'rainbow-text rainbow-glow font-bold' : `${def.color} font-bold`;
             line.innerHTML =
     `<span class="${nameClass}">${def.name}</span><span class="font-semibold text-zinc-100 amount"></span><span class="text-zinc-400 rate" style="font-size:${Math.max(8, currencyFontSize - 1)}px"></span><span class="potential"></span>`;
-            cached = { line, amount: line.querySelector('.amount'), rate: line.querySelector('.rate'),
-                potential: line.querySelector('.potential') };
-            currencyBarCache.set(key, cached);
+            currencyBarCache.set(key, { line, amount: line.querySelector('.amount'), rate: line.querySelector('.rate'), potential: line.querySelector('.potential') });
             bar.appendChild(line);
         }
+        _lastRenderedBarOrder = orderKey;
+        _lastRenderedBarHidden = hiddenKey;
+        _lastCurrencyBarFontSize = currencyFontSize;
+    }
+    
+    // Update values only (cheap DOM writes)
+    for (const [key, cached] of currencyBarCache) {
         const amt = gameState.currencies[key] || 0;
         const rate = calculateGainRate(key);
-        cached.line.style.fontSize = `${currencyFontSize}px`;
         cached.amount.textContent = formatNum(amt);
         cached.rate.textContent = `(+${formatNum(rate)}/s)`;
+        cached.rate.style.fontSize = `${Math.max(8, currencyFontSize - 1)}px`;
+        // Calculate reset potential only once per currency type
         let potentialText = '';
-        for (const node of TREE_NODES) {
-            if (node.type !== 'reset' || node.targetCurrency !== key) continue;
-            const g = getEffectiveResetGain(node);
-            if (g > 0) { potentialText = ` (+${formatNum(g)} on reset)`;
-                break; }
+        const resetNode = TREE_NODES.find(n => n.type === 'reset' && n.targetCurrency === key);
+        if (resetNode) {
+            const g = getEffectiveResetGain(resetNode);
+            if (g > 0) potentialText = ` (+${formatNum(g)} on reset)`;
         }
         cached.potential.textContent = potentialText;
-        cached.potential.className = 'text-cyan-400 font-semibold potential';
-        
-        // Fix the rate font size to match the main font size
-        cached.rate.style.fontSize = `${Math.max(8, currencyFontSize - 1)}px`;
     }
 }
         function renderCurrencyToggles() {
@@ -1553,12 +1629,12 @@
             // Only reset the currencies explicitly listed in resetCurrencies
             // Do NOT assume empty means reset P
             needsNodeUpdate = true;
-            cacheDirty = true;
+            clearCaches();
             playSound('reset');
             showToast(`Reset! +${formatNum(gain)} ${node.targetCurrency}`);
             document.getElementById('reset-modal').classList.add('hidden');
             activeResetNode = null;
-            scheduleUIRefresh(true);
+            requestCanvasRedraw();
             renderCurrencyBar();
             lastCurrencyUpdateTime = performance.now(); // Reset timer so it shows immediately
         }
@@ -1612,13 +1688,13 @@ document.getElementById('font-size-label').textContent = 11;
             displayLevels = {};
             currencyBarCache.clear();
             gameState.unlockedDecorations = [];
-            cacheDirty = true;
+            clearCaches();
             renderCurrencyBar();
             updateTransform();
             document.getElementById('pause-icon').setAttribute('data-lucide', 'pause');
             document.getElementById('pause-label').textContent = 'Stop';
             lucide.createIcons();
-            scheduleUIRefresh(true);
+            requestCanvasRedraw(true);
         };
         document.getElementById('btn-buy-multiplier').onclick = () => {
             const idx = buyModes.indexOf(buyMode);
@@ -1630,7 +1706,7 @@ document.getElementById('font-size-label').textContent = 11;
         document.getElementById('btn-toggle-effects').onclick = () => {
             gameState.showEffects = !gameState.showEffects;
             document.getElementById('effects-mode-label').textContent = `EFFECTS: ${gameState.showEffects?'ON':'OFF'}`;
-            scheduleUIRefresh(true);
+            requestCanvasRedraw(true);
             playSound('buy');
         };
         document.getElementById('btn-recenter').onclick = () => { panX = 0;
@@ -1690,8 +1766,8 @@ document.getElementById('font-size-label').textContent = 11;
                         }
                         for (const id in levelAnimations) delete levelAnimations[id];
                         displayLevels = {};
-                        cacheDirty = true;
-                        localStorage.setItem(SAVE_KEY, JSON.stringify(gameState));
+                        clearCaches();
+                    localStorage.setItem(SAVE_KEY, JSON.stringify(gameState));
                         renderCurrencyBar();
                         updateTransform();
                         if (gameState.paused) {
@@ -1983,7 +2059,7 @@ document.getElementById('font-size-label').textContent = currencyFontSize;
                             .getElementById('pause-icon').setAttribute('data-lucide', 'pause');
                         document.getElementById('pause-label').textContent = 'Stop'; }
                     lucide.createIcons();
-                    cacheDirty = true;
+                    clearCaches();
                 } catch (e) { console.warn('Save load error', e); }
             }
         }
@@ -2025,7 +2101,7 @@ document.getElementById('font-size-label').textContent = currencyFontSize;
                 }
             }
             if (Object.keys(gains).length === 0) return;
-            cacheDirty = true;
+            clearCaches();
             // Show popup
             const durStr = offlineSeconds < 60 ? `${offlineSeconds} seconds` : 
                 (offlineSeconds < 120 ? `${Math.floor(offlineSeconds/60)}m ${offlineSeconds%60}s` : 
@@ -2053,9 +2129,8 @@ document.getElementById('font-size-label').textContent = currencyFontSize;
         let lastTime = performance.now();
         const GAME_TICK_MS = 50;
         let gameTickAccumulator = 0;
-        //let lastUIUpdateTime = 0;
         let lastCurrencyUpdateTime = 0;
-        let lastProgressBarUpdateTime = 0;
+        let lastCanvasUpdateTime = 0;
 
         function gameLoop(timestamp) {
     const dt = Math.min(100, timestamp - lastTime);
@@ -2066,17 +2141,19 @@ document.getElementById('font-size-label').textContent = currencyFontSize;
         gameTickAccumulator -= GAME_TICK_MS;
     }
     updateLevelAnimations();
-    // Single source of canvas updates - progress bar throttle controls everything
-    if (timestamp - lastProgressBarUpdateTime >= PROGRESS_BAR_INTERVAL_MS) {
+    
+    // Canvas redraw - throttled. Always draw (progress bars need updates).
+    if (timestamp - lastCanvasUpdateTime >= CANVAS_UPDATE_INTERVAL_MS) {
+        draw();
         if (needsNodeUpdate) {
-            scheduleUIRefresh(true);
+            renderDecorationsUnlock();
             needsNodeUpdate = false;
-        } else {
-            renderProgressBars();
         }
-        lastProgressBarUpdateTime = timestamp;
+        cacheDirty = false;
+        lastCanvasUpdateTime = timestamp;
     }
-    // Currency bar updates at 250ms
+    
+    // Currency bar updates
     if (timestamp - lastCurrencyUpdateTime >= CURRENCY_UI_INTERVAL_MS) {
         renderCurrencyBar();
         lastCurrencyUpdateTime = timestamp;
@@ -2087,19 +2164,23 @@ document.getElementById('font-size-label').textContent = currencyFontSize;
             const dt = dtMs / 1000;
             if (gameState.paused) return;
             let changed = false;
-            for (const key of Object.keys(CURRENCIES)) {
+            // Only iterate currencies that have been discovered or have gains
+            const activeKeys = gameState.discoveredCurrencies || Object.keys(CURRENCIES);
+            for (const key of activeKeys) {
                 const rate = calculateGainRate(key);
                 if (rate > 0) {
-                    if (!gameState.discoveredCurrencies.includes(key)) { gameState.discoveredCurrencies.push(key);
+                    if (!gameState.discoveredCurrencies.includes(key)) { 
+                        gameState.discoveredCurrencies.push(key);
                         addCurrencyToOrder(key);
-                        needsNodeUpdate = true; }
+                        needsNodeUpdate = true; 
+                    }
                     const old = gameState.currencies[key] || 0;
                     const newVal = old + rate * dt;
                     gameState.currencies[key] = newVal;
-                    if (Math.abs(newVal - old) > Math.max(1, Math.abs(old) * 0.01)) changed = true;
+                    if (Math.abs(newVal - old) > Math.max(1, Math.abs(old) * 0.005)) changed = true;
                 }
             }
-            if (changed) cacheDirty = true;
+            if (changed) clearCaches();
             if (performance.now() - lastAutomationTime >= 200) {
                 lastAutomationTime = performance.now();
                 checkAutomation();
