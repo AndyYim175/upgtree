@@ -406,7 +406,7 @@
         // ==================== NODE TREE DEFINITION ====================
         const TREE_NODES = [
         //point
-    { id: 'INFO_CORE', type: 'info', code: 'Start', name: 'The start. You can pan the screen! There is buy max in the settings.', coords: [0, 0], reqs: [], desc: 'Begin.', getInfoText: () => `Rate: +${formatNum(calculateGainRate('P'))}/s` },
+    { id: 'INFO_CORE', type: 'info', code: 'Start', name: 'The start. You can pan the screen! There is buy max in the settings.', coords: [0, 0], reqs: [], desc: 'Begin. [if nothing appears please refresh the page]', getInfoText: () => `Rate: +${formatNum(calculateGainRate('P'))}/s` },
     { id: '#1', type: 'upgrade', code: '#01', name: 'Another Beginning', coords: [0, 1], reqs: [], borderColor: 'green', desc: '+1 Base point/s.', effects: [{ type: 'base_gain', currency: 'P', formula: (lvl) => lvl * 1 }], costCurrency: 'P', costFormula: (lvl) => 0, maxLevel: 1 },
     { id: '#2', type: 'upgrade', code: '#02', name: 'A bigger increase', coords: [1, 1], reqs: [[0, 1]], borderColor: 'green', desc: '+2p/s', effects: [{ type: 'base_gain', currency: 'P', formula: (lvl) => lvl * 2 }], costCurrency: 'P', costFormula: (lvl) => 5, maxLevel: 1 },
     { id: '#3', type: 'upgrade', code: '#03', name: 'Multipliers', coords: [1, 0], reqs: [[1, 1]], borderColor: 'orange', desc: 'x2 p/s.', effects: [{ type: 'currency_mult', currency: 'P', formula: (lvl) => Math.pow(2.0, lvl) }], costCurrency: 'P', costFormula: (lvl) => 24*Math.pow(1e21,Math.pow(lvl, 0.12)), maxLevel: 1 },
