@@ -1368,7 +1368,21 @@
 
         let _resetGainCache = {};
         let _resetGainFrame = {};
-        let _resetGainEffects = null;
+        // Build once, never nullified by clearCaches; also NO need to rebuild on buy.
+        const _resetGainEffectsIndex = (() => {
+            const idx = {};
+            TREE_NODES.forEach(node => {
+                if (node.type !== 'upgrade' || !node.effects) return;
+                node.effects.forEach(eff => {
+                    if (eff.type === 'reset_gain_add' || eff.type === 'reset_gain_mult') {
+                        const key = eff.targetCurrency;
+                        if (!idx[key]) idx[key] = [];
+                        idx[key].push({ nodeId: node.id, type: eff.type, formula: eff.formula });
+                    }
+                });
+            });
+            return idx;
+        })();
         function getEffectiveResetGain(resetNode) {
             if (_resetGainFrame[resetNode.id] === cacheDirtyFrame && _resetGainCache[resetNode.id] !== undefined) return _resetGainCache[resetNode.id];
             if (!cacheDirty && cache.resetGain.has(resetNode.id)) return cache.resetGain.get(resetNode.id);
@@ -1378,22 +1392,8 @@
                 _resetGainCache[resetNode.id] = 0;
                 return 0; 
             }
-            // Build index of reset gain effects once
-            if (!_resetGainEffects) {
-                _resetGainEffects = {};
-                TREE_NODES.forEach(node => {
-                    if (node.type !== 'upgrade' || !node.effects) return;
-                    node.effects.forEach(eff => {
-                        if (eff.type === 'reset_gain_add' || eff.type === 'reset_gain_mult') {
-                            const key = eff.targetCurrency;
-                            if (!_resetGainEffects[key]) _resetGainEffects[key] = [];
-                            _resetGainEffects[key].push({ nodeId: node.id, type: eff.type, formula: eff.formula });
-                        }
-                    });
-                });
-            }
             let add = 0, mult = 1;
-            const effects = _resetGainEffects[resetNode.targetCurrency];
+            const effects = _resetGainEffectsIndex[resetNode.targetCurrency];
             if (effects) {
                 for (const eff of effects) {
                     const lvl = getLevel(eff.nodeId);
@@ -1476,7 +1476,7 @@ function buyUpgrade(nodeId, isAutomated = false, isFree = false) {
                     });
                 }
                 needsNodeUpdate = true;
-                clearCaches();
+                // Caches cleared only on tick, not on buy
                 if (bought > 1 && !isAutomated && !node.bulkFinalCost) {
                     startStepAnimation(node.id, oldLevel, newLevel, isAutomated);
                     playSound('buy');
