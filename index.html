@@ -956,8 +956,8 @@
             let result;
             if (abs >= 1e45) { const exp = Math.floor(Math.log10(abs)); const mantissa = num / Math.pow(10, exp); result = mantissa.toPrecision(3) + 'e' + exp; }
             else if (abs >= 1e42) result = (num / 1e42).toPrecision(3) + 'TDe';
-            else if (abs >= 1e39) result = (num / 1e39).toPrecision(3) + 'UDe';
-            else if (abs >= 1e36) result = (num / 1e36).toPrecision(3) + 'DDe';
+            else if (abs >= 1e39) result = (num / 1e39).toPrecision(3) + 'DDe';
+            else if (abs >= 1e36) result = (num / 1e36).toPrecision(3) + 'UDe';
             else if (abs >= 1e33) result = (num / 1e33).toPrecision(3) + 'De';
             else if (abs >= 1e30) result = (num / 1e30).toPrecision(3) + 'No';
             else if (abs >= 1e27) result = (num / 1e27).toPrecision(3) + 'Oc';
