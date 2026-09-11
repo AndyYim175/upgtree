@@ -71,7 +71,7 @@
     </main>
     <!-- Bottom-left HUD -->
     <div id="currency-bar-container" class="z-30 fixed pointer-events-none flex flex-col items-start gap-2 text-xs select-none drop-shadow-md" style="bottom: max(1.25rem, env(safe-area-inset-bottom, 1.25rem)); left: max(1.25rem, env(safe-area-inset-left, 1.25rem));">
-        <div id="currency-bar" class="flex flex-col gap-0.5"></div>
+        <div id="currency-bar" class="flex flex-col gap-0.5 pointer-events-auto"></div>
         <div class="flex items-center gap-1.5">
             <button id="btn-sound" class="pointer-events-auto p-1.5 bg-zinc-900/90 hover:bg-zinc-800 text-zinc-300 border border-zinc-800 shadow-md transition flex items-center gap-1.5 text-[11px]">
                 <i id="sound-icon" data-lucide="volume-2" class="w-3.5 h-3.5 text-emerald-400"></i><span id="sound-label" class="text-zinc-400 font-mono text-[10px]">SFX: ON</span>
@@ -103,7 +103,7 @@
             <button id="btn-buy-multiplier" class="w-full px-2.5 py-1.5 bg-zinc-950 hover:bg-zinc-800 text-amber-400 border border-zinc-800 transition text-left font-bold text-[11px]"><span id="buy-mode-label">BUY: x1</span></button>
             <button id="btn-toggle-effects" class="w-full px-2.5 py-1.5 bg-zinc-950 hover:bg-zinc-800 text-cyan-400 border border-zinc-800 transition text-left font-bold text-[11px]"><span id="effects-mode-label">EFFECTS: ON</span></button>
             <div id="currency-toggles-container" class="border-t border-zinc-800 pt-1.5 mt-0.5">
-                <div class="text-[9px] font-bold text-zinc-500 tracking-wider px-1 mb-1">Currencies</div>
+                <div class="text-[9px] font-bold text-zinc-500 tracking-wider px-1 mb-1">Currencies <span class="text-[8px] font-normal text-zinc-600">(eye to hide, arrows to reorder)</span></div>
                 <div id="currency-toggles-list" class="flex flex-col gap-0.5"></div>
             </div>
             <button id="btn-recenter" class="w-full px-2.5 py-1.5 bg-zinc-950 hover:bg-zinc-800 text-zinc-300 border border-zinc-800 transition flex items-center justify-between text-[11px]"><span>Recenter Cam</span><i data-lucide="crosshair" class="w-3.5 h-3.5 text-zinc-400"></i></button>
@@ -1365,6 +1365,8 @@
         function requestCanvasRedraw() {
             needsNodeUpdate = true;
         }
+        
+        // --- remove old duplicate: scheduleCanvasRedraw alias ---
 
         // ==================== CAMERA TRANSFORM ====================
         let panX = 0,
@@ -1486,19 +1488,14 @@
             return node ? getEffectiveResetGain(node) : 0;
         }
         // ==================== BUY LOGIC ====================
-        function scheduleCanvasRedraw() {
-    needsNodeUpdate = true;
-}
-
-function requestCanvasRedraw() {
-    needsNodeUpdate = true;
-}
-
-function ensureCurrency(key) {
+        function ensureCurrency(key) {
     if (gameState.currencies[key] === undefined) gameState.currencies[key] = 0;
     if (!gameState.discoveredCurrencies.includes(key)) {
         gameState.discoveredCurrencies.push(key);
         addCurrencyToOrder(key);
+    } else if (gameState.currencyOrder && !gameState.currencyOrder.includes(key)) {
+        // Already discovered but somehow missing from order — fix it
+        gameState.currencyOrder.push(key);
     }
 }
 
@@ -1570,12 +1567,13 @@ function buyUpgrade(nodeId, isAutomated = false, isFree = false) {
         function addCurrencyToOrder(currKey) {
             if (!gameState.currencyOrder) gameState.currencyOrder = [];
             if (!gameState.discoveredCurrencies.includes(currKey)) gameState.discoveredCurrencies.push(currKey);
-            if (gameState.hiddenCurrencies && gameState.hiddenCurrencies.includes(currKey)
-                && (!gameState.userHiddenCurrencies || !gameState.userHiddenCurrencies.includes(currKey))) { 
-                // Only un-hide if the user didn't manually hide it
-                gameState.hiddenCurrencies = gameState.hiddenCurrencies.filter(k => k !== currKey); 
-                if (typeof renderCurrencyBar === 'function') renderCurrencyBar();
-                if (typeof renderCurrencyToggles === 'function') renderCurrencyToggles();
+            // *** FIX: Only auto-unhide if NOT in userHiddenCurrencies ***
+            if (gameState.hiddenCurrencies && gameState.hiddenCurrencies.includes(currKey)) {
+                if (!gameState.userHiddenCurrencies || !gameState.userHiddenCurrencies.includes(currKey)) {
+                    gameState.hiddenCurrencies = gameState.hiddenCurrencies.filter(k => k !== currKey);
+                    if (typeof renderCurrencyBar === 'function') renderCurrencyBar();
+                    if (typeof renderCurrencyToggles === 'function') renderCurrencyToggles();
+                }
             }
             if (!gameState.currencyOrder.includes(currKey)) { gameState.currencyOrder.push(currKey); }
         }
@@ -1716,6 +1714,8 @@ function buyUpgrade(nodeId, isAutomated = false, isFree = false) {
         let _lastRenderedBarOrder = '';
 let _lastRenderedBarHidden = '';
 let _lastCurrencyBarFontSize = 0;
+
+
 function renderCurrencyBar() {
     const bar = document.getElementById('currency-bar');
     if (!bar) return;
@@ -1731,14 +1731,16 @@ function renderCurrencyBar() {
         // Clear and rebuild
         bar.innerHTML = '';
         currencyBarCache.clear();
-        for (const key of order) {
+        for (let i = 0; i < order.length; i++) {
+            const key = order[i];
             if (hidden.includes(key)) continue;
             const def = CURRENCIES[key];
             if (!def) continue;
             const line = document.createElement('div');
-            line.className = 'flex items-center gap-1.5 font-mono tracking-wide text-zinc-300 drop-shadow-sm';
+            line.className = 'flex items-center gap-1.5 font-mono tracking-wide text-zinc-300 drop-shadow-sm currency-line';
             line.style.fontSize = `${currencyFontSize}px`;
             line.dataset.ckey = key;
+            line.dataset.idx = i;
             const nameClass = def.rainbow ? 'rainbow-text rainbow-glow font-bold' : `${def.color} font-bold`;
             line.innerHTML =
     `<span class="${nameClass}">${def.name}</span><span class="font-semibold text-zinc-100 amount"></span><span class="text-zinc-400 rate" style="font-size:${Math.max(8, currencyFontSize - 1)}px"></span><span class="potential"></span>`;
@@ -1767,21 +1769,52 @@ function renderCurrencyBar() {
         cached.potential.textContent = potentialText;
     }
 }
+
+
         function renderCurrencyToggles() {
             const list = document.getElementById('currency-toggles-list');
             if (!list) return;
             const hidden = gameState.hiddenCurrencies || [];
             const order = gameState.currencyOrder || [];
             let html = '';
-            for (const key of order) {
+            for (let i = 0; i < order.length; i++) {
+                const key = order[i];
                 const def = CURRENCIES[key];
                 if (!def) continue;
                 const vis = !hidden.includes(key);
-                html +=
-                    `<div class="flex items-center justify-between gap-2 px-1 py-0.5 hover:bg-zinc-800/50 transition"><span class="text-[10px] font-mono ${vis?'text-zinc-200':'text-zinc-500'} truncate">${def.name}</span><button class="currency-toggle-btn p-0.5 hover:bg-zinc-700 transition flex-shrink-0" data-currency="${key}"><i data-lucide="${vis?'eye':'eye-off'}" class="w-3.5 h-3.5 ${vis?'text-emerald-400':'text-zinc-500'}"></i></button></div>`;
+                const canUp = i > 0;
+                const canDown = i < order.length - 1;
+                html += `<div class="flex items-center justify-between gap-1 px-1 py-0.5 hover:bg-zinc-800/50 transition group">
+                    <div class="flex items-center gap-0.5 flex-shrink-0">
+                        ${canUp ? `<button class="reorder-btn p-0.5 hover:bg-zinc-700 transition" data-currency="${key}" data-dir="-1"><i data-lucide="chevron-up" class="w-3 h-3 text-zinc-500 hover:text-zinc-300"></i></button>` : '<span class="w-4"></span>'}
+                        ${canDown ? `<button class="reorder-btn p-0.5 hover:bg-zinc-700 transition" data-currency="${key}" data-dir="1"><i data-lucide="chevron-down" class="w-3 h-3 text-zinc-500 hover:text-zinc-300"></i></button>` : '<span class="w-4"></span>'}
+                    </div>
+                    <span class="text-[10px] font-mono ${vis?'text-zinc-200':'text-zinc-500'} truncate flex-1 mx-1">${def.name}</span>
+                    <button class="currency-toggle-btn p-0.5 hover:bg-zinc-700 transition flex-shrink-0" data-currency="${key}"><i data-lucide="${vis?'eye':'eye-off'}" class="w-3.5 h-3.5 ${vis?'text-emerald-400':'text-zinc-500'}"></i></button>
+                </div>`;
             }
             list.innerHTML = html || '<div class="text-[9px] text-zinc-600 italic px-1">No currencies</div>';
             lucide.createIcons();
+            
+            // Add reorder listeners
+            list.querySelectorAll('.reorder-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    const key = btn.dataset.currency;
+                    const dir = parseInt(btn.dataset.dir);
+                    const idx = gameState.currencyOrder.indexOf(key);
+                    if (idx === -1) return;
+                    const newIdx = idx + dir;
+                    if (newIdx < 0 || newIdx >= gameState.currencyOrder.length) return;
+                    // Swap
+                    const order = gameState.currencyOrder;
+                    [order[idx], order[newIdx]] = [order[newIdx], order[idx]];
+                    _lastRenderedBarOrder = '';
+                    renderCurrencyBar();
+                    renderCurrencyToggles();
+                    playSound('buy');
+                });
+            });
         }
 
         function toggleCurrencyVisibility(key) {
@@ -2075,6 +2108,8 @@ document.getElementById('btn-font-up').onclick = (e) => {
         }
 
         canvas.addEventListener('mousedown', e => {
+            // Don't start canvas drag if clicking on currency bar (which sits behind the canvas)
+            if (e.target.closest && e.target.closest('#currency-bar')) return;
             isDragging = true;
             mouseMoved = false;
             dragStartX = e.clientX - panX;
@@ -2087,10 +2122,13 @@ document.getElementById('btn-font-up').onclick = (e) => {
                 return;
             }
             if (isDragging && !mouseMoved) {
-                const node = getNodeAtScreen(e.clientX, e.clientY);
-                if (node) {
-                    if (node.type === 'upgrade') buyUpgrade(node.id);
-                    else if (node.type === 'reset') openResetModal(node);
+                // Don't trigger node click if mouseup was on currency bar
+                if (!(e.target && e.target.closest && e.target.closest('#currency-bar'))) {
+                    const node = getNodeAtScreen(e.clientX, e.clientY);
+                    if (node) {
+                        if (node.type === 'upgrade') buyUpgrade(node.id);
+                        else if (node.type === 'reset') openResetModal(node);
+                    }
                 }
             }
             isDragging = false;
@@ -2263,6 +2301,20 @@ document.getElementById('btn-font-up').onclick = (e) => {
                     if (!gameState.skipResetConfirm) gameState.skipResetConfirm = {};
                     if (gameState.currencyFontSize === undefined) gameState.currencyFontSize = 11;
                     if (!gameState.currencyOrder) gameState.currencyOrder = ['P'];
+                    // *** FIX: Ensure ALL currencies with gain are in discoveredCurrencies ***
+                    if (gameState.currencyOrder.length > 1 && gameState.currencyOrder.length <= 30 && (!gameState.discoveredCurrencies || gameState.discoveredCurrencies.length <= 1)) {
+                        // Old save — rebuild discoveredCurrencies from currencyOrder
+                        gameState.discoveredCurrencies = [...gameState.currencyOrder];
+                    }
+                    // Also ensure currencies with existing amounts in currencys are in order
+                    if (gameState.currencies) {
+                        for (const key of Object.keys(gameState.currencies)) {
+                            if (gameState.currencies[key] > 0 && gameState.currencyOrder && !gameState.currencyOrder.includes(key)) {
+                                gameState.currencyOrder.push(key);
+                                if (!gameState.discoveredCurrencies.includes(key)) gameState.discoveredCurrencies.push(key);
+                            }
+                        }
+                    }
                     if (gameState.camera) { panX = gameState.camera.panX || 0;
                         panY = gameState.camera.panY || 0;
                         scale = gameState.camera.scale || 1; }
@@ -2317,6 +2369,11 @@ document.getElementById('font-size-label').textContent = currencyFontSize;
                     if (earned > 0.01 || (key === 'P' && earned > 0)) {
                         gains[key] = earned;
                         gameState.currencies[key] = (gameState.currencies[key] || 0) + earned;
+                        // Ensure currency is discovered and in order
+                        if (!gameState.discoveredCurrencies.includes(key)) {
+                            gameState.discoveredCurrencies.push(key);
+                            addCurrencyToOrder(key);
+                        }
                     }
                 }
             }
@@ -2384,36 +2441,28 @@ document.getElementById('font-size-label').textContent = currencyFontSize;
             const dt = dtMs / 1000;
             if (gameState.paused) return;
             let changed = false;
-            // Check ALL currencies for new gains (auto-discover)
+            // Check all defined currencies for new gains — this ensures currencies
+            // that the player unlocked (e.g. ∞, ♦, L, C, ¤) get discovered even
+            // if they were hidden before or missing from currencyOrder.
             const discoveredSet = new Set(gameState.discoveredCurrencies);
             for (const key of Object.keys(CURRENCIES)) {
                 const rate = calculateGainRate(key);
                 if (rate > 0) {
+                    // Ensure it's discovered
                     if (!discoveredSet.has(key)) {
                         gameState.discoveredCurrencies.push(key);
                         addCurrencyToOrder(key);
                         discoveredSet.add(key);
                         needsNodeUpdate = true;
-                    } else if (gameState.hiddenCurrencies && gameState.hiddenCurrencies.includes(key) && (!gameState.userHiddenCurrencies || !gameState.userHiddenCurrencies.includes(key))) {
-                        // Re-unhide when the currency starts generating again, but only if NOT user-hidden
-                        gameState.hiddenCurrencies = gameState.hiddenCurrencies.filter(k => k !== key);
-                        if (typeof renderCurrencyBar === 'function') renderCurrencyBar();
-                        if (typeof renderCurrencyToggles === 'function') renderCurrencyToggles();
                     }
+                    // Ensure the value slot exists
                     if (gameState.currencies[key] === undefined) gameState.currencies[key] = 0;
                 }
             }
-            // Only iterate currencies that have been discovered
-            // NOTE: We do NOT auto-unhide here — that's handled at the end of tickGame, respecting userHiddenCurrencies
-            const activeKeys = gameState.discoveredCurrencies;
-            for (const key of activeKeys) {
+            // Process all discovered currencies for gain
+            for (const key of gameState.discoveredCurrencies) {
                 const rate = calculateGainRate(key);
                 if (rate > 0) {
-                    if (!gameState.discoveredCurrencies.includes(key)) { 
-                        gameState.discoveredCurrencies.push(key);
-                        addCurrencyToOrder(key);
-                        needsNodeUpdate = true; 
-                    }
                     const old = gameState.currencies[key] || 0;
                     const newVal = old + rate * dt;
                     gameState.currencies[key] = newVal;
@@ -2439,6 +2488,17 @@ document.getElementById('font-size-label').textContent = currencyFontSize;
             }
         }
 
+        // ---- Save on visibility change ----
+        document.addEventListener('visibilitychange', () => {
+            if (document.visibilityState === 'hidden') {
+                saveGame();
+            }
+        });
+        // Also save immediately on load so quick refresh doesn't wipe
+        setTimeout(() => { saveGame(); }, 200);
+        // Save before unload too
+        window.addEventListener('beforeunload', () => saveGame());
+        
         // ---- Build maps ----
         const CURRENCY_EFFECT_INDEX = {};
         Object.keys(CURRENCIES).forEach(c => CURRENCY_EFFECT_INDEX[c] = []);
@@ -2473,7 +2533,7 @@ document.getElementById('font-size-label').textContent = currencyFontSize;
             if (rafId) cancelAnimationFrame(rafId);
             for (const sid in stepAnimations) { cancelAnimationFrame(stepAnimations[sid].rafId);
                 delete stepAnimations[sid]; }
-            saveGame();
+            // saveGame already called by the visibility handler and the 200ms timeout
         });
     </script>
 </body>
