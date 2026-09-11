@@ -429,7 +429,6 @@
             if (clearAll) {
                 // Full clear (on tick/reset) — includes resetGain and format
                 cache.resetGain.clear();
-                _resetGainCache = {};
                 _formatCache = {};
             }
             // These frame-level caches need clearing regardless
@@ -1512,8 +1511,7 @@
             return cost;
         }
 
-        let _resetGainCache = {};
-        let _resetGainFrame = {};
+        // Reset gain uses cache.resetGain only, cleared every tick
         // Build once, never nullified by clearCaches; also NO need to rebuild on buy.
         const _resetGainEffectsIndex = (() => {
             const idx = {};
@@ -1530,7 +1528,6 @@
             return idx;
         })();
         function getEffectiveResetGain(resetNode) {
-            if (_resetGainFrame[resetNode.id] === cacheDirtyFrame && _resetGainCache[resetNode.id] !== undefined) return _resetGainCache[resetNode.id];
             if (!cacheDirty && cache.resetGain.has(resetNode.id)) return cache.resetGain.get(resetNode.id);
             const base = resetNode.calculateGain(getLevel, getCurr) || 0;
             if (base <= 0) { 
@@ -1550,8 +1547,6 @@
             }
             const result = (base + add) * mult;
             cache.resetGain.set(resetNode.id, result);
-            _resetGainCache[resetNode.id] = result;
-            _resetGainFrame[resetNode.id] = cacheDirtyFrame;
             return result;
         }
 
@@ -2510,6 +2505,9 @@ document.getElementById('font-size-label').textContent = currencyFontSize;
         function tickGame(dtMs) {
             const dt = dtMs / 1000;
             if (gameState.paused) return;
+            // Force reset gain cache clear so reset nodes update every tick
+            cache.resetGain.clear();
+            
             let changed = false;
             // Always mark changed if any discovered currency has a negative rate (drain)
             for (const key of gameState.discoveredCurrencies) {
