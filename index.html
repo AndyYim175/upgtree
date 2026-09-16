@@ -14,9 +14,44 @@
     <style>
     #currency-bar-container {
     pointer-events: none;   /* let everything fall through to the canvas */
+    max-height: 90vh;
 }
 #currency-bar-container button {
     pointer-events: auto;   /* but keep the real buttons clickable */
+}
+#currency-bar {
+    max-height: calc(100vh - 98px);
+    overflow-y: auto;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255,255,255,0.15) transparent;
+    padding-right: 4px;
+    touch-action: pan-y;
+    /* enable pointer events so scrollbar is interactive */
+    pointer-events: auto;
+}
+#currency-bar::-webkit-scrollbar {
+    width: 4px;
+}
+#currency-bar::-webkit-scrollbar-track {
+    background: transparent;
+}
+#currency-bar::-webkit-scrollbar-thumb {
+    background: rgba(255,255,255,0.15);
+    border-radius: 0;
+}
+/* Items themselves: invisible to pointer events → clicks fall through to canvas */
+#currency-bar > * {
+    pointer-events: none !important;
+    cursor: default;
+}
+        /* Scroll-lock: when locked, bar doesn't intercept scroll events */
+#currency-bar.scroll-locked {
+    overflow-y: hidden;
+    pointer-events: none !important;
+}
+/* But the scroll-lock button itself is always clickable */
+#btn-scroll-lock {
+    pointer-events: auto !important;
 }
         .rainbow-text {
             background: linear-gradient(90deg, #ff0000, #ff7f00, #ffff00, #00ff00, #0000ff, #4b0082, #9400d3, #ff0000);
@@ -83,13 +118,16 @@
     </main>
     <!-- Bottom-left HUD -->
     <div id="currency-bar-container" class="z-30 fixed flex flex-col items-start gap-2 text-xs select-none drop-shadow-md" style="bottom: max(1.25rem, env(safe-area-inset-bottom, 1.25rem)); left: max(1.25rem, env(safe-area-inset-left, 1.25rem));">
-        <div id="currency-bar" class="flex flex-col gap-0.5 pointer-events-none"></div>
-        <div class="flex items-center gap-1.5 pointer-events-auto">
+        <div id="currency-bar" class="flex flex-col gap-0.5"></div>
+        <div class="flex items-center gap-1.5 pointer-events-auto flex-shrink-0">
             <button id="btn-sound" class="p-1.5 bg-zinc-900/90 hover:bg-zinc-800 text-zinc-300 border border-zinc-800 shadow-md transition flex items-center gap-1.5 text-[11px]">
                 <i id="sound-icon" data-lucide="volume-2" class="w-3.5 h-3.5 text-emerald-400"></i><span id="sound-label" class="text-zinc-400 font-mono text-[10px]">SFX: ON</span>
             </button>
             <button id="btn-pause" class="p-1.5 bg-zinc-900/90 hover:bg-zinc-800 text-zinc-300 border border-zinc-800 shadow-md transition flex items-center gap-1.5 text-[11px]">
                 <i id="pause-icon" data-lucide="pause" class="w-3.5 h-3.5 text-amber-400"></i><span id="pause-label" class="text-zinc-400 font-mono text-[10px]">Stop</span>
+            </button>
+            <button id="btn-scroll-lock" class="p-1.5 bg-zinc-900/90 hover:bg-zinc-800 text-zinc-300 border border-zinc-800 shadow-md transition flex items-center gap-1.5 text-[11px]" title="Toggle scroll lock on currency bar">
+                <i id="scroll-lock-icon" data-lucide="lock" class="w-3.5 h-3.5 text-cyan-400"></i><span id="scroll-lock-label" class="text-zinc-400 font-mono text-[10px]">Scroll: ON</span>
             </button>
         </div>
     </div>
@@ -226,7 +264,11 @@
             { type: 'rect', coords: [7.5, 17.5], width: 800, height: 800, fillColor: 'lightblue', fillOpacity: 0.5, strokeColor: 'lightblue', strokeOpacity: 0.9, strokeWidth: 2, requirements: ['A15'] },
             { type: 'rect', coords: [12.5, 17.5], width: 800, height: 800, fillColor: 'lightgreen', fillOpacity: 0.5, strokeColor: 'lightgreen', strokeOpacity: 0.9, strokeWidth: 2, requirements: ['A15'] },
             { type: 'rect', coords: [12.5, 12.5], width: 800, height: 800, fillColor: 'grey', fillOpacity: 0.5, strokeColor: 'grey', strokeOpacity: 0.9, strokeWidth: 2, requirements: ['M12'] },
+            { type: 'rect', coords: [12.5, 7.5], width: 800, height: 800, fillColor: '#676765', fillOpacity: 0.5, strokeColor: 'grey', strokeOpacity: 0.9, strokeWidth: 2, requirements: ['M40'] },
+            { type: 'rect', coords: [12.5, 2.5], width: 800, height: 800, fillColor: '#222222', fillOpacity: 0.5, strokeColor: 'grey', strokeOpacity: 0.9, strokeWidth: 2, requirements: ['M71'] },
+            { type: 'rect', coords: [12.5, -2.5], width: 800, height: 800, fillColor: 'white', fillOpacity: 0.5, strokeColor: 'grey', strokeOpacity: 0.9, strokeWidth: 2, requirements: ['M71'] },
             { type: 'rect', coords: [14.6, 19.6], width: 448, height: 448, fillColor: 'brown', fillOpacity: 0.5, strokeColor: 'brown', strokeOpacity: 0.9, strokeWidth: 2, requirements: ['M04'] },
+            { type: 'rect', coords: [12.6, 19.6], width: 288, height: 448, fillColor: 'purple', fillOpacity: 0.5, strokeColor: 'purple', strokeOpacity: 0.9, strokeWidth: 2, requirements: ['M04'] },
             { type: 'rect', coords: [-7.5, 17.5], width: 800, height: 800, fillColor: '#8B0000', fillOpacity: 0.5, strokeColor: '#8B0000', strokeOpacity: 0.9, strokeWidth: 2, requirements: ['A50'] },
             { type: 'rect', coords: [2.5, 17.5], width: 800, height: 800, fillColor: '#8B0000', fillOpacity: 0.5, strokeColor: '#8B0000', strokeOpacity: 0.9, strokeWidth: 2, requirements: ['AD23'] },
             { type: 'rect', coords: [-7.5, 12.5], width: 800, height: 800, fillColor: '#ffa500', fillOpacity: 0.5, strokeColor: '#ffa500', strokeOpacity: 0.9, strokeWidth: 2, requirements: ['A02'] },
@@ -276,6 +318,9 @@
             { type: 'text', coords: [7.5, 17.5], text: 'plate plate', alignment: 'Bottom-left', color: 'darkblue', fontSize: 28, opacity: 0.9, requirements: ['A15'] },
             { type: 'text', coords: [12.5, 17.5], text: 'Mining plate', alignment: 'Bottom-left', color: 'lightgreen', fontSize: 28, opacity: 0.9, requirements: ['AP19'] },
             { type: 'text', coords: [12.5, 12.5], text: 'Mining plate II', alignment: 'Bottom-left', color: 'lightgrey', fontSize: 28, opacity: 0.9, requirements: ['M12'] },
+            { type: 'text', coords: [12.5, 7.5], text: 'Mining plate III', alignment: 'Bottom-left', color: '#676765', fontSize: 28, opacity: 0.9, requirements: ['M40'] },
+            { type: 'text', coords: [12.5, 2.5], text: 'Mining plate IV', alignment: 'Bottom-left', color: '#222222', fontSize: 28, opacity: 0.9, requirements: ['M71'] },
+            { type: 'text', coords: [12.5, -2.5], text: 'Finale I', alignment: 'Bottom-left', color: 'white', fontSize: 28, opacity: 0.9, requirements: ['M71'] },
             { type: 'text', coords: [-7.5, 17.5], text: 'Dimension baseplate III', alignment: 'Bottom-left', color: '#8B0000', fontSize: 28, opacity: 0.9, requirements: ['A50'] },
             { type: 'text', coords: [-7.5, 12.5], text: 'Progression baseplate', alignment: 'Bottom-left', color: '#ffa500', fontSize: 28, opacity: 0.9, requirements: ['A12'] },
             { type: 'text', coords: [-2.5, 7.65], text: 'Reset all your progress again!', alignment: 'Bottom-left', color: 'lightyellow', fontSize: 15, opacity: 0.9, requirements: ['D16'] },
@@ -360,6 +405,8 @@
             gold: { id: 'gold', name: 'Gold', color: 'text-yellow-400', fillBg: 'rgba(250, 204, 21, 0.25)' },
             lapis: { id: 'lapis', name: 'Lapis', color: 'text-blue-600', fillBg: 'rgba(37, 99, 235, 0.25)' },
             diamonds: { id: 'diamonds', name: 'Diamonds', color: 'text-cyan-400', fillBg: 'rgba(34, 211, 238, 0.25)' },
+            netherite: { id: 'netherite', name: 'Netherite', color: 'text-[#433D40]', fillBg: 'rgba(67, 61, 64, 0.25)' },
+            fragment: { id: 'fragment', name: 'Fragment', color: 'text-white-100', fillBg: 'rgba(255, 255, 255, 0.25)' },
             DE: { id: 'DE', name: 'Dim-Essence', color: 'text-blue-100', fillBg: 'rgba(0,0,255,0.25)' },
             plates: { id: 'plates', name: 'Plates', color: 'text-blue-200', fillBg: 'rgba(0,0,230,0.25)' },
             S: { id: 'S', name: 'Progression score', color: 'text-[#ffa500]', fillBg: 'rgba(255,0,0,0.25)' }, 
@@ -397,7 +444,7 @@
         let uiUpdateThrottle = 0;
         
         const CURRENCY_UI_INTERVAL_MS = 100; // currency bar update interval (faster, cheaper now)
-        const CANVAS_UPDATE_INTERVAL_MS = 120; // canvas redraw interval
+        const CANVAS_UPDATE_INTERVAL_MS = 200; // canvas redraw interval (reduced from 120 to lower CPU)
         let currencyFontSize = 11;
         
         // ---- PERFORMANCE CACHES ----
@@ -411,6 +458,32 @@
         let cacheDirty = true;
         let cacheDirtyFrame = 0;
         let frameCounter = 0;
+        
+        // Persistent max-level mod index — built once, never rebuilt
+        let _maxLevelModEffectsBuilt = false;
+        function ensureMaxLevelModIndex() {
+            if (_maxLevelModEffectsBuilt) return;
+            _maxLevelModEffects = [];
+            TREE_NODES.forEach(other => {
+                if (other.type !== 'upgrade' || !other.effects) return;
+                other.effects.forEach(eff => {
+                    if (eff.type === 'max_level_mod') {
+                        _maxLevelModEffects.push({ nodeId: other.id, targets: Array.isArray(eff.target) ? eff.target : [eff.target], amount: eff.amount });
+                    }
+                });
+            });
+            _maxLevelModEffectsBuilt = true;
+        }
+        // Lightweight per-tick cache clear: just invalidates frame-level caches.
+        // _formatCache is NOT cleared every tick — only on purchase/reset via clearCaches(true).
+        function clearTickCaches() {
+            cacheDirty = true;
+            cacheDirtyFrame++;
+            _maxLevelCache = {};
+            _currencyRateCache = {};
+            _resetGainCache = {};
+            _displayCostCache = {};
+        }
         
         // Track previous currency values to avoid unnecessary redraws
         let prevCurrencySnapshot = {};
@@ -702,26 +775,109 @@
     { id: 'M18', type: 'upgrade', code: 'M18', name: 'sometimes, its not only stone', coords: [15, 17], reqs: [[14,17]], borderColor: 'green', desc: 'unlock ways to get other ores. also double stone', effects: [{ type: 'currency_mult', currency: 'stone', formula: (lvl) => 2 }], costCurrency: 'stone', costFormula: (lvl) => 1e4, maxLevel: 1 },
     { id: 'M19', type: 'upgrade', code: 'M19', name: 'copper', coords: [15, 16], reqs: [[15,17]], borderColor: 'orange', desc: '+1% chance per tick to get copper.', effects: [{ type: 'base_gain', currency: 'copper', formula: (lvl) => (Math.random()<=0.01*lvl) }], costCurrency: 'stone', costFormula: (lvl) => 2500*Math.pow(2,Math.pow(lvl,0.75)), maxLevel: 100 },
     { id: 'M20', type: 'upgrade', code: 'M20', name: 'equals stone?', coords: [16, 16], reqs: [[15,16]], borderColor: 'orange', desc: 'get +25% stone per second/lvl', effects: [{ type: 'currency_mult', currency: 'stone', formula: (lvl) => 1+0.25*lvl }], costCurrency: 'copper', costFormula: (lvl) => 0.5*Math.pow(2,Math.pow(lvl,0.7)), maxLevel: 36 },
-    { id: 'M21', type: 'upgrade', code: 'M21', name: 'number between 2 and 3', coords: [16, 17], reqs: [[16,16]], borderColor: 'green', desc: 'x2.5 copper per/lvl', effects: [{ type: 'currency_mult', currency: 'copper', formula: (lvl) => Math.pow(2.5,lvl) }], costCurrency: 'copper', costFormula: (lvl) => 2.5*Math.pow(8*Math.pow(1.25,lvl),lvl), maxLevel: 15 },
+    { id: 'M21', type: 'upgrade', code: 'M21', name: 'number between 2 and 3', coords: [16, 17], reqs: [[16,16]], borderColor: 'green', desc: 'x2.5 copper per/lvl', effects: [{ type: 'currency_mult', currency: 'copper', formula: (lvl) => Math.pow(2.5,lvl) }], costCurrency: 'copper', costFormula: (lvl) => 2.5*Math.pow(8*Math.pow(1.25,lvl),lvl), maxLevel: 5 },
     { id: 'M22', type: 'upgrade', code: 'M22', name: 'both!', coords: [15, 21], reqs: [[13,16],[15,20]], borderColor: 'green', desc: 'triple stone mining efficiency', effects: [{ type: 'currency_mult', currency: 'stone', formula: (lvl) => 3 }], costCurrency: 'stone', costFormula: (lvl) => 256000, maxLevel: 1 },
     { id: 'M23', type: 'upgrade', code: 'M23', name: 'its fine, forgive him when he dont get copper in a tick :D', coords: [17, 17], reqs: [[16,17]], borderColor: 'green', desc: '+0.05 base copper per/lvl', effects: [{ type: 'base_gain', currency: 'copper', formula: (lvl) => 0.05*lvl }], costCurrency: 'copper', costFormula: (lvl) => 5*Math.pow(1.5,lvl), maxLevel: 20 },
     { id: 'M24', type: 'upgrade', code: 'M24', name: 'thanks.', coords: [16, 21], reqs: [[13,16],[16,20]], borderColor: 'red', desc: 'M07 now does not reduce grass.', effects: [], costCurrency: 'stone', costFormula: (lvl) => 3e6, maxLevel: 1 },
     { id: 'M25', type: 'upgrade', code: 'M25', name: 'you are important!', coords: [16, 15], reqs: [[16,16]], borderColor: 'orange', desc: 'x1.2 stone per second/lvl', effects: [{ type: 'currency_mult', currency: 'stone', formula: (lvl) => Math.pow(1.2,lvl) }], costCurrency: 'copper', costFormula: (lvl) => 0.25*Math.pow(2,Math.pow(lvl,0.8)), maxLevel: 10 },
     { id: 'M26', type: 'upgrade', code: 'M26', name: 'silver', coords: [15, 15], reqs: [[15,16]], borderColor: 'green', desc: '+0.25% chance per tick to get silver.', effects: [{ type: 'base_gain', currency: 'silver', formula: (lvl) => (Math.random()<=0.0025*lvl) }], costCurrency: 'stone', costFormula: (lvl) => 5e5*Math.pow(2,Math.pow(lvl,0.35)), maxLevel: 400 },
-    { id: 'M27', type: 'upgrade', code: 'M27', name: 'copper+', coords: [15, 14], reqs: [[15,15]], borderColor: 'orange', desc: 'x1.5 copper per level.', effects: [{ type: 'currency_mult', currency: 'copper', formula: (lvl) => Math.pow(1.5,lvl) }], costCurrency: 'silver', costFormula: (lvl) => 0.01*Math.pow(2*Math.pow(1.2,lvl),lvl), maxLevel: 15 },
-    { id: 'M28', type: 'upgrade', code: 'M28', name: 'stone+', coords: [14, 15], reqs: [[15,15]], borderColor: 'orange', desc: 'x1.25 stone per level.', effects: [{ type: 'currency_mult', currency: 'stone', formula: (lvl) => Math.pow(1.25,lvl) }], costCurrency: 'silver', costFormula: (lvl) => 0.03*Math.pow(5*Math.pow(1.3,lvl),lvl), maxLevel: 15 },
-    { id: 'M29', type: 'upgrade', code: 'M29', name: 'the classic in tmt :D', coords: [17, 16], reqs: [[16,16]], borderColor: 'orange', desc: 'get +1x stone per second/lvl ^0.5d', effects: [{ type: 'currency_mult', currency: 'stone', formula: (lvl) => Math.pow(1+lvl,0.5) }], costCurrency: 'copper', costFormula: (lvl) => 125*Math.pow(1.5,Math.pow(lvl,0.55)), maxLevel: 2500 },
-    { id: 'M30', type: 'upgrade', code: 'M30', name: 'thank to everyone.', coords: [14, 14], reqs: [[15,14],[14,15]], borderColor: 'orange', desc: 'x5 grass per level.', effects: [{ type: 'currency_mult', currency: 'grass', formula: (lvl) => Math.pow(5,lvl) }], costCurrency: 'silver', costFormula: (lvl) => 0.25*Math.pow(2.5*Math.pow(1.25,lvl),lvl), maxLevel: 15 },
+    { id: 'M27', type: 'upgrade', code: 'M27', name: 'copper+', coords: [15, 14], reqs: [[15,15]], borderColor: 'orange', desc: 'x1.5 copper per level.', effects: [{ type: 'currency_mult', currency: 'copper', formula: (lvl) => Math.pow(1.5,lvl) }], costCurrency: 'silver', costFormula: (lvl) => 0.01*Math.pow(2*Math.pow(1.2,lvl),lvl), maxLevel: 10 },
+    { id: 'M28', type: 'upgrade', code: 'M28', name: 'stone+', coords: [14, 15], reqs: [[15,15]], borderColor: 'orange', desc: 'x1.25 stone per level.', effects: [{ type: 'currency_mult', currency: 'stone', formula: (lvl) => Math.pow(1.25,lvl) }], costCurrency: 'silver', costFormula: (lvl) => 0.03*Math.pow(5*Math.pow(1.3,lvl),lvl), maxLevel: 10 },
+    { id: 'M29', type: 'upgrade', code: 'M29', name: 'the classic in tmt :D', coords: [17, 16], reqs: [[16,16]], borderColor: 'orange', desc: 'get +1x stone per second/lvl ^0.5d', effects: [{ type: 'currency_mult', currency: 'stone', formula: (lvl) => Math.pow(1+lvl,0.5) }], costCurrency: 'copper', costFormula: (lvl) => 125*Math.pow(1.5,Math.pow(lvl,0.55)), maxLevel: 200 },
+    { id: 'M30', type: 'upgrade', code: 'M30', name: 'thank to everyone.', coords: [14, 14], reqs: [[15,14],[14,15]], borderColor: 'orange', desc: 'x5 grass per level.', effects: [{ type: 'currency_mult', currency: 'grass', formula: (lvl) => Math.pow(5,lvl) }], costCurrency: 'silver', costFormula: (lvl) => 0.25*Math.pow(2.5*Math.pow(1.25,lvl),lvl), maxLevel: 8 },
     { id: 'M31', type: 'upgrade', code: 'M31', name: 'self', coords: [16, 14], reqs: [[15,14]], borderColor: 'orange', desc: 'silver boost self.', effects: [{ type: 'currency_mult', currency: 'silver', formula: (lvl) => Math.pow(getCurr('silver')*5+1,0.25) }], costCurrency: 'silver', costFormula: (lvl) => 3, maxLevel: 1 },
-    { id: 'M32', type: 'upgrade', code: 'M32', name: 'gold', coords: [17, 14], reqs: [[16,14]], borderColor: 'green', desc: '+0.1% chance per tick to get gold.', effects: [{ type: 'base_gain', currency: 'gold', formula: (lvl) => (Math.random()<=0.001*lvl) }], costCurrency: 'stone', costFormula: (lvl) => 2e7*Math.pow(2,Math.pow(lvl,0.25)), maxLevel: 750 },
-    { id: 'M33', type: 'upgrade', code: 'M33', name: 'gold extra chance', coords: [17, 15], reqs: [[17,14]], borderColor: 'green', desc: '+0.1% chance per tick to get gold.', effects: [{ type: 'base_gain', currency: 'gold', formula: (lvl) => (Math.random()<=0.001*lvl) }], costCurrency: 'gold', costFormula: (lvl) => 0.1*Math.pow(1.8,Math.pow(lvl,0.3)), maxLevel: 250 },
+    { id: 'M32', type: 'upgrade', code: 'M32', name: 'gold', coords: [17, 14], reqs: [[16,14]], borderColor: 'green', desc: '+0.1% chance per tick to get gold.', effects: [{ type: 'base_gain', currency: 'gold', formula: (lvl) => (Math.random()<=0.001*lvl) }], costCurrency: 'stone', costFormula: (lvl) => 2e7*Math.pow(2,Math.pow(lvl,0.25)), maxLevel: 1000 },
+    { id: 'M33', type: 'upgrade', code: 'M33', name: 'gold extra chance', coords: [17, 15], reqs: [[17,14]], borderColor: 'green', desc: '+0.1% chance per tick to get gold.', effects: [{ type: 'base_gain', currency: 'gold', formula: (lvl) => (Math.random()<=0.001*lvl) }], costCurrency: 'gold', costFormula: (lvl) => 0.1*Math.pow(1.8,Math.pow(lvl,0.3)), maxLevel: 1000 },
     { id: 'M34', type: 'upgrade', code: 'M34', name: 'silver auto', coords: [17, 13], reqs: [[17,14]], borderColor: 'green', desc: '+0.1 base silver/s/lvl.', effects: [{ type: 'base_gain', currency: 'silver', formula: (lvl) => 0.1*lvl }], costCurrency: 'gold', costFormula: (lvl) => 0.05*Math.pow(2,Math.pow(lvl,0.5)), maxLevel: 100 },
     { id: 'M35', type: 'upgrade', code: 'M35', name: 'gold gain mult', coords: [16, 13], reqs: [[17,13]], borderColor: 'green', desc: '+25% base gold/s/lvl.', effects: [{ type: 'currency_mult', currency: 'gold', formula: (lvl) => 1+0.25*lvl }], costCurrency: 'copper', costFormula: (lvl) => 2.5e4*Math.pow(2,Math.pow(lvl+4,0.5)-2), maxLevel: 100 },
     { id: 'M36', type: 'upgrade', code: 'M36', name: 'with it i have another idea', coords: [15, 13], reqs: [[16,13]], borderColor: 'green', desc: 'new crafting recipes', effects: [], costCurrency: 'gold', costFormula: (lvl) => 1, maxLevel: 1 },
     { id: 'M37', type: 'upgrade', code: 'M37', name: 'better equipment', coords: [15, 22], reqs: [[15,13],[15,21]], borderColor: 'green', desc: 'double copper/silver/gold mining efficiency', effects: [{ type: 'currency_mult', currency: 'copper', formula: (lvl) => 2 },{ type: 'currency_mult', currency: 'silver', formula: (lvl) => 2 },{ type: 'currency_mult', currency: 'gold', formula: (lvl) => 2 }], costCurrency: 'stone', costFormula: (lvl) => 1e9, maxLevel: 1 },
     { id: 'M38', type: 'upgrade', code: 'M38', name: 'gold tools', coords: [16, 22], reqs: [[15,13],[16,21]], borderColor: 'green', desc: 'triple stone mining efficiency', effects: [{ type: 'currency_mult', currency: 'stone', formula: (lvl) => 3 }], costCurrency: 'gold', costFormula: (lvl) => 5, maxLevel: 1 },
-    { id: 'M39', type: 'upgrade', code: 'M39', name: 'thank to all.', coords: [14, 13], reqs: [[15,13]], borderColor: 'orange', desc: 'x1.5 stone per level.', effects: [{ type: 'currency_mult', currency: 'stone', formula: (lvl) => Math.pow(1.5,lvl) }], costCurrency: 'gold', costFormula: (lvl) => 3*Math.pow(3*Math.pow(1.5,lvl),lvl), maxLevel: 10 },
-    { id: 'M40', type: 'upgrade', code: 'M40', name: ':o', coords: [13, 13], reqs: [[14,13]], borderColor: 'green', desc: 'extra content. [wip]', effects: [], costCurrency: 'gold', costFormula: (lvl) => 25, maxLevel: 1 },
+    { id: 'M39', type: 'upgrade', code: 'M39', name: 'thank to all.', coords: [14, 13], reqs: [[15,13]], borderColor: 'orange', desc: 'x1.5 stone per level.', effects: [{ type: 'currency_mult', currency: 'stone', formula: (lvl) => Math.pow(1.5,lvl) }], costCurrency: 'gold', costFormula: (lvl) => 3*Math.pow(3*Math.pow(1.5,lvl),lvl), maxLevel: 7 },
+    { id: 'M40', type: 'upgrade', code: 'M40', name: ':o', coords: [13, 13], reqs: [[14,13]], borderColor: 'green', desc: 'extra content.', effects: [], costCurrency: 'gold', costFormula: (lvl) => 25, maxLevel: 1 },
+    { id: 'M41', type: 'upgrade', code: 'M41', name: 'its nice', coords: [13, 14], reqs: [[13,13]], borderColor: 'green', desc: 'double gold per level.', effects: [{ type: 'currency_mult', currency: 'gold', formula: (lvl) => Math.pow(2,lvl) }], costCurrency: 'gold', costFormula: (lvl) => 250*Math.pow(10,lvl), maxLevel: 8 },
+    { id: 'M42', type: 'upgrade', code: 'M42', name: 'unlock something.', coords: [13, 15], reqs: [[13,14]], borderColor: 'green', desc: 'unlock something at grass level. also double gold', effects: [{ type: 'currency_mult', currency: 'gold', formula: (lvl) => Math.pow(2,lvl) }], costCurrency: 'gold', costFormula: (lvl) => 125000*Math.pow(10,lvl), maxLevel: 1 },
+    { id: 'M43', type: 'upgrade', code: 'M43', name: 'DIAMONDS DIAMONDS DIAMONDS', coords: [13, 12], reqs: [[14,13]], borderColor: 'green', desc: 'get... diamonds?', effects: [{ type: 'base_gain', currency: 'lapis', formula: (lvl) => (Math.random()<=0.01*lvl) }], costCurrency: 'gold', costFormula: (lvl) => 100*Math.pow(2,Math.pow(lvl,0.7)), maxLevel: 100 },
+    { id: 'M44', type: 'upgrade', code: 'M44', name: 'thats lapis', coords: [13, 11], reqs: [[13,12]], borderColor: 'green', desc: 'unlock enchants. (grass level)', effects: [], costCurrency: 'lapis', costFormula: (lvl) => 0.25, maxLevel: 1 },
+    { id: 'M45', type: 'upgrade', code: 'M45', name: 'efficiency', coords: [13, 20], reqs: [[13,11]], borderColor: 'green', desc: '+15% grass/dirt/stone/ copper/silver/ gold/lapis per level', effects: [{ type: 'currency_mult', currency: 'grass', formula: (lvl) => 1+0.15*lvl },{ type: 'currency_mult', currency: 'dirt', formula: (lvl) => 1+0.15*lvl },{ type: 'currency_mult', currency: 'stone', formula: (lvl) => 1+0.15*lvl },{ type: 'currency_mult', currency: 'copper', formula: (lvl) => 1+0.15*lvl },{ type: 'currency_mult', currency: 'silver', formula: (lvl) => 1+0.15*lvl },{ type: 'currency_mult', currency: 'gold', formula: (lvl) => 1+0.15*lvl },{ type: 'currency_mult', currency: 'lapis', formula: (lvl) => 1+0.15*lvl },], costCurrency: 'lapis', costFormula: (lvl) => 10*Math.pow(5,lvl), maxLevel: 5 },
+    { id: 'M46', type: 'upgrade', code: 'M46', name: 'now thats diamond.', coords: [13, 10], reqs: [[13,11]], borderColor: 'green', desc: '+0.01% chnace to get diamonds per tick', effects: [{ type: 'base_gain', currency: 'diamonds', formula: (lvl) => (Math.random()<=0.0001*lvl*(1+getLevel('M55'))) }], costCurrency: 'lapis', costFormula: (lvl) => 0.25*Math.pow(10,Math.pow(lvl,0.35)), maxLevel: 1000 },
+    { id: 'M47', type: 'upgrade', code: 'M47', name: 'i found peace.', coords: [14, 11], reqs: [[13,11]], borderColor: 'green', desc: '+5 gold/s uneffected by multipliers per second per level', effects: [{ type: 'base_gain_raw', currency: 'gold', formula: (lvl) => 5*lvl }], costCurrency: 'lapis', costFormula: (lvl) => 1*Math.pow(1.5, Math.pow(lvl, 0.8)), maxLevel: 125 },
+    { id: 'M48', type: 'upgrade', code: 'M48', name: 'peace', coords: [14, 12], reqs: [[14,11]], borderColor: 'orange', desc: 'x2^(lvl^0.5) lapis', effects: [{ type: 'currency_mult', currency: 'lapis', formula: (lvl) => Math.pow(2, Math.pow(lvl,0.5)) }], costCurrency: 'lapis', costFormula: (lvl) => 2*Math.pow(2, Math.pow(lvl,0.8)), maxLevel: 100 },
+    { id: 'M49', type: 'upgrade', code: 'M49', name: 'gold gets better', coords: [15, 12], reqs: [[14,11]], borderColor: 'orange', desc: 'x1.25^(lvl^0.5) gold', effects: [{ type: 'currency_mult', currency: 'gold', formula: (lvl) => Math.pow(1.25, Math.pow(lvl,0.5)) }], costCurrency: 'lapis', costFormula: (lvl) => 3*Math.pow(1.125, lvl), maxLevel: 125 },
+    { id: 'M50', type: 'upgrade', code: 'M50', name: 'thats a concerning amount of grass you have there', coords: [16, 12], reqs: [[15,12]], borderColor: 'orange', desc: 'x1.5^(lvl^0.5) lapis', effects: [{ type: 'currency_mult', currency: 'lapis', formula: (lvl) => Math.pow(1.5, Math.pow(lvl,0.5)) }], costCurrency: 'grass', costFormula: (lvl) => 1e15*Math.pow(10, lvl), maxLevel: 25 },
+    { id: 'M51', type: 'upgrade', code: 'M51', name: 'read the desc.', coords: [15, 11], reqs: [[13,11]], borderColor: 'green', desc: '+5 gold/s effected by multipliers per second per level', effects: [{ type: 'base_gain', currency: 'gold', formula: (lvl) => 5*lvl }], costCurrency: 'lapis', costFormula: (lvl) => 25*Math.pow(2.5, Math.pow(lvl, 0.8)), maxLevel: 25 },
+    { id: 'M52', type: 'upgrade', code: 'M52', name: 'lucky!!', coords: [13, 9], reqs: [[13,10]], borderColor: 'green', desc: 'triple lapis', effects: [{ type: 'currency_mult', currency: 'lapis', formula: (lvl) => 3 }], costCurrency: 'diamonds', costFormula: (lvl) => 0.01, maxLevel: 1 },
+    { id: 'M53', type: 'upgrade', code: 'M53', name: 'gold mine mine gold mine gold', coords: [17, 22], reqs: [[13,15],[16,22]], borderColor: 'green', desc: 'triple gold mining efficiency', effects: [{ type: 'currency_mult', currency: 'gold', formula: (lvl) => 3 }], costCurrency: 'gold', costFormula: (lvl) => 5e4, maxLevel: 1 },
+    { id: 'M54', type: 'upgrade', code: 'M54', name: 'lapis mult', coords: [14, 9], reqs: [[13,10]], borderColor: 'orange', desc: 'gain a 5% chance per level to 25x lapis that tick', effects: [{ type: 'currency_mult', currency: 'lapis', formula: (lvl) => 1+24*(Math.random()<=0.05*lvl) }], costCurrency: 'diamonds', costFormula: (lvl) => 0.05*Math.pow(2,Math.pow(lvl, 0.9)), maxLevel: 20 },
+    { id: 'M55', type: 'upgrade', code: 'M55', name: 'differeny y levels', coords: [13, 8], reqs: [[13,9]], borderColor: 'orange', desc: '+100% diamond gain chance per level', effects: [], costCurrency: 'diamonds', costFormula: (lvl) => 0.2*Math.pow(2+lvl,Math.pow(lvl, 0.9)), maxLevel: 9 },
+    { id: 'M56', type: 'upgrade', code: 'M56', name: 'cycles', coords: [14, 10], reqs: [[13,10]], borderColor: 'orange', desc: '100x grass per level', effects: [{ type: 'currency_mult', currency: 'grass', formula: (lvl) => Math.pow(100,lvl) }], costCurrency: 'diamonds', costFormula: (lvl) => 0.5*Math.pow(5,Math.pow(lvl, 0.7)), maxLevel: 5 },
+    { id: 'M57', type: 'upgrade', code: 'M57', name: 'efficiency II', coords: [14, 20], reqs: [[13,11]], borderColor: 'green', desc: '+25% grass/dirt/stone/ copper/silver/ gold/lapis per level', effects: [{ type: 'currency_mult', currency: 'grass', formula: (lvl) => 1+0.25*lvl },{ type: 'currency_mult', currency: 'dirt', formula: (lvl) => 1+0.25*lvl },{ type: 'currency_mult', currency: 'stone', formula: (lvl) => 1+0.25*lvl },{ type: 'currency_mult', currency: 'copper', formula: (lvl) => 1+0.25*lvl },{ type: 'currency_mult', currency: 'silver', formula: (lvl) => 1+0.25*lvl },{ type: 'currency_mult', currency: 'gold', formula: (lvl) => 1+0.25*lvl },{ type: 'currency_mult', currency: 'lapis', formula: (lvl) => 1+0.25*lvl },], costCurrency: 'lapis', costFormula: (lvl) => 1e5*Math.pow(3,lvl), maxLevel: 5 },
+    { id: 'M58', type: 'upgrade', code: 'M58', name: 'main!', coords: [13, 21], reqs: [[13,11]], borderColor: 'green', desc: 'x10 points per level', effects: [{ type: 'currency_mult', currency: 'P', formula: (lvl) => Math.pow(10,lvl) }], costCurrency: 'lapis', costFormula: (lvl) => 1e3*Math.pow(5,lvl), maxLevel: 10 },
+    { id: 'M59', type: 'upgrade', code: 'M59', name: 'madness', coords: [14, 8], reqs: [[14,9]], borderColor: 'orange', desc: 'almost there... triple lapis', effects: [{ type: 'currency_mult', currency: 'lapis', formula: (lvl) => Math.pow(3,lvl) }], costCurrency: 'diamonds', costFormula: (lvl) => 2*Math.pow(5,Math.pow(lvl, 0.7)), maxLevel: 1 },
+    { id: 'M60', type: 'upgrade', code: 'M60', name: 'back on track', coords: [15, 8], reqs: [[14,8]], borderColor: 'orange', desc: 'almost there... x4 lapis', effects: [{ type: 'currency_mult', currency: 'lapis', formula: (lvl) => Math.pow(4,lvl) }], costCurrency: 'diamonds', costFormula: (lvl) => 3*Math.pow(5,Math.pow(lvl, 0.7)), maxLevel: 1 },
+    { id: 'M61', type: 'upgrade', code: 'M61', name: 'oh yes this one', coords: [15, 9], reqs: [[15,8]], borderColor: 'orange', desc: 'x5 diamonds', effects: [{ type: 'currency_mult', currency: 'diamonds', formula: (lvl) => Math.pow(5,lvl) }], costCurrency: 'diamonds', costFormula: (lvl) => 4*Math.pow(5,Math.pow(lvl, 0.7)), maxLevel: 1 },
+    { id: 'M62', type: 'upgrade', code: 'M62', name: 'one more inflation', coords: [15, 10], reqs: [[15,9]], borderColor: 'orange', desc: 'lapis boost diamonds', effects: [{ type: 'currency_mult', currency: 'diamonds', formula: (lvl) => Math.pow(getCurr('lapis')/1e5+1,0.15) }], costCurrency: 'diamonds', costFormula: (lvl) => 12*Math.pow(5,Math.pow(lvl, 0.7)), maxLevel: 1 },
+    { id: 'M63', type: 'upgrade', code: 'M63', name: 'ok this is placed randomly', coords: [16, 10], reqs: [[15,10]], borderColor: 'orange', desc: 'x1.23 diamonds', effects: [{ type: 'currency_mult', currency: 'diamonds', formula: (lvl) => Math.pow(1.23,lvl) }], costCurrency: 'diamonds', costFormula: (lvl) => 16*Math.pow(3,Math.pow(lvl, 0.7)), maxLevel: 5 },
+    { id: 'M64', type: 'upgrade', code: 'M64', name: 'pos switching', coords: [16, 9], reqs: [[16,10]], borderColor: 'orange', desc: 'x12.3 lapis', effects: [{ type: 'currency_mult', currency: 'lapis', formula: (lvl) => Math.pow(12.3,lvl) }], costCurrency: 'diamonds', costFormula: (lvl) => 32*Math.pow(3,Math.pow(lvl, 0.7)), maxLevel: 1 },
+    { id: 'M65', type: 'upgrade', code: 'M65', name: 'pos switching again', coords: [16, 8], reqs: [[16,9]], borderColor: 'orange', desc: 'x123 stone', effects: [{ type: 'currency_mult', currency: 'stone', formula: (lvl) => Math.pow(123,lvl) }], costCurrency: 'diamonds', costFormula: (lvl) => 64*Math.pow(3,Math.pow(lvl, 0.7)), maxLevel: 1 },
+    { id: 'M66', type: 'upgrade', code: 'M66', name: 'go', coords: [16, 11], reqs: [[16,10]], borderColor: 'orange', desc: 'x7 lapis per level', effects: [{ type: 'currency_mult', currency: 'lapis', formula: (lvl) => Math.pow(7,lvl) }], costCurrency: 'diamonds', costFormula: (lvl) => 128*Math.pow(2,Math.pow(lvl, 1)), maxLevel: 3 },
+    { id: 'M67', type: 'upgrade', code: 'M67', name: 'haha very funny', coords: [17, 11], reqs: [[16,11]], borderColor: 'orange', desc: 'x6.7 gold', effects: [{ type: 'currency_mult', currency: 'gold', formula: (lvl) => Math.pow(6.7,lvl) }], costCurrency: 'diamonds', costFormula: (lvl) => 512*Math.pow(2,Math.pow(lvl, 1)), maxLevel: 1 },
+    { id: 'M68', type: 'upgrade', code: 'M68', name: 'alternate boosting', coords: [17, 12], reqs: [[17,11]], borderColor: 'orange', desc: 'additional x2 diamonds odd/ else x2 lapis', effects: [{ type: 'currency_mult', currency: 'diamonds', formula: (lvl) => Math.pow(2,Math.floor((1+lvl)/2)) },{ type: 'currency_mult', currency: 'lapis', formula: (lvl) => Math.pow(2,Math.floor((lvl)/2)) }], costCurrency: 'diamonds', costFormula: (lvl) => 512*Math.pow(2,Math.pow(lvl, 1.25)), maxLevel: 10 },
+    { id: 'M69', type: 'upgrade', code: 'M69', name: 'num boosting', coords: [17, 10], reqs: [[17,11]], borderColor: 'orange', desc: 'additional x1.5 diamonds odd/ else x1.2 diamonds', effects: [{ type: 'currency_mult', currency: 'diamonds', formula: (lvl) => Math.pow(1.5,Math.floor((1+lvl)/2)) },{ type: 'currency_mult', currency: 'diamonds', formula: (lvl) => Math.pow(1.2,Math.floor((lvl)/2)) }], costCurrency: 'diamonds', costFormula: (lvl) => 8192*Math.pow(2,Math.pow(lvl, 1.25)), maxLevel: 10 },
+    { id: 'M70', type: 'upgrade', code: 'M70', name: 'three loop', coords: [17, 9], reqs: [[17,10]], borderColor: 'orange', desc: 'additional x1.1 diamonds mod3=1/ else x1.2mod3=2 / else x1.3mod3=0', effects: [{ type: 'currency_mult', currency: 'diamonds', formula: (lvl) => Math.pow(1.1,Math.floor((2+lvl)/3)) },{ type: 'currency_mult', currency: 'diamonds', formula: (lvl) => Math.pow(1.2,Math.floor((1+lvl)/3)) },{ type: 'currency_mult', currency: 'diamonds', formula: (lvl) => Math.pow(1.3,Math.floor((lvl)/3)) }], costCurrency: 'diamonds', costFormula: (lvl) => 25e3*Math.pow(1.8,Math.pow(lvl, 1.25)), maxLevel: 10 },
+    { id: 'M71', type: 'upgrade', code: 'M71', name: 'last descent.', coords: [17, 8], reqs: [[17,9]], borderColor: 'green', desc: 'unlock the last part of the mining series.', effects: [], costCurrency: 'diamonds', costFormula: (lvl) => 1e6*Math.pow(1.8,Math.pow(lvl, 1.25)), maxLevel: 1 },
+    { id: 'M72', type: 'upgrade', code: 'M72', name: 'ok fine its not random.', coords: [17, 7], reqs: [[17,8]], borderColor: 'green', desc: 'get netherite.', effects: [{ type: 'base_gain', currency: 'netherite', formula: (lvl) => 1*lvl }], costCurrency: 'diamonds', costFormula: (lvl) => 5e5*Math.pow(1.8,Math.pow(lvl, 1.25)), maxLevel: 1 },
+    { id: 'M73', type: 'upgrade', code: 'M73', name: 'finally someting automatic.', coords: [16, 7], reqs: [[17,7]], borderColor: 'green', desc: 'unlock netherite milestones.', effects: [{ type: 'automation', target: 'M74'},{ type: 'automation', target: 'M75'},{ type: 'automation', target: 'M76'}], costCurrency: 'netherite', costFormula: (lvl) => 10, maxLevel: 1 },
+    { id: 'M74', type: 'upgrade', code: 'M74', name: 'milestone I.', coords: [15, 7], reqs: [[16,7]], borderColor: 'green', desc: 'get +1 netherite/s.', effects: [{ type: 'base_gain', currency: 'netherite', formula: (lvl) => 1*lvl }], costCurrency: 'netherite', costFormula: (lvl) => 25*Math.pow(10,Math.pow(lvl+9, 0.5)-3), maxLevel: 100 },
+    { id: 'M75', type: 'upgrade', code: 'M75', name: 'milestone II.', coords: [14, 7], reqs: [[16,7]], borderColor: 'orange', desc: 'get +1x netherite/s.', effects: [{ type: 'currency_mult', currency: 'netherite', formula: (lvl) => 1+lvl }], costCurrency: 'netherite', costFormula: (lvl) => 1e4*Math.pow(10,Math.pow(lvl+4, 0.5)-2), maxLevel: 100 },
+    { id: 'M76', type: 'upgrade', code: 'M76', name: 'milestone III.', coords: [13, 7], reqs: [[16,7]], borderColor: 'orange', desc: 'get x2 netherite/s.', effects: [{ type: 'currency_mult', currency: 'netherite', formula: (lvl) => Math.pow(2,lvl) }], costCurrency: 'netherite', costFormula: (lvl) => 1e9*Math.pow(10*Math.pow(1.2,lvl),lvl), maxLevel: 20 },
+    { id: 'M77', type: 'upgrade', code: 'M77', name: 'upgrade.', coords: [17, 6], reqs: [[17,7]], borderColor: 'green', desc: 'get +25% netherite/s/lvl.', effects: [{ type: 'currency_mult', currency: 'netherite', formula: (lvl) => 1+0.25*lvl }], costCurrency: 'diamonds', costFormula: (lvl) => 5e5*Math.pow(10,Math.pow(lvl+9, 0.5)-3), maxLevel: 100 },
+    { id: 'M78', type: 'upgrade', code: 'M78', name: 'upgrade^-1.', coords: [16, 6], reqs: [[17,6]], borderColor: 'green', desc: 'get +25% diamonds/s/lvl.', effects: [{ type: 'currency_mult', currency: 'diamonds', formula: (lvl) => 1+0.25*lvl }], costCurrency: 'netherite', costFormula: (lvl) => 25*Math.pow(10,Math.pow(lvl+9, 0.5)-3), maxLevel: 100 },
+    { id: 'M79', type: 'upgrade', code: 'M79', name: 'its been a long time without a boost to this.', coords: [17, 5], reqs: [[17,6]], borderColor: 'green', desc: 'get +500% energy/s/lvl.', effects: [{ type: 'currency_mult', currency: 'E', formula: (lvl) => 1+5*lvl }], costCurrency: 'netherite', costFormula: (lvl) => 1e3*Math.pow(10,Math.pow(lvl+9, 0.5)-3), maxLevel: 100 },
+    { id: 'M80', type: 'upgrade', code: 'M80', name: 'self.', coords: [15, 6], reqs: [[16,6]], borderColor: 'green', desc: 'netherite boost self.', effects: [{ type: 'currency_mult', currency: 'netherite', formula: (lvl) => Math.pow(getCurr('netherite')+1,0.125) }], costCurrency: 'netherite', costFormula: (lvl) => 250, maxLevel: 1 },
+    { id: 'M81', type: 'upgrade', code: 'M81', name: 'again.', coords: [14, 6], reqs: [[15,6]], borderColor: 'green', desc: 'netherite boost self.', effects: [{ type: 'currency_mult', currency: 'netherite', formula: (lvl) => Math.pow(getCurr('netherite')+1,0.125) }], costCurrency: 'netherite', costFormula: (lvl) => 2500, maxLevel: 1 },
+    { id: 'M82', type: 'upgrade', code: 'M82', name: 'repeat.', coords: [13, 6], reqs: [[14,6]], borderColor: 'green', desc: 'netherite boost self.', effects: [{ type: 'currency_mult', currency: 'netherite', formula: (lvl) => Math.pow(getCurr('netherite')+1,0.125) }], costCurrency: 'netherite', costFormula: (lvl) => 2e6, maxLevel: 1 },
+    { id: 'M83', type: 'upgrade', code: 'M83', name: 'economy', coords: [16, 5], reqs: [[16,7]], borderColor: 'green', desc: 'diamonds boost self.', effects: [{ type: 'currency_mult', currency: 'diamonds', formula: (lvl) => Math.pow(getCurr('diamonds')/1e5+1,0.1) }], costCurrency: 'netherite', costFormula: (lvl) => 5e8, maxLevel: 1 },
+    { id: 'M84', type: 'upgrade', code: 'M84', name: 'nether', coords: [15, 5], reqs: [[16,5]], borderColor: 'green', desc: 'diamonds boost self again and stronger.', effects: [{ type: 'currency_mult', currency: 'diamonds', formula: (lvl) => Math.pow(getCurr('diamonds')/1e5+1,0.125) }], costCurrency: 'netherite', costFormula: (lvl) => 5e9, maxLevel: 1 },
+    { id: 'M85', type: 'upgrade', code: 'M85', name: 'ok last one', coords: [14, 5], reqs: [[15,5]], borderColor: 'green', desc: 'diamonds boost self again and stronger.', effects: [{ type: 'currency_mult', currency: 'diamonds', formula: (lvl) => Math.pow(getCurr('diamonds')/1e5+1,0.15) }], costCurrency: 'netherite', costFormula: (lvl) => 5e10, maxLevel: 1 },
+    { id: 'M86', type: 'upgrade', code: 'M86', name: 'new', coords: [14, 4], reqs: [[14,5]], borderColor: 'green', desc: 'triple diamonds.', effects: [{ type: 'currency_mult', currency: 'diamonds', formula: (lvl) => 3 }], costCurrency: 'netherite', costFormula: (lvl) => 2e11, maxLevel: 1 },
+    { id: 'M87', type: 'upgrade', code: 'M87', name: 'hmm mystery', coords: [15, 4], reqs: [[14,4]], borderColor: 'green', desc: 'x??? netherite.', effects: [{ type: 'currency_mult', currency: 'netherite', formula: (lvl) => 1+0.3*lvl }], costCurrency: 'netherite', costFormula: (lvl) => 3e11, maxLevel: 1 },
+    { id: 'M88', type: 'upgrade', code: 'M88', name: 'hmm mystery', coords: [13, 4], reqs: [[14,4]], borderColor: 'green', desc: 'x??? netherite.', effects: [{ type: 'currency_mult', currency: 'netherite', formula: (lvl) => 1+0.5*lvl }], costCurrency: 'netherite', costFormula: (lvl) => 3e11, maxLevel: 1 },
+    { id: 'M89', type: 'upgrade', code: 'M89', name: 'hmm mystery', coords: [13, 3], reqs: [[14,4]], borderColor: 'green', desc: 'x??? netherite.', effects: [{ type: 'currency_mult', currency: 'netherite', formula: (lvl) => 1+0.1*lvl }], costCurrency: 'netherite', costFormula: (lvl) => 3e11, maxLevel: 1 },
+    { id: 'M90', type: 'upgrade', code: 'M90', name: 'hmm mystery', coords: [14, 3], reqs: [[14,4]], borderColor: 'green', desc: 'x??? netherite.', effects: [{ type: 'currency_mult', currency: 'netherite', formula: (lvl) => 1+0.2*lvl }], costCurrency: 'netherite', costFormula: (lvl) => 3e11, maxLevel: 1 },
+    { id: 'M91', type: 'upgrade', code: 'M91', name: 'hmm mystery', coords: [15, 3], reqs: [[14,4]], borderColor: 'green', desc: 'x??? netherite.', effects: [{ type: 'currency_mult', currency: 'netherite', formula: (lvl) => 1+0.6*lvl }], costCurrency: 'netherite', costFormula: (lvl) => 3e11, maxLevel: 1 },
+    { id: 'M92', type: 'upgrade', code: 'M92', name: 'hmm mystery', coords: [13, 5], reqs: [[14,4]], borderColor: 'green', desc: 'x??? netherite.', effects: [{ type: 'currency_mult', currency: 'netherite', formula: (lvl) => 1+0.4*lvl }], costCurrency: 'netherite', costFormula: (lvl) => 3e11, maxLevel: 1 },
+    { id: 'M93', type: 'upgrade', code: 'M93', name: 'mystery?', coords: [16, 4], reqs: [[15,4]], borderColor: 'green', desc: 'x2 ???.', effects: [{ type: 'currency_mult', currency: 'netherite', formula: (lvl) => 1+1*lvl }], costCurrency: 'netherite', costFormula: (lvl) => 5e12, maxLevel: 1 },
+    { id: 'M94', type: 'upgrade', code: 'M94', name: 'M93 was netherite', coords: [17, 4], reqs: [[16,4]], borderColor: 'green', desc: 'x2 ???.', effects: [{ type: 'currency_mult', currency: 'diamonds', formula: (lvl) => 1+1*lvl }], costCurrency: 'netherite', costFormula: (lvl) => 5e12, maxLevel: 1 },
+    { id: 'M95', type: 'upgrade', code: 'M95', name: 'oh yes im points', coords: [16, 3], reqs: [[16,4]], borderColor: 'green', desc: 'x2 points. yea lol', effects: [{ type: 'currency_mult', currency: 'P', formula: (lvl) => 1+1*lvl }], costCurrency: 'netherite', costFormula: (lvl) => 5e12, maxLevel: 1 },
+    { id: 'M96', type: 'upgrade', code: 'M96', name: 'M94 was diamonds', coords: [17, 3], reqs: [[17,4]], borderColor: 'green', desc: 'descent', effects: [], costCurrency: 'netherite', costFormula: (lvl) => 2e14, maxLevel: 1 },
+
+    //Finale
+    { id: 'F01', type: 'upgrade', code: 'F01', name: 'piece by piece', coords: [17, 2], reqs: [[17,3]], borderColor: 'green', desc: 'get a piece of thing per upgrade in this plate', effects: [{ type: 'base_gain', currency: 'fragment', formula: (lvl) => 1 }], costCurrency: 'P', costFormula: (lvl) => 1e70, maxLevel: 1 },
+    { id: 'F02', type: 'upgrade', code: 'F02', name: 'piece by piece', coords: [17, 1], reqs: [[17,2]], borderColor: 'green', desc: 'get a piece of thing per upgrade in this plate', effects: [{ type: 'currency_mult', currency: 'fragment', formula: (lvl) => 2.4e13 }], costCurrency: 'R', costFormula: (lvl) => 1e41, maxLevel: 1 },
+    { id: 'F03', type: 'upgrade', code: 'F03', name: 'piece by piece', coords: [16, 2], reqs: [[17,2]], borderColor: 'green', desc: 'get a piece of thing per upgrade in this plate', effects: [{ type: 'currency_mult', currency: 'fragment', formula: (lvl) => 2.4e13 }], costCurrency: '€', costFormula: (lvl) => 2e16, maxLevel: 1 },
+    { id: 'F04', type: 'upgrade', code: 'F04', name: 'piece by piece', coords: [16, 1], reqs: [[16,2]], borderColor: 'green', desc: 'get a piece of thing per upgrade in this plate', effects: [{ type: 'currency_mult', currency: 'fragment', formula: (lvl) => 2.4e13 }], costCurrency: 'E', costFormula: (lvl) => 1e24, maxLevel: 1 },
+    { id: 'F05', type: 'upgrade', code: 'F05', name: 'piece by piece', coords: [15, 2], reqs: [[16,2]], borderColor: 'green', desc: 'get a piece of thing per upgrade in this plate', effects: [{ type: 'currency_mult', currency: 'fragment', formula: (lvl) => 2.4e13 }], costCurrency: '+', costFormula: (lvl) => 1e28, maxLevel: 1 },
+    { id: 'F06', type: 'upgrade', code: 'F06', name: 'piece by piece', coords: [14, 2], reqs: [[15,2]], borderColor: 'green', desc: 'get a piece of thing per upgrade in this plate', effects: [{ type: 'currency_mult', currency: 'fragment', formula: (lvl) => 2.4e13 }], costCurrency: '×', costFormula: (lvl) => 1e12, maxLevel: 1 },
+    { id: 'F07', type: 'upgrade', code: 'F07', name: 'piece by piece', coords: [15, 1], reqs: [[15,2]], borderColor: 'green', desc: 'get a piece of thing per upgrade in this plate', effects: [{ type: 'currency_mult', currency: 'fragment', formula: (lvl) => 2.4e13 }], costCurrency: '¤', costFormula: (lvl) => 1e36, maxLevel: 1 },
+    { id: 'F08', type: 'upgrade', code: 'F08', name: 'piece by piece', coords: [13, 2], reqs: [[14,2]], borderColor: 'green', desc: 'get a piece of thing per upgrade in this plate', effects: [{ type: 'currency_mult', currency: 'fragment', formula: (lvl) => 2.4e13 }], costCurrency: 'L', costFormula: (lvl) => 1e8, maxLevel: 1 },
+    { id: 'F09', type: 'upgrade', code: 'F09', name: 'piece by piece', coords: [17, 0], reqs: [[17,1]], borderColor: 'green', desc: 'get a piece of thing per upgrade in this plate', effects: [{ type: 'currency_mult', currency: 'fragment', formula: (lvl) => 2.4e13 }], costCurrency: 'A', costFormula: (lvl) => 1e10, maxLevel: 1 },
+    { id: 'F10', type: 'upgrade', code: 'F10', name: 'piece by piece', coords: [17, -1], reqs: [[17,0]], borderColor: 'green', desc: 'get a piece of thing per upgrade in this plate', effects: [{ type: 'currency_mult', currency: 'fragment', formula: (lvl) => 2.4e13 }], costCurrency: 'TM', costFormula: (lvl) => 1e52, maxLevel: 1 },
+    { id: 'F11', type: 'upgrade', code: 'F11', name: 'piece by piece', coords: [16, 0], reqs: [[16,1]], borderColor: 'green', desc: 'get a piece of thing per upgrade in this plate', effects: [{ type: 'currency_mult', currency: 'fragment', formula: (lvl) => 2.4e13 }], costCurrency: 'water', costFormula: (lvl) => 2e21, maxLevel: 1 },
+    { id: 'F12', type: 'upgrade', code: 'F12', name: 'piece by piece', coords: [16, -1], reqs: [[16,0]], borderColor: 'green', desc: 'get a piece of thing per upgrade in this plate', effects: [{ type: 'currency_mult', currency: 'fragment', formula: (lvl) => 2.4e13 }], costCurrency: 'sunlight', costFormula: (lvl) => 5e17, maxLevel: 1 },
+    { id: 'F13', type: 'upgrade', code: 'F13', name: 'piece by piece', coords: [15, 0], reqs: [[15,1]], borderColor: 'green', desc: 'get a piece of thing per upgrade in this plate', effects: [{ type: 'currency_mult', currency: 'fragment', formula: (lvl) => 2.4e13 }], costCurrency: 'D1', costFormula: (lvl) => 1e105, maxLevel: 1 },
+    { id: 'F14', type: 'upgrade', code: 'F14', name: 'piece by piece', coords: [15, -1], reqs: [[15,0]], borderColor: 'green', desc: 'get a piece of thing per upgrade in this plate', effects: [{ type: 'currency_mult', currency: 'fragment', formula: (lvl) => 2.4e13 }], costCurrency: 'D8', costFormula: (lvl) => 1e12, maxLevel: 1 },
+    { id: 'F15', type: 'upgrade', code: 'F15', name: 'piece by piece', coords: [14, 1], reqs: [[14,2]], borderColor: 'green', desc: 'get a piece of thing per upgrade in this plate', effects: [{ type: 'currency_mult', currency: 'fragment', formula: (lvl) => 2.4e13 }], costCurrency: 'plates', costFormula: (lvl) => 5e20, maxLevel: 1 },
+    { id: 'F16', type: 'upgrade', code: 'F16', name: 'piece by piece', coords: [14, 0], reqs: [[14,1]], borderColor: 'green', desc: 'get a piece of thing per upgrade in this plate', effects: [{ type: 'currency_mult', currency: 'fragment', formula: (lvl) => 2.4e13 }], costCurrency: 'grass', costFormula: (lvl) => 1e36, maxLevel: 1 },
+    { id: 'F17', type: 'upgrade', code: 'F17', name: 'piece by piece', coords: [14, -1], reqs: [[14,0]], borderColor: 'green', desc: 'get a piece of thing per upgrade in this plate', effects: [{ type: 'currency_mult', currency: 'fragment', formula: (lvl) => 2.4e13 }], costCurrency: 'dirt', costFormula: (lvl) => 5e40, maxLevel: 1 },
+    { id: 'F18', type: 'upgrade', code: 'F18', name: 'piece by piece', coords: [14, -2], reqs: [[14,-1]], borderColor: 'green', desc: 'get a piece of thing per upgrade in this plate', effects: [{ type: 'currency_mult', currency: 'fragment', formula: (lvl) => 2.4e13 }], costCurrency: 'stone', costFormula: (lvl) => 1e15, maxLevel: 1 },
+    { id: 'F19', type: 'upgrade', code: 'F19', name: 'piece by piece', coords: [13, 1], reqs: [[13,2]], borderColor: 'green', desc: 'get a piece of thing per upgrade in this plate', effects: [{ type: 'currency_mult', currency: 'fragment', formula: (lvl) => 2.4e13 }], costCurrency: 'copper', costFormula: (lvl) => 2e6, maxLevel: 1 },
+    { id: 'F20', type: 'upgrade', code: 'F20', name: 'piece by piece', coords: [13, 0], reqs: [[13,1]], borderColor: 'green', desc: 'get a piece of thing per upgrade in this plate', effects: [{ type: 'currency_mult', currency: 'fragment', formula: (lvl) => 2.4e13 }], costCurrency: 'silver', costFormula: (lvl) => 2e5, maxLevel: 1 },
+    { id: 'F21', type: 'upgrade', code: 'F21', name: 'piece by piece', coords: [13, -1], reqs: [[13,0]], borderColor: 'green', desc: 'get a piece of thing per upgrade in this plate', effects: [{ type: 'currency_mult', currency: 'fragment', formula: (lvl) => 2.4e13 }], costCurrency: 'gold', costFormula: (lvl) => 5e11, maxLevel: 1 },
+    { id: 'F22', type: 'upgrade', code: 'F22', name: 'piece by piece', coords: [13, -2], reqs: [[13,-1]], borderColor: 'green', desc: 'get a piece of thing per upgrade in this plate', effects: [{ type: 'currency_mult', currency: 'fragment', formula: (lvl) => 2.4e13 }], costCurrency: 'lapis', costFormula: (lvl) => 2e14, maxLevel: 1 },
+    { id: 'F23', type: 'upgrade', code: 'F23', name: 'piece by piece', coords: [15, -2], reqs: [[15,-1]], borderColor: 'green', desc: 'get a piece of thing per upgrade in this plate', effects: [{ type: 'currency_mult', currency: 'fragment', formula: (lvl) => 2.4e13 }], costCurrency: 'diamonds', costFormula: (lvl) => 2e13, maxLevel: 1 },
+    { id: 'F24', type: 'upgrade', code: 'F24', name: 'piece by piece', coords: [16, -2], reqs: [[16,-1]], borderColor: 'green', desc: 'get a piece of thing per upgrade in this plate', effects: [{ type: 'currency_mult', currency: 'fragment', formula: (lvl) => 2.4e13 }], costCurrency: 'netherite', costFormula: (lvl) => 1e16, maxLevel: 1 },
+    { id: 'F25', type: 'upgrade', code: 'F25', name: 'all of them', coords: [17, -2], reqs: [[17,-1]], borderColor: 'green', desc: 'get... something? [wip]', effects: [], costCurrency: 'fragment', costFormula: (lvl) => 1.79e308, maxLevel: 1 },
     
     
     //progression
@@ -1018,18 +1174,7 @@
             if (_maxLevelFrame[node.id] === cacheDirtyFrame && _maxLevelCache[node.id] !== undefined) return _maxLevelCache[node.id];
             if (!cacheDirty && cache.maxLevel.has(node.id)) return cache.maxLevel.get(node.id);
             let maxCap = node.maxLevel || 1;
-            // Build index once
-            if (!_maxLevelModEffects) {
-                _maxLevelModEffects = [];
-                TREE_NODES.forEach(other => {
-                    if (other.type !== 'upgrade' || !other.effects) return;
-                    other.effects.forEach(eff => {
-                        if (eff.type === 'max_level_mod') {
-                            _maxLevelModEffects.push({ nodeId: other.id, targets: Array.isArray(eff.target) ? eff.target : [eff.target], amount: eff.amount });
-                        }
-                    });
-                });
-            }
+            ensureMaxLevelModIndex();
             for (const mod of _maxLevelModEffects) {
                 const lvl = getLevel(mod.nodeId);
                 if (lvl <= 0) continue;
@@ -1057,6 +1202,8 @@
             if (num === undefined || num === null || isNaN(num)) return '0';
             if (num === 0) return '0';
             const key = num;
+            if (_formatCache.hasOwnProperty && _formatCache[key] !== undefined) return _formatCache[key];
+            // also check non-numeric keys for speed
             if (_formatCache[key] !== undefined) return _formatCache[key];
             const abs = Math.abs(num);
             let result;
@@ -1145,8 +1292,14 @@
             return { x: (gx * NODE_GAP - (NODE_SIZE / 2)) + vw + panX, y: (-gy * NODE_GAP - (NODE_SIZE / 2)) + vh + panY };
         }
 
+        const _wrapCache = new Map();
+        const _wrapCacheMax = 500;
         function wrapText(text, maxWidth, fontSize) {
+            const key = text + '|' + maxWidth + '|' + fontSize;
+            const cached = _wrapCache.get(key);
+            if (cached) return cached;
             const words = text.split(/\s+/).filter(Boolean);
+            if (words.length === 0) { _wrapCache.set(key, []); if (_wrapCache.size > _wrapCacheMax) _wrapCache.delete(_wrapCache.keys().next().value); return []; }
             const lines = [];
             let currentLine = '';
             ctx.font = `${fontSize}px 'Fira Code', monospace`;
@@ -1160,6 +1313,8 @@
                 }
             }
             if (currentLine) lines.push(currentLine);
+            _wrapCache.set(key, lines);
+            if (_wrapCache.size > _wrapCacheMax) _wrapCache.delete(_wrapCache.keys().next().value);
             return lines;
         }
 
@@ -1409,9 +1564,11 @@
             }
         }
 
-        function draw() {
+        let _drawFrameCount = 0;
+function draw() {
             const vw = viewportEl.clientWidth;
             const vh = viewportEl.clientHeight;
+            _drawFrameCount++;
             ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
             ctx.clearRect(0, 0, vw, vh);
             
@@ -1470,9 +1627,10 @@
                 baseRaw = 0,
                 mult = 1;
             const effects = CURRENCY_EFFECT_INDEX[currency];
-            if (effects) {
-                for (const eff of effects) {
-                    const lvl = getLevel(eff.nodeId);
+            if (effects && effects.length > 0) {
+                for (let i = 0, len = effects.length; i < len; i++) {
+                    const eff = effects[i];
+                    const lvl = gameState.levels[eff.nodeId] || 0;
                     if (lvl <= 0) continue;
                     const val = eff.formula(lvl, getLevel, getCurr);
                     if (eff.type === 'base_gain') base += val;
@@ -1788,6 +1946,10 @@ let _lastRenderedBarHidden = '';
 let _lastCurrencyBarFontSize = 0;
 
 
+let _resetNodeCache = null;
+let _lastBarValues = {};
+let _lastBarDirty = true;
+
 function renderCurrencyBar() {
     const bar = document.getElementById('currency-bar');
     if (!bar) return;
@@ -1822,22 +1984,35 @@ function renderCurrencyBar() {
         _lastRenderedBarOrder = orderKey;
         _lastRenderedBarHidden = hiddenKey;
         _lastCurrencyBarFontSize = currencyFontSize;
+        _lastBarValues = {};
     }
     
-    // Update values only (cheap DOM writes)
+    // Build resetNode lookup once
+    if (!_resetNodeCache) {
+        _resetNodeCache = {};
+        TREE_NODES.forEach(n => {
+            if (n.type === 'reset') _resetNodeCache[n.targetCurrency] = n;
+        });
+    }
+    
+    // Update values only (cheap DOM writes) — skip if value hasn't changed
     for (const [key, cached] of currencyBarCache) {
         const amt = gameState.currencies[key] || 0;
         const rate = calculateGainRate(key);
-        cached.amount.textContent = formatNum(amt);
-        cached.rate.textContent = `(+${formatNum(rate)}/s)`;
-        cached.rate.style.fontSize = `${Math.max(8, currencyFontSize - 1)}px`;
-        // Calculate reset potential only once per currency type
+        const fmtAmt = formatNum(amt);
+        const fmtRate = `(+${formatNum(rate)}/s)`;
         let potentialText = '';
-        const resetNode = TREE_NODES.find(n => n.type === 'reset' && n.targetCurrency === key);
+        const resetNode = _resetNodeCache[key];
         if (resetNode) {
             const g = getEffectiveResetGain(resetNode);
             if (g > 0) potentialText = ` (+${formatNum(g)} on reset)`;
         }
+        const valKey = fmtAmt + fmtRate + potentialText;
+        if (_lastBarValues[key] === valKey) continue;
+        _lastBarValues[key] = valKey;
+        cached.amount.textContent = fmtAmt;
+        cached.rate.textContent = fmtRate;
+        cached.rate.style.fontSize = `${Math.max(8, currencyFontSize - 1)}px`;
         cached.potential.textContent = potentialText;
     }
 }
@@ -1885,6 +2060,7 @@ function renderCurrencyBar() {
                     renderCurrencyBar();
                     renderCurrencyToggles();
                     playSound('buy');
+                    _lastBarValues = {};
                 });
             });
         }
@@ -1973,7 +2149,15 @@ function renderCurrencyBar() {
             executeReset(activeResetNode);
         };
         // ==================== UI CONTROLS ====================
-        document.getElementById('btn-pause').onclick = () => {
+        // Scroll lock toggle
+let scrollLocked = false;
+document.getElementById('btn-scroll-lock').onclick = () => {
+    scrollLocked = !scrollLocked;
+    applyScrollLockState(scrollLocked);
+    playSound('buy');
+    saveCurrencyBarScrollState();
+};
+document.getElementById('btn-pause').onclick = () => {
             gameState.paused = !gameState.paused;
             const icon = document.getElementById('pause-icon'),
                 label = document.getElementById('pause-label');
@@ -2153,6 +2337,41 @@ document.getElementById('btn-font-up').onclick = (e) => {
             setTimeout(() => { toast.classList.add('translate-x-full');
                 setTimeout(() => toast.classList.add('hidden'), 300); }, 2500);
         }
+        // ==================== SAVE / RESTORE SCROLL POSITION ====================
+        function saveScrollState() {
+            try {
+                sessionStorage.setItem('UG_SCROLL_X', panX.toString());
+                sessionStorage.setItem('UG_SCROLL_Y', panY.toString());
+                sessionStorage.setItem('UG_SCROLL_S', scale.toString());
+            } catch(e) {}
+        }
+        function restoreScrollState() {
+            try {
+                const x = sessionStorage.getItem('UG_SCROLL_X');
+                const y = sessionStorage.getItem('UG_SCROLL_Y');
+                const s = sessionStorage.getItem('UG_SCROLL_S');
+                if (x !== null && y !== null && s !== null) {
+                    panX = parseFloat(x);
+                    panY = parseFloat(y);
+                    scale = parseFloat(s);
+                }
+            } catch(e) {}
+        }
+        // Auto-save scroll on pan/zoom
+        let scrollSaveTimer = null;
+        function debounceScrollSave() {
+            if (scrollSaveTimer) clearTimeout(scrollSaveTimer);
+            scrollSaveTimer = setTimeout(saveScrollState, 300);
+        }
+        // Patch updateTransform to also save scroll
+        const _origUpdateTransform = updateTransform;
+        updateTransform = function() {
+            _origUpdateTransform();
+            debounceScrollSave();
+        };
+        // Also save when user leaves the page
+        window.addEventListener('beforeunload', saveScrollState);
+        
         // ==================== DRAG & ZOOM & CLICK ====================
         let isDragging = false,
             dragStartX = 0,
@@ -2361,49 +2580,59 @@ document.getElementById('btn-font-up').onclick = (e) => {
 
         function loadGame() {
             const data = localStorage.getItem(SAVE_KEY);
-            if (data) {
-                try {
-                    const parsed = JSON.parse(data);
-                    gameState = { ...gameState, ...parsed };
-                    if (!gameState.hiddenCurrencies) gameState.hiddenCurrencies = [];
-                    if (!gameState.userHiddenCurrencies) gameState.userHiddenCurrencies = [];
-                    if (!gameState.unlockedDecorations) gameState.unlockedDecorations = [];
-                    if (!gameState.skipResetConfirm) gameState.skipResetConfirm = {};
-                    if (gameState.currencyFontSize === undefined) gameState.currencyFontSize = 11;
-                    if (!gameState.currencyOrder) gameState.currencyOrder = ['P'];
-                    // *** FIX: Ensure ALL currencies with gain are in discoveredCurrencies ***
-                    if (gameState.currencyOrder.length > 1 && gameState.currencyOrder.length <= 30 && (!gameState.discoveredCurrencies || gameState.discoveredCurrencies.length <= 1)) {
-                        // Old save — rebuild discoveredCurrencies from currencyOrder
-                        gameState.discoveredCurrencies = [...gameState.currencyOrder];
-                    }
-                    // Also ensure currencies with existing amounts in currencys are in order
-                    if (gameState.currencies) {
-                        for (const key of Object.keys(gameState.currencies)) {
-                            if (gameState.currencies[key] > 0 && gameState.currencyOrder && !gameState.currencyOrder.includes(key)) {
-                                gameState.currencyOrder.push(key);
-                                if (!gameState.discoveredCurrencies.includes(key)) gameState.discoveredCurrencies.push(key);
-                            }
+            if (!data) return;
+            try {
+                const parsed = JSON.parse(data);
+                // Validate essential fields to avoid applying a corrupt save
+                if (typeof parsed !== 'object' || !parsed.currencies || typeof parsed.currencies !== 'object') {
+                    console.warn('Corrupt save (missing currencies) — ignoring.');
+                    return;
+                }
+                // Make sure it has at least one known key
+                const valid = Object.keys(parsed.currencies).some(k => CURRENCIES[k]);
+                if (!valid) {
+                    console.warn('Corrupt save (no known currencies) — ignoring.');
+                    return;
+                }
+                gameState = { ...gameState, ...parsed };
+                if (!gameState.hiddenCurrencies) gameState.hiddenCurrencies = [];
+                if (!gameState.userHiddenCurrencies) gameState.userHiddenCurrencies = [];
+                if (!gameState.unlockedDecorations) gameState.unlockedDecorations = [];
+                if (!gameState.skipResetConfirm) gameState.skipResetConfirm = {};
+                if (gameState.currencyFontSize === undefined) gameState.currencyFontSize = 11;
+                if (!gameState.currencyOrder) gameState.currencyOrder = ['P'];
+                // *** FIX: Ensure ALL currencies with gain are in discoveredCurrencies ***
+                if (gameState.currencyOrder.length > 1 && gameState.currencyOrder.length <= 30 && (!gameState.discoveredCurrencies || gameState.discoveredCurrencies.length <= 1)) {
+                    // Old save — rebuild discoveredCurrencies from currencyOrder
+                    gameState.discoveredCurrencies = [...gameState.currencyOrder];
+                }
+                // Also ensure currencies with existing amounts in currencys are in order
+                if (gameState.currencies) {
+                    for (const key of Object.keys(gameState.currencies)) {
+                        if (gameState.currencies[key] > 0 && gameState.currencyOrder && !gameState.currencyOrder.includes(key)) {
+                            gameState.currencyOrder.push(key);
+                            if (!gameState.discoveredCurrencies.includes(key)) gameState.discoveredCurrencies.push(key);
                         }
                     }
-                    if (gameState.camera) { panX = gameState.camera.panX || 0;
-                        panY = gameState.camera.panY || 0;
-                        scale = gameState.camera.scale || 1; }
-                    if (gameState.buyMode !== undefined) { buyMode = gameState.buyMode; }
-                    if (gameState.currencyFontSize !== undefined) {
+                }
+                if (gameState.camera) { panX = gameState.camera.panX || 0;
+                    panY = gameState.camera.panY || 0;
+                    scale = gameState.camera.scale || 1; }
+                if (gameState.buyMode !== undefined) { buyMode = gameState.buyMode; }
+                if (gameState.currencyFontSize !== undefined) {
     currencyFontSize = gameState.currencyFontSize;
 } else {
     currencyFontSize = 11;
 }
 document.getElementById('font-size-label').textContent = currencyFontSize;
-                    document.getElementById('buy-mode-label').textContent = `BUY: x${buyMode}`;
-                    if (gameState.paused) { document.getElementById('pause-icon').setAttribute('data-lucide', 'play');
-                        document.getElementById('pause-label').textContent = 'Continue'; } else { document
-                            .getElementById('pause-icon').setAttribute('data-lucide', 'pause');
-                        document.getElementById('pause-label').textContent = 'Stop'; }
-                    lucide.createIcons();
-                    clearCaches(true);
-                } catch (e) { console.warn('Save load error', e); }
-            }
+                document.getElementById('buy-mode-label').textContent = `BUY: x${buyMode}`;
+                if (gameState.paused) { document.getElementById('pause-icon').setAttribute('data-lucide', 'play');
+                    document.getElementById('pause-label').textContent = 'Continue'; } else { document
+                        .getElementById('pause-icon').setAttribute('data-lucide', 'pause');
+                    document.getElementById('pause-label').textContent = 'Stop'; }
+                lucide.createIcons();
+                clearCaches(true);
+            } catch (e) { console.warn('Save load error, skipping:', e); localStorage.removeItem(SAVE_KEY); }
         }
 
         function processOfflineProgress() {
@@ -2474,10 +2703,12 @@ document.getElementById('font-size-label').textContent = currencyFontSize;
         };
         // ==================== MAIN LOOP ====================
         let lastTime = performance.now();
-        const GAME_TICK_MS = 50;
+        const GAME_TICK_MS = 100;
         let gameTickAccumulator = 0;
         let lastCurrencyUpdateTime = 0;
         let lastCanvasUpdateTime = 0;
+        let canvasFrameCounter = 0;
+        let lastCanvasSnapshot = '';
 
         function gameLoop(timestamp) {
     const dt = Math.min(100, timestamp - lastTime);
@@ -2489,18 +2720,21 @@ document.getElementById('font-size-label').textContent = currencyFontSize;
     }
     updateLevelAnimations();
     
-    // Canvas redraw - throttled. Always draw (progress bars need updates).
+    // Canvas redraw - throttled. Skip if nothing changed (compare hash of visible currencies + levels)
     if (timestamp - lastCanvasUpdateTime >= CANVAS_UPDATE_INTERVAL_MS) {
-        draw();
-        if (needsNodeUpdate) {
-            renderDecorationsUnlock();
-            needsNodeUpdate = false;
+        // Quick dirty check: only skip if no pending updates and currencies barely changed
+        if (needsNodeUpdate || gameTickAccumulator > 0 || (++canvasFrameCounter % 5 === 0)) {
+            draw();
+            if (needsNodeUpdate) {
+                renderDecorationsUnlock();
+                needsNodeUpdate = false;
+            }
+            cacheDirty = false;
+            lastCanvasUpdateTime = timestamp;
         }
-        cacheDirty = false;
-        lastCanvasUpdateTime = timestamp;
     }
     
-    // Currency bar updates
+    // Currency bar updates — throttle more aggressively
     if (timestamp - lastCurrencyUpdateTime >= CURRENCY_UI_INTERVAL_MS) {
         renderCurrencyBar();
         lastCurrencyUpdateTime = timestamp;
@@ -2510,6 +2744,8 @@ document.getElementById('font-size-label').textContent = currencyFontSize;
         function tickGame(dtMs) {
             const dt = dtMs / 1000;
             if (gameState.paused) return;
+            // Clear frame-level caches every tick so effects/rates/upgrades update continuously
+            clearTickCaches();
             let changed = false;
             // Always mark changed if any discovered currency has a negative rate (drain)
             for (const key of gameState.discoveredCurrencies) {
@@ -2544,7 +2780,6 @@ document.getElementById('font-size-label').textContent = currencyFontSize;
                     else if (newVal < old && old > 0) changed = true; // also mark changed when draining
                 }
             }
-            if (changed) clearCaches(true);
             // Auto-unhide currencies that have gain but were NOT user-hidden
             for (const key of gameState.discoveredCurrencies || []) {
                 const rate = calculateGainRate(key);
@@ -2563,16 +2798,93 @@ document.getElementById('font-size-label').textContent = currencyFontSize;
             }
         }
 
-        // ---- Save on visibility change ----
+        // ==================== CURRENCY BAR SCROLL & SCROLL-LOCK PERSISTENCE ====================
+        const BAR_SCROLL_KEY = 'UG_BAR_SCROLL_TOP';
+        const BAR_LOCK_KEY = 'UG_BAR_SCROLL_LOCKED';
+        
+        function saveCurrencyBarScrollState() {
+            const bar = document.getElementById('currency-bar');
+            if (!bar) return;
+            try {
+                sessionStorage.setItem(BAR_SCROLL_KEY, bar.scrollTop.toString());
+                sessionStorage.setItem(BAR_LOCK_KEY, scrollLocked ? '1' : '0');
+            } catch(e) {}
+        }
+        
+        function applyScrollLockState(locked) {
+            const bar = document.getElementById('currency-bar');
+            const icon = document.getElementById('scroll-lock-icon');
+            const label = document.getElementById('scroll-lock-label');
+            if (!bar || !icon || !label) return false;
+            scrollLocked = locked;
+            if (locked) {
+                bar.classList.add('scroll-locked');
+                icon.setAttribute('data-lucide', 'lock');
+                icon.className = 'w-3.5 h-3.5 text-cyan-400';
+                label.textContent = 'Scroll: ON';
+            } else {
+                bar.classList.remove('scroll-locked');
+                icon.setAttribute('data-lucide', 'unlock');
+                icon.className = 'w-3.5 h-3.5 text-zinc-500';
+                label.textContent = 'Scroll: OFF';
+            }
+            lucide.createIcons();
+            return true;
+        }
+        
+        function restoreCurrencyBarScrollState() {
+            try {
+                const locked = sessionStorage.getItem(BAR_LOCK_KEY);
+                if (locked !== null) {
+                    applyScrollLockState(locked === '1');
+                }
+                const st = sessionStorage.getItem(BAR_SCROLL_KEY);
+                if (st !== null) {
+                    // Use multiple attempts to set scrollTop — the bar may not be rendered yet
+                    const bar = document.getElementById('currency-bar');
+                    if (bar) {
+                        const tryScroll = () => {
+                            const val = parseFloat(st);
+                            if (val > 0 && bar.scrollHeight > 0) {
+                                bar.scrollTop = val;
+                                // Check if it actually worked
+                                if (bar.scrollTop !== val) {
+                                    // Try again after a frame
+                                    requestAnimationFrame(() => { bar.scrollTop = val; });
+                                }
+                            }
+                        };
+                        // Immediate attempt
+                        tryScroll();
+                        // Retry after renderCurrencyBar runs (currency bar is rebuilt on load)
+                        setTimeout(tryScroll, 50);
+                        setTimeout(tryScroll, 200);
+                        setTimeout(tryScroll, 500);
+                    }
+                }
+            } catch(e) {}
+        }
+        
+        // Auto-save bar scroll on scroll (debounced)
+        let barScrollSaveTimer = null;
+        function setupBarScrollSave() {
+            const bar = document.getElementById('currency-bar');
+            if (bar) {
+                bar.addEventListener('scroll', () => {
+                    if (barScrollSaveTimer) clearTimeout(barScrollSaveTimer);
+                    barScrollSaveTimer = setTimeout(saveCurrencyBarScrollState, 150);
+                });
+            }
+        }
+        
+        // Also save on beforeunload and visibility change
+        window.addEventListener('beforeunload', saveCurrencyBarScrollState);
         document.addEventListener('visibilitychange', () => {
             if (document.visibilityState === 'hidden') {
+                saveCurrencyBarScrollState();
                 saveGame();
             }
         });
-        // Also save immediately on load so quick refresh doesn't wipe
-        setTimeout(() => { saveGame(); }, 200);
-        // Save before unload too
-        window.addEventListener('beforeunload', () => saveGame());
         
         // ---- Build maps ----
         const CURRENCY_EFFECT_INDEX = {};
@@ -2589,6 +2901,7 @@ document.getElementById('font-size-label').textContent = currencyFontSize;
 
         window.onload = () => {
             loadGame();
+            restoreScrollState();
             processOfflineProgress();
             if (gameState.showEffects === undefined) gameState.showEffects = true;
             if (!gameState.unlockedDecorations) gameState.unlockedDecorations = [];
@@ -2597,6 +2910,9 @@ document.getElementById('font-size-label').textContent = currencyFontSize;
             resizeCanvas();
             updateTransform();
             renderCurrencyBar();
+            // Restore bar scroll state & lock state AFTER the bar is first rendered
+            restoreCurrencyBarScrollState();
+            setupBarScrollSave();
             setInterval(saveGame, 3000);
             rafId = requestAnimationFrame(gameLoop);
         };
