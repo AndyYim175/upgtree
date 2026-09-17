@@ -266,6 +266,8 @@
             { type: 'rect', coords: [12.5, 12.5], width: 800, height: 800, fillColor: 'grey', fillOpacity: 0.5, strokeColor: 'grey', strokeOpacity: 0.9, strokeWidth: 2, requirements: ['M12'] },
             { type: 'rect', coords: [12.5, 7.5], width: 800, height: 800, fillColor: '#676765', fillOpacity: 0.5, strokeColor: 'grey', strokeOpacity: 0.9, strokeWidth: 2, requirements: ['M40'] },
             { type: 'rect', coords: [12.5, 2.5], width: 800, height: 800, fillColor: '#222222', fillOpacity: 0.5, strokeColor: 'grey', strokeOpacity: 0.9, strokeWidth: 2, requirements: ['M71'] },
+            { type: 'rect', coords: [22.5, -2.5], width: 800, height: 800, fillColor: '#777777', fillOpacity: 0.5, strokeColor: 'grey', strokeOpacity: 0.9, strokeWidth: 2, requirements: ['F25'] },
+            { type: 'rect', coords: [17.5, -0.5], width: 800, height: 160, fillColor: '#676765', fillOpacity: 0.5, strokeColor: 'grey', strokeOpacity: 0.9, strokeWidth: 0, requirements: ['F25'] },
             { type: 'rect', coords: [12.5, -2.5], width: 800, height: 800, fillColor: 'white', fillOpacity: 0.5, strokeColor: 'grey', strokeOpacity: 0.9, strokeWidth: 2, requirements: ['M71'] },
             { type: 'rect', coords: [14.6, 19.6], width: 448, height: 448, fillColor: 'brown', fillOpacity: 0.5, strokeColor: 'brown', strokeOpacity: 0.9, strokeWidth: 2, requirements: ['M04'] },
             { type: 'rect', coords: [12.6, 19.6], width: 288, height: 448, fillColor: 'purple', fillOpacity: 0.5, strokeColor: 'purple', strokeOpacity: 0.9, strokeWidth: 2, requirements: ['M04'] },
@@ -321,6 +323,7 @@
             { type: 'text', coords: [12.5, 7.5], text: 'Mining plate III', alignment: 'Bottom-left', color: '#676765', fontSize: 28, opacity: 0.9, requirements: ['M40'] },
             { type: 'text', coords: [12.5, 2.5], text: 'Mining plate IV', alignment: 'Bottom-left', color: '#222222', fontSize: 28, opacity: 0.9, requirements: ['M71'] },
             { type: 'text', coords: [12.5, -2.5], text: 'Finale I', alignment: 'Bottom-left', color: 'white', fontSize: 28, opacity: 0.9, requirements: ['M71'] },
+            { type: 'text', coords: [22.5, -2.5], text: 'Uni II start', alignment: 'Bottom-left', color: 'grey', fontSize: 28, opacity: 0.9, requirements: ['M71'] },
             { type: 'text', coords: [-7.5, 17.5], text: 'Dimension baseplate III', alignment: 'Bottom-left', color: '#8B0000', fontSize: 28, opacity: 0.9, requirements: ['A50'] },
             { type: 'text', coords: [-7.5, 12.5], text: 'Progression baseplate', alignment: 'Bottom-left', color: '#ffa500', fontSize: 28, opacity: 0.9, requirements: ['A12'] },
             { type: 'text', coords: [-2.5, 7.65], text: 'Reset all your progress again!', alignment: 'Bottom-left', color: 'lightyellow', fontSize: 15, opacity: 0.9, requirements: ['D16'] },
@@ -407,6 +410,8 @@
             diamonds: { id: 'diamonds', name: 'Diamonds', color: 'text-cyan-400', fillBg: 'rgba(34, 211, 238, 0.25)' },
             netherite: { id: 'netherite', name: 'Netherite', color: 'text-[#433D40]', fillBg: 'rgba(67, 61, 64, 0.25)' },
             fragment: { id: 'fragment', name: 'Fragment', color: 'text-white-100', fillBg: 'rgba(255, 255, 255, 0.25)' },
+            IP: { id: 'IP', name: 'IP', color: 'text-grey-200', fillBg: 'rgba(255, 255, 255, 0.25)' },
+            essence: { id: 'essence', name: 'Essence', color: 'text-purple-200', fillBg: 'rgba(233, 219, 232, 0.25)' },
             DE: { id: 'DE', name: 'Dim-Essence', color: 'text-blue-100', fillBg: 'rgba(0,0,255,0.25)' },
             plates: { id: 'plates', name: 'Plates', color: 'text-blue-200', fillBg: 'rgba(0,0,230,0.25)' },
             S: { id: 'S', name: 'Progression score', color: 'text-[#ffa500]', fillBg: 'rgba(255,0,0,0.25)' }, 
@@ -522,7 +527,7 @@
     { id: '#6', type: 'upgrade', code: '#06', name: 'Point boost', coords: [-1, 0], reqs: [[-1, 1]], borderColor: 'orange', desc: '+5% p/s per level additive.', effects: [{ type: 'currency_mult', currency: 'P', formula: (lvl) => 1 + 0.05 * lvl }], costCurrency: 'P', costFormula: (lvl) => Math.ceil(Math.pow(1.125, lvl) * (225 * (lvl >= 40) + 25)), maxLevel: 40 },
     { id: '#7', type: 'upgrade', code: '#07', name: 'Another mult', coords: [-1, -1], reqs: [[-1, 0]], borderColor: 'orange', desc: 'x2.5 p/s.', effects: [{ type: 'currency_mult', currency: 'P', formula: (lvl) => Math.pow(2.5, lvl) }], costCurrency: 'P', costFormula: (lvl) => 1250, maxLevel: 1 },
     { id: '+#8', type: 'upgrade', code: '#08', name: 'Research', coords: [0, -1], reqs: [[-1, -1]], borderColor: 'orange', desc: 'Unlock research (on top of #1)', effects: [{}], costCurrency: 'P', costFormula: (lvl) => 5000, maxLevel: 1 },
-    { id: '#9', type: 'upgrade', code: '#09', name: 'Self-boost', coords: [-2, -1], reqs: [[-1, 4], [-1, -1]], borderColor: 'orange', desc: 'Points boost itself. p^0.08', effects: [{ type: 'currency_mult', currency: 'P', formula: (lvl, getcurr) => Math.pow(getCurr('P'), 0.08 * lvl) }], costCurrency: 'P', costFormula: (lvl) => 12500, maxLevel: 1 },
+    { id: '#9', type: 'upgrade', code: '#09', name: 'Self-boost', coords: [-2, -1], reqs: [[-1, 4], [-1, -1]], borderColor: 'orange', desc: 'Points boost itself. p^0.08', effects: [{ type: 'currency_mult', currency: 'P', formula: (lvl, getcurr) => Math.max(1, Math.pow(Math.max(getCurr('P'), 1), 0.08 * lvl)) }], costCurrency: 'P', costFormula: (lvl) => 12500, maxLevel: 1 },
     { id: '#10', type: 'upgrade', code: '#10', name: 'Uncapped', coords: [-2, 0], reqs: [[-1, 4], [-1, 0]], borderColor: 'red', desc: '#4 cap +5/level', effects: [{ type: 'max_level_mod', target: '#4', amount: (lvl) => 5 * lvl }], costCurrency: 'P', costFormula: (lvl) => Math.floor(75000 * Math.pow(1.075, lvl)), maxLevel: 98 },
     { id: '#11', type: 'upgrade', code: '#11', name: 'Many', coords: [2, 0], reqs: [[-1, 4], [1, 0]], borderColor: 'orange', desc: 'x1.03 p/s per level.', effects: [{ type: 'currency_mult', currency: 'P', formula: (lvl) => Math.pow(1.03, lvl) }], costCurrency: 'P', costFormula: (lvl) => Math.floor(45000 * (1 + 0.025 * lvl) * Math.pow(1.083367, lvl)), maxLevel: 125 },
     { id: '#12', type: 'upgrade', code: '#12', name: 'yes!', coords: [2, -1], reqs: [[-1, 5], [1, -1]], borderColor: 'orange', desc: 'x1.25 resc/lvl.', effects: [{ type: 'reset_gain_mult', targetCurrency: 'R', formula: (lvl) => Math.pow(1.25, lvl) }], costCurrency: 'P', costFormula: (lvl) => Math.floor(5e9 * Math.pow(2.5, lvl)), maxLevel: 5 },
@@ -879,6 +884,57 @@
     { id: 'F24', type: 'upgrade', code: 'F24', name: 'piece by piece', coords: [16, -2], reqs: [[16,-1]], borderColor: 'green', desc: 'get a piece of thing per upgrade in this plate', effects: [{ type: 'currency_mult', currency: 'fragment', formula: (lvl) => 2.4e13 }], costCurrency: 'netherite', costFormula: (lvl) => 1e16, maxLevel: 1 },
     { id: 'F25', type: 'upgrade', code: 'F25', name: 'all of them', coords: [17, -2], reqs: [[17,-1]], borderColor: 'green', desc: 'get... something? [wip]', effects: [], costCurrency: 'fragment', costFormula: (lvl) => 1.79e308, maxLevel: 1 },
     
+    //uni II
+    { id: 'U01', type: 'upgrade', code: 'U01', name: 'hello', coords: [23, -2], reqs: [[17,-1]], borderColor: 'green', desc: 'start the universe.', effects: [], costCurrency: 'fragment', costFormula: (lvl) => 1.79e308, maxLevel: 1 },
+    { id: 'U1_RESET', type: 'reset', code: 'U2reset', name: 'Reset Universe I', coords: [23, -1], reqs: [[17, -2]],
+      desc: 'Wipes all non-bonus uni 1 node levels & currencies. Bonus plates excepted.',
+      targetCurrency: 'IP',
+      resetCurrencies: ['DP','P','R','€','A','E','L','XP','+','×','S','D1','D2','D3','D4','D5','D6','D7','D8','DE','plates','grass','dirt','stone','copper','silver','gold','lapis','diamonds','netherite','fragment','TM','water','sunlight','sunpower','QT','T','PR'],
+      resettedCoords: [
+        'A',      // all point upgrades (starts with #)
+        '#',      // all point upgrades (starts with #)
+        'R',      // research upgrades
+        '+R',     // +R11 etc.
+        'P',      // prestige upgrades  
+        'D',      // prestige upgrades  
+        'E0',     // energy upgrades
+        'AU',     // automation upgrades
+        'AAU',    // auto++ upgrades
+        'EXP',    // experience start
+        'EX',     // experience upgrades (EX01 etc.)
+        'Lvl',    // level reset
+        'S',      // progression score
+        'AD',     // dimension upgrades
+        'dim',    // dim-essence reset
+        'AP',     // plate plate upgrades
+        'M',      // mining upgrades
+        'F',      // finale upgrades
+        //'U',      // uni II upgrades (U01+)
+        'T',      // tree upgrades
+        'W',      // water upgrades
+        'AS',     // sunlight upgrades
+        'sun',    // sun reset
+        'water',  // water reset
+        'G',      // generator upgrades
+        'Mult',   // mult reset
+        'Info',   // info nodes (Info_CORE, Dinfo, InfoInf, etc.)  
+        'Resc',   // research reset
+        'Prestige', // prestige reset
+        'Ascension', // ascension reset
+        'warp',   // time warp reset
+        'B0',     // B02-B10 (B01 is bonus start, but it has 0 cost so fine)
+        '+T',     // +T25-29
+        //sorry, this one is ai-generated, i dont want to waste time typing out and maybe missing and refilling them.
+      ],
+      calculateGain: () => 1,
+    },
+    { id: 'U02', type: 'upgrade', code: 'U02', name: 'hi', coords: [23, -0], reqs: [[23,-2]], borderColor: 'green', desc: 'start generating essence based on IP a lot.', effects: [{ type: 'base_gain', currency: 'essence', formula: (lvl) => Math.pow(getCurr('IP'), 5) }], costCurrency: 'IP', costFormula: (lvl) => 0, maxLevel: 1 },
+    { id: 'U03', type: 'upgrade', code: 'U03', name: 'thats a lot', coords: [23, 1], reqs: [[23,0]], borderColor: 'green', desc: 'get raw base point gain based on essence.', effects: [{ type: 'base_gain_raw', currency: 'P', formula: (lvl) => Math.min(Math.pow(getCurr('essence')+2, 5),1e8*Math.pow(getCurr('essence'),0.5)) }], costCurrency: 'essence', costFormula: (lvl) => 5, maxLevel: 1 },
+    { id: 'U04', type: 'upgrade', code: 'U04', name: 'thats not so much xd', coords: [23, 2], reqs: [[23,1]], borderColor: 'orange', desc: 'boost point gain based on essence.', effects: [{ type: 'currency_mult', currency: 'P', formula: (lvl) => Math.pow(getCurr('essence')+1,0.5) }], costCurrency: 'essence', costFormula: (lvl) => 25, maxLevel: 1 },
+    { id: 'U05', type: 'upgrade', code: 'U05', name: 'feeling energetic?', coords: [24, 1], reqs: [[23,1]], borderColor: 'orange', desc: 'boost energy gain based on essence.', effects: [{ type: 'currency_mult', currency: 'E', formula: (lvl) => Math.pow(getCurr('essence')*5+25,0.7) }], costCurrency: 'essence', costFormula: (lvl) => 50, maxLevel: 1 },
+    { id: 'U06', type: 'upgrade', code: 'U06', name: 'experienced', coords: [24, 0], reqs: [[24,1]], borderColor: 'orange', desc: 'boost experience gain based on essence.', effects: [{ type: 'currency_mult', currency: 'XP', formula: (lvl) => Math.pow(getCurr('essence')*3+35,0.3) }], costCurrency: 'essence', costFormula: (lvl) => 75, maxLevel: 1 },
+    { id: 'U07', type: 'upgrade', code: 'U07', name: 'plus', coords: [24, 2], reqs: [[24,1]], borderColor: 'orange', desc: 'boost plus gain based on essence.', effects: [{ type: 'currency_mult', currency: '+', formula: (lvl) => Math.pow(getCurr('essence')*7+50,0.5) }], costCurrency: 'essence', costFormula: (lvl) => 125, maxLevel: 1 },
+    { id: 'U08', type: 'upgrade', code: 'U08', name: 'dynamic programming (dp)', coords: [25, 1], reqs: [[24,1]], borderColor: 'orange', desc: 'boost deco power gain based on essence.', effects: [{ type: 'currency_mult', currency: '¤', formula: (lvl) => Math.pow(getCurr('essence')*15+250,2.25) }], costCurrency: 'essence', costFormula: (lvl) => 125, maxLevel: 1 },
     
     //progression
     { id: 'S01', type: 'upgrade', code: 'S01', name: 'score', coords: [-3, 15], reqs: [[-2, 15]], borderColor: 'green', desc: 'get rating based on progression. (pt/resc/prestige/ascn)', effects: [{ type: 'base_gain', currency: 'S', formula: (lvl) => Math.pow((0.01*Math.log10(getCurr('P')+10)*Math.log10(getCurr('R')+10)*Math.log10(getCurr('€')+10)*Math.pow(Math.log10(getCurr('A')+12),5)),1*Math.pow(1.03, getLevel('S07'))) }], costCurrency: 'S', costFormula: (lvl) => 0, maxLevel: 1 },
@@ -1638,6 +1694,8 @@ function draw() {
                     else mult *= val;
                 }
             }
+            // Safety: ensure mult is never 0 or negative (prevents any buggy formula from killing gain)
+            if (mult <= 0) mult = 1;
             const result = base * mult + baseRaw;
             cache.gainRate.set(currency, result);
             _currencyRateCache[currency] = result;
@@ -1724,8 +1782,8 @@ function draw() {
         gameState.discoveredCurrencies.push(key);
         addCurrencyToOrder(key);
     } else if (gameState.currencyOrder && !gameState.currencyOrder.includes(key)) {
-        // Already discovered but somehow missing from order — fix it
         gameState.currencyOrder.push(key);
+        _lastRenderedBarOrder = '';
     }
 }
 
@@ -1795,18 +1853,29 @@ function buyUpgrade(nodeId, isAutomated = false, isFree = false) {
         }
         // ==================== CURRENCY ORDER MANAGEMENT ====================
         function addCurrencyToOrder(currKey) {
-            if (!gameState.currencyOrder) gameState.currencyOrder = [];
-            if (!gameState.discoveredCurrencies.includes(currKey)) gameState.discoveredCurrencies.push(currKey);
-            // *** FIX: Only auto-unhide if NOT in userHiddenCurrencies ***
-            if (gameState.hiddenCurrencies && gameState.hiddenCurrencies.includes(currKey)) {
-                if (!gameState.userHiddenCurrencies || !gameState.userHiddenCurrencies.includes(currKey)) {
-                    gameState.hiddenCurrencies = gameState.hiddenCurrencies.filter(k => k !== currKey);
-                    if (typeof renderCurrencyBar === 'function') renderCurrencyBar();
-                    if (typeof renderCurrencyToggles === 'function') renderCurrencyToggles();
-                }
-            }
-            if (!gameState.currencyOrder.includes(currKey)) { gameState.currencyOrder.push(currKey); }
+    if (!gameState.currencyOrder) gameState.currencyOrder = [];
+    if (!gameState.discoveredCurrencies.includes(currKey)) gameState.discoveredCurrencies.push(currKey);
+    // Only auto-unhide if NOT in userHiddenCurrencies
+    if (gameState.hiddenCurrencies && gameState.hiddenCurrencies.includes(currKey)) {
+        if (!gameState.userHiddenCurrencies || !gameState.userHiddenCurrencies.includes(currKey)) {
+            gameState.hiddenCurrencies = gameState.hiddenCurrencies.filter(k => k !== currKey);
+            if (typeof renderCurrencyBar === 'function') renderCurrencyBar();
+            if (typeof renderCurrencyToggles === 'function') renderCurrencyToggles();
         }
+    }
+    if (!gameState.currencyOrder.includes(currKey)) { 
+        gameState.currencyOrder.push(currKey); 
+        // Force bar rebuild on next render cycle
+        _lastRenderedBarOrder = '';
+    } else if (gameState.currencyOrder.indexOf(currKey) > gameState.currencyOrder.lastIndexOf(currKey)) {
+        // Remove duplicate if somehow present twice
+        const idx = gameState.currencyOrder.lastIndexOf(currKey);
+        if (idx !== gameState.currencyOrder.indexOf(currKey)) {
+            gameState.currencyOrder.splice(idx, 1);
+            _lastRenderedBarOrder = '';
+        }
+    }
+}
         // ==================== STEP-WISE ANIMATION (RAF-based) ====================
         function startStepAnimation(nodeId, from, to, isAutomated) {
             const totalSteps = to - from;
@@ -1949,6 +2018,31 @@ let _lastCurrencyBarFontSize = 0;
 let _resetNodeCache = null;
 let _lastBarValues = {};
 let _lastBarDirty = true;
+let _barViewportCheckTime = 0;
+const BAR_VIEWPORT_CHECK_INTERVAL = 850; // ms — check which currencies are visible
+let _visibleCurrencyKeys = new Set(); // keys currently in the scroll viewport
+
+function updateVisibleCurrencies() {
+    const bar = document.getElementById('currency-bar');
+    if (!bar) return;
+    const rect = bar.getBoundingClientRect();
+    const scrollTop = bar.scrollTop;
+    const containerTop = rect.top;
+    const containerBottom = rect.bottom;
+    _visibleCurrencyKeys.clear();
+    // Walk child elements, check if they're in viewport
+    for (const child of bar.children) {
+        const ckey = child.dataset.ckey;
+        if (!ckey) continue;
+        const childRect = child.getBoundingClientRect();
+        // Check overlap with container viewport (with small buffer)
+        const top = childRect.top;
+        const bottom = childRect.bottom;
+        if (bottom >= containerTop - 5 && top <= containerBottom + 5) {
+            _visibleCurrencyKeys.add(ckey);
+        }
+    }
+}
 
 function renderCurrencyBar() {
     const bar = document.getElementById('currency-bar');
@@ -1985,6 +2079,15 @@ function renderCurrencyBar() {
         _lastRenderedBarHidden = hiddenKey;
         _lastCurrencyBarFontSize = currencyFontSize;
         _lastBarValues = {};
+        // After rebuild, refresh visible set
+        updateVisibleCurrencies();
+    }
+    
+    // Every ~850ms, refresh which currencies are in the scroll viewport
+    const now = performance.now();
+    if (now - _barViewportCheckTime > BAR_VIEWPORT_CHECK_INTERVAL) {
+        updateVisibleCurrencies();
+        _barViewportCheckTime = now;
     }
     
     // Build resetNode lookup once
@@ -1995,8 +2098,11 @@ function renderCurrencyBar() {
         });
     }
     
-    // Update values only (cheap DOM writes) — skip if value hasn't changed
+    // Update values — always update ALL visible currencies regardless of cached value
+    // This ensures "0" gets shown properly after a reset
     for (const [key, cached] of currencyBarCache) {
+        if (!_visibleCurrencyKeys.has(key)) continue;
+        
         const amt = gameState.currencies[key] || 0;
         const rate = calculateGainRate(key);
         const fmtAmt = formatNum(amt);
@@ -2008,12 +2114,29 @@ function renderCurrencyBar() {
             if (g > 0) potentialText = ` (+${formatNum(g)} on reset)`;
         }
         const valKey = fmtAmt + fmtRate + potentialText;
-        if (_lastBarValues[key] === valKey) continue;
+        // Force update when value is 0 (to display "0" after reset)
+        if (_lastBarValues[key] === valKey && amt !== 0) continue;
         _lastBarValues[key] = valKey;
         cached.amount.textContent = fmtAmt;
         cached.rate.textContent = fmtRate;
         cached.rate.style.fontSize = `${Math.max(8, currencyFontSize - 1)}px`;
         cached.potential.textContent = potentialText;
+    }
+    
+    // Also refresh bar for all currencies that are not in the visible set but have value 0
+    // (e.g. after a reset, a currency that was previously non-zero is now 0 and should show)
+    for (const [key, cached] of currencyBarCache) {
+        if (_visibleCurrencyKeys.has(key)) continue; // already handled above
+        const amt = gameState.currencies[key] || 0;
+        if (amt === 0 && _lastBarValues[key] !== '0') {
+            // Force update this hidden currency now — it's 0 after reset
+            _lastBarValues[key] = '0';
+            cached.amount.textContent = '0';
+            const rate = calculateGainRate(key);
+            cached.rate.textContent = `(+${formatNum(rate)}/s)`;
+            cached.rate.style.fontSize = `${Math.max(8, currencyFontSize - 1)}px`;
+            cached.potential.textContent = '';
+        }
     }
 }
 
@@ -2107,36 +2230,37 @@ function renderCurrencyBar() {
         }
 
         function executeReset(node) {
-            if (!node) return;
-            const gain = getEffectiveResetGain(node);
-            if (gain <= 0) { playSound('fail');
-                document.getElementById('reset-modal').classList.add('hidden'); return; }
-            gameState.currencies[node.targetCurrency] = (gameState.currencies[node.targetCurrency] || 0) + gain;
-            if (!gameState.discoveredCurrencies.includes(node.targetCurrency)) { 
-                gameState.discoveredCurrencies.push(node.targetCurrency);
-                addCurrencyToOrder(node.targetCurrency); 
-            } else if (gameState.hiddenCurrencies && gameState.hiddenCurrencies.includes(node.targetCurrency) 
-                       && (!gameState.userHiddenCurrencies || !gameState.userHiddenCurrencies.includes(node.targetCurrency))) {
-                // Un-hide when currency is earned from a reset, but only if user didn't manually hide it
-                gameState.hiddenCurrencies = gameState.hiddenCurrencies.filter(k => k !== node.targetCurrency);
-                if (typeof renderCurrencyBar === 'function') renderCurrencyBar();
-                if (typeof renderCurrencyToggles === 'function') renderCurrencyToggles();
-                if (typeof renderCurrencyBar === 'function') renderCurrencyBar();
-                if (typeof renderCurrencyToggles === 'function') renderCurrencyToggles();
-            }
-            resetNodeLevels(node);
-            // Only reset the currencies explicitly listed in resetCurrencies
-            // Do NOT assume empty means reset P
-            needsNodeUpdate = true;
-            clearCaches(true);
-            playSound('reset');
-            showToast(`Reset! +${formatNum(gain)} ${node.targetCurrency}`);
-            document.getElementById('reset-modal').classList.add('hidden');
-            activeResetNode = null;
-            requestCanvasRedraw();
-            renderCurrencyBar();
-            lastCurrencyUpdateTime = performance.now(); // Reset timer so it shows immediately
-        }
+    if (!node) return;
+    const gain = getEffectiveResetGain(node);
+    if (gain <= 0) { playSound('fail');
+        document.getElementById('reset-modal').classList.add('hidden'); return; }
+    // Save BEFORE reset in case something goes wrong
+    try { saveGame(); } catch(e) {}
+    gameState.currencies[node.targetCurrency] = (gameState.currencies[node.targetCurrency] || 0) + gain;
+    if (!gameState.discoveredCurrencies.includes(node.targetCurrency)) { 
+        gameState.discoveredCurrencies.push(node.targetCurrency);
+        addCurrencyToOrder(node.targetCurrency); 
+    } else if (gameState.hiddenCurrencies && gameState.hiddenCurrencies.includes(node.targetCurrency) 
+               && (!gameState.userHiddenCurrencies || !gameState.userHiddenCurrencies.includes(node.targetCurrency))) {
+        // Un-hide when currency is earned from a reset, but only if user didn't manually hide it
+        gameState.hiddenCurrencies = gameState.hiddenCurrencies.filter(k => k !== node.targetCurrency);
+    }
+    resetNodeLevels(node);
+    needsNodeUpdate = true;
+    clearCaches(true);
+    playSound('reset');
+    showToast(`Reset! +${formatNum(gain)} ${node.targetCurrency}`);
+    document.getElementById('reset-modal').classList.add('hidden');
+    activeResetNode = null;
+    requestCanvasRedraw();
+    // Force bar rebuild after reset (currencies that went to 0 need to reappear)
+    _lastRenderedBarOrder = '';
+    _lastBarValues = {};
+    renderCurrencyBar();
+    lastCurrencyUpdateTime = performance.now();
+    // Save again after reset
+    try { saveGame(); } catch(e) {}
+}
 
         document.getElementById('reset-modal-cancel').onclick = () => { document.getElementById('reset-modal').classList.add(
                 'hidden');
@@ -2572,67 +2696,106 @@ document.getElementById('btn-font-up').onclick = (e) => {
                 '#btn-settings-toggle')) document.getElementById('settings-menu').classList.add('hidden'); });
         // ==================== PERSISTENCE ====================
         const SAVE_KEY = 'UPGRADEX_SAVE_V7';
+const SAVE_BACKUP_KEY = 'UPGRADEX_SAVE_BACKUP_V7';
+const SAVE_VERSION = 1;
 
-        function saveGame() { gameState.camera = { panX, panY, scale };
-            gameState.buyMode = buyMode;
-            gameState.offlineTimestamp = Date.now();
-            localStorage.setItem(SAVE_KEY, JSON.stringify(gameState)); }
-
-        function loadGame() {
-            const data = localStorage.getItem(SAVE_KEY);
-            if (!data) return;
+        function saveGame() {
             try {
-                const parsed = JSON.parse(data);
-                // Validate essential fields to avoid applying a corrupt save
-                if (typeof parsed !== 'object' || !parsed.currencies || typeof parsed.currencies !== 'object') {
-                    console.warn('Corrupt save (missing currencies) — ignoring.');
-                    return;
-                }
-                // Make sure it has at least one known key
-                const valid = Object.keys(parsed.currencies).some(k => CURRENCIES[k]);
-                if (!valid) {
-                    console.warn('Corrupt save (no known currencies) — ignoring.');
-                    return;
-                }
-                gameState = { ...gameState, ...parsed };
-                if (!gameState.hiddenCurrencies) gameState.hiddenCurrencies = [];
-                if (!gameState.userHiddenCurrencies) gameState.userHiddenCurrencies = [];
-                if (!gameState.unlockedDecorations) gameState.unlockedDecorations = [];
-                if (!gameState.skipResetConfirm) gameState.skipResetConfirm = {};
-                if (gameState.currencyFontSize === undefined) gameState.currencyFontSize = 11;
-                if (!gameState.currencyOrder) gameState.currencyOrder = ['P'];
-                // *** FIX: Ensure ALL currencies with gain are in discoveredCurrencies ***
-                if (gameState.currencyOrder.length > 1 && gameState.currencyOrder.length <= 30 && (!gameState.discoveredCurrencies || gameState.discoveredCurrencies.length <= 1)) {
-                    // Old save — rebuild discoveredCurrencies from currencyOrder
-                    gameState.discoveredCurrencies = [...gameState.currencyOrder];
-                }
-                // Also ensure currencies with existing amounts in currencys are in order
-                if (gameState.currencies) {
-                    for (const key of Object.keys(gameState.currencies)) {
-                        if (gameState.currencies[key] > 0 && gameState.currencyOrder && !gameState.currencyOrder.includes(key)) {
-                            gameState.currencyOrder.push(key);
-                            if (!gameState.discoveredCurrencies.includes(key)) gameState.discoveredCurrencies.push(key);
-                        }
+                gameState.camera = { panX, panY, scale };
+                gameState.buyMode = buyMode;
+                gameState.offlineTimestamp = Date.now();
+                // Include version for forward compat
+                const toSave = { __version: SAVE_VERSION, ...gameState };
+                const raw = JSON.stringify(toSave);
+                // Re-parse and re-stringify to validate before overwriting
+                JSON.parse(raw);
+                localStorage.setItem(SAVE_KEY, raw);
+                // Save a backup copy too (only the most recent)
+                localStorage.setItem(SAVE_BACKUP_KEY, raw);
+            } catch (e) {
+                console.warn('Save failed (non-critical):', e);
+            }
+        }
+
+        function tryParseSave(raw) {
+            try { return JSON.parse(raw); } catch(e) { return null; }
+        }
+        
+        function tryLoadGameFrom(raw) {
+            const parsed = tryParseSave(raw);
+            if (!parsed) return null;
+            if (!parsed || typeof parsed !== 'object' || !parsed.currencies || typeof parsed.currencies !== 'object') return null;
+            const knownFields = ['levels', 'currencies', 'discoveredCurrencies', 'currencyOrder', 'camera', 'buyMode'];
+            const knownCount = knownFields.filter(f => parsed[f] !== undefined).length;
+            if (knownCount < 2) return null;
+            return parsed;
+        }
+        
+        function loadGame() {
+            let raw = localStorage.getItem(SAVE_KEY);
+            let parsed = null;
+            if (raw) parsed = tryLoadGameFrom(raw);
+            
+            // If main save is invalid, try the backup
+            if (!parsed) {
+                const backupRaw = localStorage.getItem(SAVE_BACKUP_KEY);
+                if (backupRaw && backupRaw !== raw) {
+                    console.warn('Main save corrupt — trying backup...');
+                    parsed = tryLoadGameFrom(backupRaw);
+                    if (parsed) {
+                        showToast('⚠️ Main save was corrupt, loaded backup instead');
                     }
                 }
-                if (gameState.camera) { panX = gameState.camera.panX || 0;
-                    panY = gameState.camera.panY || 0;
-                    scale = gameState.camera.scale || 1; }
-                if (gameState.buyMode !== undefined) { buyMode = gameState.buyMode; }
-                if (gameState.currencyFontSize !== undefined) {
-    currencyFontSize = gameState.currencyFontSize;
-} else {
-    currencyFontSize = 11;
-}
-document.getElementById('font-size-label').textContent = currencyFontSize;
-                document.getElementById('buy-mode-label').textContent = `BUY: x${buyMode}`;
-                if (gameState.paused) { document.getElementById('pause-icon').setAttribute('data-lucide', 'play');
-                    document.getElementById('pause-label').textContent = 'Continue'; } else { document
-                        .getElementById('pause-icon').setAttribute('data-lucide', 'pause');
-                    document.getElementById('pause-label').textContent = 'Stop'; }
-                lucide.createIcons();
-                clearCaches(true);
-            } catch (e) { console.warn('Save load error, skipping:', e); localStorage.removeItem(SAVE_KEY); }
+            }
+            
+            if (!parsed) return;
+            // Soft validation: if the data looks completely wrong, just log and keep defaults
+            if (!parsed || typeof parsed !== 'object' || !parsed.currencies || typeof parsed.currencies !== 'object') {
+                console.warn('Save has no currencies — ignoring.');
+                return;
+            }
+            // Check that at least a few known fields exist (partial/corrupt saves are OK)
+            const knownFields = ['levels', 'currencies', 'discoveredCurrencies', 'currencyOrder', 'camera', 'buyMode'];
+            const knownCount = knownFields.filter(f => parsed[f] !== undefined).length;
+            if (knownCount < 2) {
+                console.warn('Save has too few known fields (' + knownCount + ') — ignoring.');
+                return;
+            }
+            // Merge safely — never replace the entire gameState object, only merge fields
+            gameState = { ...gameState, ...parsed };
+            if (!gameState.hiddenCurrencies) gameState.hiddenCurrencies = [];
+            if (!gameState.userHiddenCurrencies) gameState.userHiddenCurrencies = [];
+            if (!gameState.unlockedDecorations) gameState.unlockedDecorations = [];
+            if (!gameState.skipResetConfirm) gameState.skipResetConfirm = {};
+            if (gameState.currencyFontSize === undefined) gameState.currencyFontSize = 11;
+            if (!gameState.currencyOrder) gameState.currencyOrder = ['P'];
+            if (!gameState.discoveredCurrencies) gameState.discoveredCurrencies = ['P'];
+            // Ensure currencies with amounts are in order
+            if (gameState.currencies) {
+                for (const key of Object.keys(gameState.currencies)) {
+                    if ((gameState.currencies[key] || 0) > 0 && gameState.currencyOrder && !gameState.currencyOrder.includes(key)) {
+                        gameState.currencyOrder.push(key);
+                        if (!gameState.discoveredCurrencies.includes(key)) gameState.discoveredCurrencies.push(key);
+                    }
+                }
+            }
+            if (gameState.camera) { panX = gameState.camera.panX || 0;
+                panY = gameState.camera.panY || 0;
+                scale = gameState.camera.scale || 1; }
+            if (gameState.buyMode !== undefined) { buyMode = gameState.buyMode; }
+            if (gameState.currencyFontSize !== undefined) {
+                currencyFontSize = gameState.currencyFontSize;
+            } else {
+                currencyFontSize = 11;
+            }
+            document.getElementById('font-size-label').textContent = currencyFontSize;
+            document.getElementById('buy-mode-label').textContent = `BUY: x${buyMode}`;
+            if (gameState.paused) { document.getElementById('pause-icon').setAttribute('data-lucide', 'play');
+                document.getElementById('pause-label').textContent = 'Continue'; } else { document
+                    .getElementById('pause-icon').setAttribute('data-lucide', 'pause');
+                document.getElementById('pause-label').textContent = 'Stop'; }
+            lucide.createIcons();
+            clearCaches(true);
         }
 
         function processOfflineProgress() {
@@ -2744,32 +2907,28 @@ document.getElementById('font-size-label').textContent = currencyFontSize;
         function tickGame(dtMs) {
             const dt = dtMs / 1000;
             if (gameState.paused) return;
-            // Clear frame-level caches every tick so effects/rates/upgrades update continuously
+            // Clear frame-level caches every tick
             clearTickCaches();
             let changed = false;
-            // Always mark changed if any discovered currency has a negative rate (drain)
+            // Mark changed if any discovered currency has a negative rate
             for (const key of gameState.discoveredCurrencies) {
                 if (calculateGainRate(key) < 0) { changed = true; break; }
             }
-            // Check all defined currencies for new gains or drains — this ensures currencies
-            // that the player unlocked (e.g. ∞, ♦, L, C, ¤) get discovered even
-            // if they were hidden before or missing from currencyOrder.
+            // Check all defined currencies for new gains or drains
             const discoveredSet = new Set(gameState.discoveredCurrencies);
             for (const key of Object.keys(CURRENCIES)) {
                 const rate = calculateGainRate(key);
                 if (rate !== 0) {
-                    // Ensure it's discovered
                     if (!discoveredSet.has(key)) {
                         gameState.discoveredCurrencies.push(key);
                         addCurrencyToOrder(key);
                         discoveredSet.add(key);
                         needsNodeUpdate = true;
                     }
-                    // Ensure the value slot exists
                     if (gameState.currencies[key] === undefined) gameState.currencies[key] = 0;
                 }
             }
-            // Process all discovered currencies for gain (including negative rates)
+            // Process all discovered currencies for gain
             for (const key of gameState.discoveredCurrencies) {
                 const rate = calculateGainRate(key);
                 if (rate !== 0) {
@@ -2777,20 +2936,24 @@ document.getElementById('font-size-label').textContent = currencyFontSize;
                     const newVal = old + rate * dt;
                     gameState.currencies[key] = newVal;
                     if (Math.abs(newVal - old) > Math.max(1, Math.abs(old) * 0.005)) changed = true;
-                    else if (newVal < old && old > 0) changed = true; // also mark changed when draining
+                    else if (newVal < old && old > 0) changed = true;
                 }
             }
-            // Auto-unhide currencies that have gain but were NOT user-hidden
+            // Auto-unhide currencies with gain
             for (const key of gameState.discoveredCurrencies || []) {
                 const rate = calculateGainRate(key);
                 if (rate > 0 && gameState.hiddenCurrencies && gameState.hiddenCurrencies.includes(key)) {
-                    // Only auto-unhide if NOT in userHiddenCurrencies
                     if (!gameState.userHiddenCurrencies || !gameState.userHiddenCurrencies.includes(key)) {
                         gameState.hiddenCurrencies = gameState.hiddenCurrencies.filter(k => k !== key);
                         if (typeof renderCurrencyBar === 'function') renderCurrencyBar();
                         if (typeof renderCurrencyToggles === 'function') renderCurrencyToggles();
                     }
                 }
+            }
+            // Periodically refresh currency bar for currencies that exist but show 0
+            // This handles the case where a currency went to 0 after reset
+            if (typeof renderCurrencyBar === 'function' && performance.now() % 2000 < 20) {
+                renderCurrencyBar();
             }
             if (performance.now() - lastAutomationTime >= 200) {
                 lastAutomationTime = performance.now();
@@ -2873,6 +3036,8 @@ document.getElementById('font-size-label').textContent = currencyFontSize;
                 bar.addEventListener('scroll', () => {
                     if (barScrollSaveTimer) clearTimeout(barScrollSaveTimer);
                     barScrollSaveTimer = setTimeout(saveCurrencyBarScrollState, 150);
+                    // Refresh visible set immediately on scroll
+                    updateVisibleCurrencies();
                 });
             }
         }
@@ -2913,7 +3078,7 @@ document.getElementById('font-size-label').textContent = currencyFontSize;
             // Restore bar scroll state & lock state AFTER the bar is first rendered
             restoreCurrencyBarScrollState();
             setupBarScrollSave();
-            setInterval(saveGame, 3000);
+            setInterval(saveGame, 10000);
             rafId = requestAnimationFrame(gameLoop);
         };
         window.addEventListener('resize', () => {
