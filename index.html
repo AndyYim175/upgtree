@@ -1871,16 +1871,66 @@ function buyUpgrade(nodeId, isAutomated = false, isFree = false) {
                 clearCaches();
                 if (bought > 1 && !isAutomated && !node.bulkFinalCost) {
                     startStepAnimation(node.id, oldLevel, newLevel, isAutomated);
-                    playSound('buy');
+                    // Schedule multi-buy sounds spread over time
+                    scheduleMultiBuySound(bought);
                 } else {
                     startLevelAnimation(node.id, oldLevel, newLevel);
-                    playSound(isAutomated ? 'auto' : 'buy');
+                    // Autobuyers: no sound. Single manual buy: fire immediately.
+                    if (!isAutomated) {
+                        playSound('buy');
+                    }
                 }
                 requestCanvasRedraw();
                 return true;
             }
             return false;
             } catch(e) { console.warn('buyUpgrade error for', nodeId, e); return false; }
+        }
+
+        // ---- Multi-buy sound scheduler ----
+        // Fires individual buy-sounds spread over time for multi-level purchases.
+        // Autobuyers are completely silent (handled in buyUpgrade).
+        let _multiBuyTimerId = null;
+        let _multiBuyTimes = [];
+
+        function scheduleMultiBuySound(levels) {
+            if (levels <= 0) return;
+            const count = Math.min(levels, 64);
+            // Total duration = 0.5 + 0.1 * sqrt(count)
+            const totalDuration = 0.1 + 0.02 * Math.pow(count, 0.);
+            // sqrt(i) for i=1..count, scaled & shifted so first=0, last=totalDuration
+            const sqrt1 = Math.sqrt(1);
+            const sqrtN = Math.sqrt(count);
+            const times = [];
+            for (let i = 1; i <= count; i++) {
+                const t = ((Math.sqrt(i) - sqrt1) / (sqrtN - sqrt1)) * totalDuration;
+                times.push(t);
+            }
+            // Cancel any previous in-flight sequence (e.g. from rapid clicks)
+            if (_multiBuyTimerId) {
+                clearTimeout(_multiBuyTimerId);
+                _multiBuyTimerId = null;
+            }
+            _multiBuyTimes = times.slice();
+            // Fire the first one (t=0) immediately
+            playSound('buy');
+            // Schedule the rest at their absolute delay from now
+            scheduleMultiBuyNext();
+        }
+
+        function scheduleMultiBuyNext() {
+            if (_multiBuyTimes.length <= 1) {
+                _multiBuyTimes = [];
+                return;
+            }
+            // Remove index 0 (already fired)
+            _multiBuyTimes.shift();
+            // Next pop's absolute delay from start
+            const delayMs = Math.max(10, Math.round(_multiBuyTimes[0] * 1000));
+            _multiBuyTimerId = setTimeout(() => {
+                playSound('buy');
+                scheduleMultiBuyNext();
+            }, delayMs);
         }
         // ==================== CURRENCY ORDER MANAGEMENT ====================
         function addCurrencyToOrder(currKey) {
