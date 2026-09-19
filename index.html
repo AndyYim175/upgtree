@@ -1444,9 +1444,9 @@ function wrapText(text, maxWidth, fontSize) {
                     );
                 else if (eff.type === 'automation') parts.push('AUTO');
                 else if (eff.type === 'reset_gain_mult') parts.push(
-                    `x${formatNum(eff.formula(curLevel, getLevel, getCurr))} ${eff.targetCurrency} r/g`);
+                    `x${formatNum(eff.formula(curLevel, getLevel, getCurr))} ${eff.targetCurrency || eff.currency} r/g`);
                 else if (eff.type === 'reset_gain_add') parts.push(
-                    `+${formatNum(eff.formula(curLevel, getLevel, getCurr))} ${eff.targetCurrency} r/g`);
+                    `+${formatNum(eff.formula(curLevel, getLevel, getCurr))} ${eff.targetCurrency || eff.currency} r/g`);
             });
             return parts.join(', ');
         }
@@ -1792,13 +1792,14 @@ function draw() {
         let _resetGainCache = {};
         let _resetGainFrame = {};
         // Build once, never nullified by clearCaches; also NO need to rebuild on buy.
+        // Accepts either `targetCurrency` or `currency` — modders can use whichever they prefer.
         const _resetGainEffectsIndex = (() => {
             const idx = {};
             TREE_NODES.forEach(node => {
                 if (node.type !== 'upgrade' || !node.effects) return;
                 node.effects.forEach(eff => {
                     if (eff.type === 'reset_gain_add' || eff.type === 'reset_gain_mult') {
-                        const key = eff.targetCurrency;
+                        const key = eff.targetCurrency || eff.currency;
                         if (!idx[key]) idx[key] = [];
                         idx[key].push({ nodeId: node.id, type: eff.type, formula: eff.formula });
                     }
@@ -3277,6 +3278,7 @@ document.getElementById('btn-font-up').onclick = (e) => {
         TREE_NODES.forEach(node => {
             if (node.type !== 'upgrade' || !node.effects) return;
             node.effects.forEach(eff => {
+                // Accept either key — modders no longer need to remember which one to use
                 const target = eff.currency || eff.targetCurrency;
                 if (!target) return;
                 if (['base_gain', 'base_gain_raw', 'currency_mult', 'dynamic_mult'].includes(eff.type)) {
