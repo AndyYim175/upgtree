@@ -150,6 +150,28 @@
                 </div>
             </div>
             <button id="btn-buy-multiplier" class="w-full px-2.5 py-1.5 bg-zinc-950 hover:bg-zinc-800 text-amber-400 border border-zinc-800 transition text-left font-bold text-[11px]"><span id="buy-mode-label">BUY: x1</span></button>
+            <!-- Hotkey settings row -->
+            <div class="border-t border-zinc-800 pt-1.5 mt-0.5">
+                <div class="text-[9px] font-bold text-zinc-500 tracking-wider px-1 mb-1">Hotkeys <span class="text-[8px] font-normal text-zinc-600">(click to rebind)</span></div>
+                <div id="hotkey-rows" class="flex flex-col gap-0.5">
+                    <div class="flex items-center justify-between px-2.5 py-1 bg-zinc-950/80 border border-zinc-800 text-[10px]">
+                        <span class="text-zinc-400">Buy x1</span>
+                        <span><button class="hotkey-btn px-1.5 py-0.5 bg-zinc-800 hover:bg-zinc-700 text-zinc-200 border border-zinc-700 min-w-[28px] text-center text-[10px]" data-action="buy1">1</button></span>
+                    </div>
+                    <div class="flex items-center justify-between px-2.5 py-1 bg-zinc-950/80 border border-zinc-800 text-[10px]">
+                        <span class="text-zinc-400">Buy x5</span>
+                        <span><button class="hotkey-btn px-1.5 py-0.5 bg-zinc-800 hover:bg-zinc-700 text-zinc-200 border border-zinc-700 min-w-[28px] text-center text-[10px]" data-action="buy5">2</button></span>
+                    </div>
+                    <div class="flex items-center justify-between px-2.5 py-1 bg-zinc-950/80 border border-zinc-800 text-[10px]">
+                        <span class="text-zinc-400">Buy x10</span>
+                        <span><button class="hotkey-btn px-1.5 py-0.5 bg-zinc-800 hover:bg-zinc-700 text-zinc-200 border border-zinc-700 min-w-[28px] text-center text-[10px]" data-action="buy10">3</button></span>
+                    </div>
+                    <div class="flex items-center justify-between px-2.5 py-1 bg-zinc-950/80 border border-zinc-800 text-[10px]">
+                        <span class="text-zinc-400">Buy MAX</span>
+                        <span><button class="hotkey-btn px-1.5 py-0.5 bg-zinc-800 hover:bg-zinc-700 text-zinc-200 border border-zinc-700 min-w-[28px] text-center text-[10px]" data-action="buyMax">4</button></span>
+                    </div>
+                </div>
+            </div>
             <button id="btn-toggle-effects" class="w-full px-2.5 py-1.5 bg-zinc-950 hover:bg-zinc-800 text-cyan-400 border border-zinc-800 transition text-left font-bold text-[11px]"><span id="effects-mode-label">EFFECTS: ON</span></button>
             <div id="currency-toggles-container" class="border-t border-zinc-800 pt-1.5 mt-0.5">
                 <div class="text-[9px] font-bold text-zinc-500 tracking-wider px-1 mb-1">Currencies <span class="text-[8px] font-normal text-zinc-600">(eye to hide, arrows to reorder)</span></div>
@@ -226,6 +248,21 @@
     <script>
         // ==================== SOUND CONFIGURATION ====================
         const SOUND_CONFIG = { baseFreq: 392.00, freqMultiplier: 1.06, maxStreak: 21, comboResetTimeout: 2000, buyVolume: 1, buyMaxVolume: 1, autoVolume: 0, masterVolume: 0.2, minSoundInterval: 0.05, stepAnimInterval: 0.02 };
+// ==================== CURRENCIES EXCLUDED FROM OFFLINE PROGRESS ====================
+// Some currencies depend on formulas (diminishing returns, random chance, tick-based effects)
+// that would produce unrealistic amounts if processed offline. Add their keys here.
+const OFFLINE_EXCLUDED_CURRENCIES = new Set([
+    'customers',
+    'essence',// uses Math.random() for tick chance
+    'copper',      // uses Math.random() <= 0.01*level per tick
+    'silver',      // uses Math.random() <= 0.0025*level per tick
+    'gold',        // uses Math.random() <= 0.001*level per tick
+    'lapis',       // uses Math.random() for tick chance
+    'diamonds',    // uses Math.random() for tick chance
+    'netherite',   // milestone-based gain (M73 automates, not base)
+    'stars',       // diminishing-return formula capped by current amount — offline would over-earn
+    'fame',        // depends on customers (random), offline would compute incorrectly
+]);
         // ==================== DECORATION DEFINITIONS ====================
         const DECORATIONS = [
             { coords: [[-2.5, 7], [-1.25, 7.5]], thickness: 6, color: 'lightblue', opacity: 0.2, requirements: ['D14'], type: 'line' },
@@ -269,6 +306,8 @@
             { type: 'rect', coords: [12.5, 2.5], width: 800, height: 800, fillColor: '#222222', fillOpacity: 0.5, strokeColor: 'grey', strokeOpacity: 0.9, strokeWidth: 2, requirements: ['M71'] },
             { type: 'rect', coords: [22.5, -2.5], width: 800, height: 800, fillColor: '#777777', fillOpacity: 0.5, strokeColor: 'grey', strokeOpacity: 0.9, strokeWidth: 2, requirements: ['F25'] },
             { type: 'rect', coords: [27.5, -2.5], width: 800, height: 800, fillColor: 'lightgreen', fillOpacity: 0.5, strokeColor: 'green', strokeOpacity: 0.9, strokeWidth: 2, requirements: ['F25'] },
+            { type: 'rect', coords: [32.5, -2.5], width: 800, height: 800, fillColor: '#fcd221', fillOpacity: 0.5, strokeColor: '#fcd221', strokeOpacity: 0.9, strokeWidth: 2, requirements: ['F25'] },
+            { type: 'rect', coords: [32.5, 2.5], width: 800, height: 800, fillColor: '#343434', fillOpacity: 0.1, strokeColor: '#343434', strokeOpacity: 0.9, strokeWidth: 2, requirements: ['F25'] },
             { type: 'rect', coords: [27.5, 2.5], width: 800, height: 800, fillColor: 'lightgreen', fillOpacity: 0.5, strokeColor: 'green', strokeOpacity: 0.9, strokeWidth: 2, requirements: ['F25'] },
             { type: 'rect', coords: [22.5, 2.5], width: 800, height: 800, fillColor: 'lightgreen', fillOpacity: 0.5, strokeColor: 'green', strokeOpacity: 0.9, strokeWidth: 2, requirements: ['F25'] },
             { type: 'rect', coords: [17.5, -0.5], width: 800, height: 160, fillColor: '#676765', fillOpacity: 0.5, strokeColor: 'grey', strokeOpacity: 0.9, strokeWidth: 0, requirements: ['F25'] },
@@ -333,6 +372,8 @@
             { type: 'text', coords: [27.5, 2.5], text: 'Business', alignment: 'Bottom-left', color: 'lightgreen', fontSize: 28, opacity: 0.9, requirements: ['U27'] },
             { type: 'text', coords: [22.5, 2.5], text: 'Business II', alignment: 'Bottom-left', color: 'lightgreen', fontSize: 28, opacity: 0.9, requirements: ['U27'] },
             { type: 'text', coords: [27.5, -2.5], text: 'Business III', alignment: 'Bottom-left', color: 'lightgreen', fontSize: 28, opacity: 0.9, requirements: ['U27'] },
+            { type: 'text', coords: [32.5, -2.5], text: 'Infinity', alignment: 'Bottom-left', color: '#fcd221', fontSize: 28, opacity: 0.9, requirements: ['UB39'] },
+            { type: 'text', coords: [37.5, -2.5], text: 'Black', alignment: 'Bottom-left', color: 'black', fontSize: 28, opacity: 0.9, requirements: ['UB39'] },
             { type: 'text', coords: [-7.5, 17.5], text: 'Dimension baseplate III', alignment: 'Bottom-left', color: '#8B0000', fontSize: 28, opacity: 0.9, requirements: ['A50'] },
             { type: 'text', coords: [-7.5, 12.5], text: 'Progression baseplate', alignment: 'Bottom-left', color: '#ffa500', fontSize: 28, opacity: 0.9, requirements: ['A12'] },
             { type: 'text', coords: [-2.5, 7.65], text: 'Reset all your progress again!', alignment: 'Bottom-left', color: 'lightyellow', fontSize: 15, opacity: 0.9, requirements: ['D16'] },
@@ -419,7 +460,7 @@
             diamonds: { id: 'diamonds', name: 'Diamonds', color: 'text-cyan-400', fillBg: 'rgba(34, 211, 238, 0.25)' },
             netherite: { id: 'netherite', name: 'Netherite', color: 'text-[#433D40]', fillBg: 'rgba(67, 61, 64, 0.25)' },
             fragment: { id: 'fragment', name: 'Fragment', color: 'text-white-100', fillBg: 'rgba(255, 255, 255, 0.25)' },
-            IP: { id: 'IP', name: 'IP', color: 'text-grey-200', fillBg: 'rgba(255, 255, 255, 0.25)' },
+            IP: { id: 'IP', name: 'IP', color: 'text-[#fcd221]', fillBg: 'rgba(252, 210, 33, 0.25)' },
             essence: { id: 'essence', name: 'Essence', color: 'text-purple-200', fillBg: 'rgba(233, 219, 232, 0.25)' },
             DE: { id: 'DE', name: 'Dim-Essence', color: 'text-blue-100', fillBg: 'rgba(0,0,255,0.25)' },
             plates: { id: 'plates', name: 'Plates', color: 'text-blue-200', fillBg: 'rgba(0,0,230,0.25)' },
@@ -448,9 +489,17 @@
             '¤': { id: '¤', name: 'Decoration power', color: 'text-purple-400', fillBg: 'rgba(34,197,94,0.18)' }, 
             '∞': { id: '∞', name: 'Infinities', color: 'text-grey-400', fillBg: 'rgba(34,197,94,0.18)', rainbow: true }, 
             '♦': { id: '♦', name: 'Infinity fragments', color: 'text-purple-400', fillBg: 'rgba(34,197,94,0.18)' }, 
-            E: { id: 'E', name: 'Energy', color: 'text-orange-400', fillBg: 'rgba(255,165,0,0.535)' } };
+            E: { id: 'E', name: 'Energy', color: 'text-orange-400', fillBg: 'rgba(255,165,0,0.535)' },
+            black: { id: 'black', name: 'Black', color: 'text-zinc-900', fillBg: 'rgba(0,0,0,0.2)' },
+        red: { id: 'red', name: 'Red', color: 'text-red-400', fillBg: 'rgba(255,99,71,0.2)' },
+        yellow: { id: 'yellow', name: 'Yellow', color: 'text-yellow-400', fillBg: 'rgba(255,235,59,0.2)' },
+        blue: { id: 'blue', name: 'Blue', color: 'text-blue-400', fillBg: 'rgba(59,130,246,0.2)' },
+        orange: { id: 'orange', name: 'Orange', color: 'text-orange-400', fillBg: 'rgba(255,165,0,0.2)' },
+        green: { id: 'green', name: 'Green', color: 'text-green-400', fillBg: 'rgba(34,197,94,0.2)' },
+        purple: { id: 'purple', name: 'Purple', color: 'text-purple-400', fillBg: 'rgba(168,85,247,0.2)' },
+        white: { id: 'white', name: 'White', color: 'text-zinc-100', fillBg: 'rgba(255,255,255,0.2)' }};
         // ==================== GAME STATE ====================
-        let gameState = { currencies: { P: 0, PR: 0, QT: 0, T: 0, D1: 0, D2: 0, D3: 0, D4: 0, D5: 0, D6: 0, D7: 0, D8: 0 }, discoveredCurrencies: ['P'], currencyOrder: ['P'], hiddenCurrencies: [], userHiddenCurrencies: [], levels: {}, unlockedDecorations: [], camera: { panX: 0, panY: 0, scale: 1 }, soundMuted: false, showEffects: true, buyMode: 1, skipResetConfirm: {}, paused: false, currencyFontSize: 11, offlineTimestamp: Date.now() };
+        let gameState = { currencies: { P: 0, PR: 0, QT: 0, T: 0, D1: 0, D2: 0, D3: 0, D4: 0, D5: 0, D6: 0, D7: 0, D8: 0 }, discoveredCurrencies: ['P'], currencyOrder: ['P'], hiddenCurrencies: [], userHiddenCurrencies: [], levels: {}, unlockedDecorations: [], camera: { panX: 0, panY: 0, scale: 1 }, soundMuted: false, showEffects: true, buyMode: 1, skipResetConfirm: {}, paused: false, currencyFontSize: 11, offlineTimestamp: Date.now(), hotkeyBindings: null };
 // Always ensure P is a valid number (defence against undefined save corruption)
 if (typeof gameState.currencies.P !== 'number' || isNaN(gameState.currencies.P)) gameState.currencies.P = 0;
         let displayLevels = {},
@@ -760,7 +809,7 @@ if (typeof gameState.currencies.P !== 'number' || isNaN(gameState.currencies.P))
     { id: 'AP02', type: 'upgrade', code: 'AP02', name: 'more than game!', coords: [8, 20], reqs: [[8,19]], borderColor: 'green', desc: 'get a plate a second, its more than game!', effects: [{ type: 'base_gain', currency: 'plates', formula: (lvl) => 1*lvl }], costCurrency: 'plates', costFormula: (lvl) => 19, maxLevel: 1 },
     { id: 'AP03', type: 'upgrade', code: 'AP03', name: 'its yes', coords: [8, 18], reqs: [[8,19]], borderColor: 'green', desc: 'get plate based on dim-1!', effects: [{ type: 'base_gain', currency: 'plates', formula: (lvl) => (1+0.1*Math.log10(getCurr('D1')/1e89+10)) }], costCurrency: 'plates', costFormula: (lvl) => 30, maxLevel: 1 },
     { id: 'AP04', type: 'upgrade', code: 'AP04', name: 'its yes...?', coords: [9, 18], reqs: [[8,18]], borderColor: 'green', desc: 'get plate based on dim-2!', effects: [{ type: 'base_gain', currency: 'plates', formula: (lvl) => Math.pow((1+0.1*Math.log10(getCurr('D1')/1e77+10)),2) }], costCurrency: 'plates', costFormula: (lvl) => 100, maxLevel: 1 },
-    { id: 'AP05', type: 'upgrade', code: 'AP05', name: 'connect them all!', coords: [9, 19], reqs: [[8,19]], borderColor: 'green', desc: 'get points based on level!', effects: [{ type: 'currency_mult', currency: 'P', formula: (lvl) => Math.pow(2,Math.pow(lvl,0.5)) }], costCurrency: 'plates', costFormula: (lvl) => 50*Math.pow(2,lvl), maxLevel: 100 },
+    { id: 'AP05', type: 'upgrade', code: 'AP05', name: 'connect them all!', coords: [9, 19], reqs: [[8,19]], borderColor: 'green', desc: 'get points based on level!', effects: [{ type: 'currency_mult', currency: 'P', formula: (lvl) => 2*Math.pow(2,Math.pow(lvl,0.5)) }], costCurrency: 'plates', costFormula: (lvl) => 50*Math.pow(2,lvl), maxLevel: 100 },
     { id: 'AP06', type: 'upgrade', code: 'AP06', name: 'ive been waiting!', coords: [9, 20], reqs: [[8,20]], borderColor: 'green', desc: 'more point upgrades!', effects: [], costCurrency: 'plates', costFormula: (lvl) => 750, maxLevel: 1 },
     { id: 'AP07', type: 'upgrade', code: 'AP07', name: 'yes. every currency do this now', coords: [10, 20], reqs: [[9,20]], borderColor: 'orange', desc: 'boost plate based on points, better effect per level', effects: [{ type: 'currency_mult', currency: 'plates', formula: (lvl) => Math.pow((1+0.3*Math.log10(getCurr('P')/1e50+10)),1+0.1*lvl) }], costCurrency: 'plates', costFormula: (lvl) => 800+200*lvl, maxLevel: 8 },
     { id: 'AP08', type: 'upgrade', code: 'AP08', name: 'inflation', coords: [10, 19], reqs: [[10,20]], borderColor: 'orange', desc: 'x100 dim-8.', effects: [{ type: 'currency_mult', currency: 'D8', formula: (lvl) => Math.pow(100,1*lvl) }], costCurrency: 'plates', costFormula: (lvl) => 2500*Math.pow(2+lvl,lvl), maxLevel: 3 },
@@ -880,13 +929,13 @@ if (typeof gameState.currencies.P !== 'number' || isNaN(gameState.currencies.P))
     { id: 'F03', type: 'upgrade', code: 'F03', name: 'piece by piece', coords: [16, 2], reqs: [[17,2]], borderColor: 'green', desc: 'get a piece of thing per upgrade in this plate', effects: [{ type: 'currency_mult', currency: 'fragment', formula: (lvl) => 2.4e13 }], costCurrency: '€', costFormula: (lvl) => 2e16, maxLevel: 1 },
     { id: 'F04', type: 'upgrade', code: 'F04', name: 'piece by piece', coords: [16, 1], reqs: [[16,2]], borderColor: 'green', desc: 'get a piece of thing per upgrade in this plate', effects: [{ type: 'currency_mult', currency: 'fragment', formula: (lvl) => 2.4e13 }], costCurrency: 'E', costFormula: (lvl) => 1e24, maxLevel: 1 },
     { id: 'F05', type: 'upgrade', code: 'F05', name: 'piece by piece', coords: [15, 2], reqs: [[16,2]], borderColor: 'green', desc: 'get a piece of thing per upgrade in this plate', effects: [{ type: 'currency_mult', currency: 'fragment', formula: (lvl) => 2.4e13 }], costCurrency: '+', costFormula: (lvl) => 1e28, maxLevel: 1 },
-    { id: 'F06', type: 'upgrade', code: 'F06', name: 'piece by piece', coords: [14, 2], reqs: [[15,2]], borderColor: 'green', desc: 'get a piece of thing per upgrade in this plate', effects: [{ type: 'currency_mult', currency: 'fragment', formula: (lvl) => 2.4e13 }], costCurrency: '×', costFormula: (lvl) => 1e12, maxLevel: 1 },
+    { id: 'F06', type: 'upgrade', code: 'F06', name: 'piece by piece', coords: [14, 2], reqs: [[15,2]], borderColor: 'green', desc: 'get a piece of thing per upgrade in this plate', effects: [{ type: 'currency_mult', currency: 'fragment', formula: (lvl) => 2.4e13 }], costCurrency: '×', costFormula: (lvl) => 2e11, maxLevel: 1 },
     { id: 'F07', type: 'upgrade', code: 'F07', name: 'piece by piece', coords: [15, 1], reqs: [[15,2]], borderColor: 'green', desc: 'get a piece of thing per upgrade in this plate', effects: [{ type: 'currency_mult', currency: 'fragment', formula: (lvl) => 2.4e13 }], costCurrency: '¤', costFormula: (lvl) => 1e36, maxLevel: 1 },
-    { id: 'F08', type: 'upgrade', code: 'F08', name: 'piece by piece', coords: [13, 2], reqs: [[14,2]], borderColor: 'green', desc: 'get a piece of thing per upgrade in this plate', effects: [{ type: 'currency_mult', currency: 'fragment', formula: (lvl) => 2.4e13 }], costCurrency: 'L', costFormula: (lvl) => 1e8, maxLevel: 1 },
-    { id: 'F09', type: 'upgrade', code: 'F09', name: 'piece by piece', coords: [17, 0], reqs: [[17,1]], borderColor: 'green', desc: 'get a piece of thing per upgrade in this plate', effects: [{ type: 'currency_mult', currency: 'fragment', formula: (lvl) => 2.4e13 }], costCurrency: 'A', costFormula: (lvl) => 1e10, maxLevel: 1 },
+    { id: 'F08', type: 'upgrade', code: 'F08', name: 'piece by piece', coords: [13, 2], reqs: [[14,2]], borderColor: 'green', desc: 'get a piece of thing per upgrade in this plate', effects: [{ type: 'currency_mult', currency: 'fragment', formula: (lvl) => 2.4e13 }], costCurrency: 'L', costFormula: (lvl) => 1e7, maxLevel: 1 },
+    { id: 'F09', type: 'upgrade', code: 'F09', name: 'piece by piece', coords: [17, 0], reqs: [[17,1]], borderColor: 'green', desc: 'get a piece of thing per upgrade in this plate', effects: [{ type: 'currency_mult', currency: 'fragment', formula: (lvl) => 2.4e13 }], costCurrency: 'A', costFormula: (lvl) => 5e9, maxLevel: 1 },
     { id: 'F10', type: 'upgrade', code: 'F10', name: 'piece by piece', coords: [17, -1], reqs: [[17,0]], borderColor: 'green', desc: 'get a piece of thing per upgrade in this plate', effects: [{ type: 'currency_mult', currency: 'fragment', formula: (lvl) => 2.4e13 }], costCurrency: 'TM', costFormula: (lvl) => 1e52, maxLevel: 1 },
-    { id: 'F11', type: 'upgrade', code: 'F11', name: 'piece by piece', coords: [16, 0], reqs: [[16,1]], borderColor: 'green', desc: 'get a piece of thing per upgrade in this plate', effects: [{ type: 'currency_mult', currency: 'fragment', formula: (lvl) => 2.4e13 }], costCurrency: 'water', costFormula: (lvl) => 2e21, maxLevel: 1 },
-    { id: 'F12', type: 'upgrade', code: 'F12', name: 'piece by piece', coords: [16, -1], reqs: [[16,0]], borderColor: 'green', desc: 'get a piece of thing per upgrade in this plate', effects: [{ type: 'currency_mult', currency: 'fragment', formula: (lvl) => 2.4e13 }], costCurrency: 'sunlight', costFormula: (lvl) => 5e14, maxLevel: 1 },
+    { id: 'F11', type: 'upgrade', code: 'F11', name: 'piece by piece', coords: [16, 0], reqs: [[16,1]], borderColor: 'green', desc: 'get a piece of thing per upgrade in this plate', effects: [{ type: 'currency_mult', currency: 'fragment', formula: (lvl) => 2.4e13 }], costCurrency: 'water', costFormula: (lvl) => 1e20, maxLevel: 1 },
+    { id: 'F12', type: 'upgrade', code: 'F12', name: 'piece by piece', coords: [16, -1], reqs: [[16,0]], borderColor: 'green', desc: 'get a piece of thing per upgrade in this plate', effects: [{ type: 'currency_mult', currency: 'fragment', formula: (lvl) => 2.4e13 }], costCurrency: 'sunlight', costFormula: (lvl) => 5e13, maxLevel: 1 },
     { id: 'F13', type: 'upgrade', code: 'F13', name: 'piece by piece', coords: [15, 0], reqs: [[15,1]], borderColor: 'green', desc: 'get a piece of thing per upgrade in this plate', effects: [{ type: 'currency_mult', currency: 'fragment', formula: (lvl) => 2.4e13 }], costCurrency: 'D1', costFormula: (lvl) => 1e105, maxLevel: 1 },
     { id: 'F14', type: 'upgrade', code: 'F14', name: 'piece by piece', coords: [15, -1], reqs: [[15,0]], borderColor: 'green', desc: 'get a piece of thing per upgrade in this plate', effects: [{ type: 'currency_mult', currency: 'fragment', formula: (lvl) => 2.4e13 }], costCurrency: 'D8', costFormula: (lvl) => 1e12, maxLevel: 1 },
     { id: 'F15', type: 'upgrade', code: 'F15', name: 'piece by piece', coords: [14, 1], reqs: [[14,2]], borderColor: 'green', desc: 'get a piece of thing per upgrade in this plate', effects: [{ type: 'currency_mult', currency: 'fragment', formula: (lvl) => 2.4e13 }], costCurrency: 'plates', costFormula: (lvl) => 5e20, maxLevel: 1 },
@@ -947,8 +996,8 @@ if (typeof gameState.currencies.P !== 'number' || isNaN(gameState.currencies.P))
       ],
       calculateGain: () => (getCurr('fragment')>1.7e308),
     },
-    { id: 'U02', type: 'upgrade', code: 'U02', name: 'hi', coords: [23, -0], reqs: [[23,-2]], borderColor: 'green', desc: 'start generating essence based on IP a lot.', effects: [{ type: 'base_gain', currency: 'essence', formula: (lvl) => Math.pow(getCurr('IP'), 5) }], costCurrency: 'IP', costFormula: (lvl) => 0, maxLevel: 1 },
-    { id: 'U03', type: 'upgrade', code: 'U03', name: 'thats a lot', coords: [23, 1], reqs: [[23,0]], borderColor: 'green', desc: 'get raw base point gain based on essence.', effects: [{ type: 'base_gain_raw', currency: 'P', formula: (lvl) => 1+Math.min(Math.pow(getCurr('essence')+2, 5),1e8*Math.pow(getCurr('essence'),0.5)) }], costCurrency: 'essence', costFormula: (lvl) => 5, maxLevel: 1 },
+    { id: 'U02', type: 'upgrade', code: 'U02', name: 'hi', coords: [23, -0], reqs: [[23,-2]], borderColor: 'green', desc: 'start generating essence based on IP a lot. [effect capped at 10 IP]', effects: [{ type: 'base_gain', currency: 'essence', formula: (lvl) => Math.pow(Math.min(Math.max(getCurr('IP'),1),10), 5) }], costCurrency: 'IP', costFormula: (lvl) => 0, maxLevel: 1 },
+    { id: 'U03', type: 'upgrade', code: 'U03', name: 'thats a lot', coords: [23, 1], reqs: [[23,0]], borderColor: 'green', desc: 'get raw base point gain based on essence. [will get softcapped]', effects: [{ type: 'base_gain_raw', currency: 'P', formula: (lvl) => 1+Math.min(Math.pow(getCurr('essence')+2, 5),1e8*Math.pow(getCurr('essence')+1,0.125)) }], costCurrency: 'essence', costFormula: (lvl) => 5, maxLevel: 1 },
     { id: 'U04', type: 'upgrade', code: 'U04', name: 'thats not so much xd', coords: [23, 2], reqs: [[23,1]], borderColor: 'orange', desc: 'boost point gain based on essence.', effects: [{ type: 'currency_mult', currency: 'P', formula: (lvl) => Math.pow(getCurr('essence')/1e1+1,0.35) }], costCurrency: 'essence', costFormula: (lvl) => 10, maxLevel: 1 },
     { id: 'U05', type: 'upgrade', code: 'U05', name: 'feeling energetic?', coords: [24, 1], reqs: [[23,1]], borderColor: 'orange', desc: 'boost energy gain based on essence.', effects: [{ type: 'currency_mult', currency: 'E', formula: (lvl) => Math.pow(getCurr('essence')/2e1+25,0.5) }], costCurrency: 'essence', costFormula: (lvl) => 15, maxLevel: 1 },
     { id: 'U06', type: 'upgrade', code: 'U06', name: 'experienced', coords: [24, 0], reqs: [[24,1]], borderColor: 'orange', desc: 'boost experience gain based on essence.', effects: [{ type: 'currency_mult', currency: 'XP', formula: (lvl) => Math.pow(getCurr('essence')/3+35,0.7) }], costCurrency: 'essence', costFormula: (lvl) => 20, maxLevel: 1 },
@@ -959,17 +1008,17 @@ if (typeof gameState.currencies.P !== 'number' || isNaN(gameState.currencies.P))
     { id: 'U11', type: 'upgrade', code: 'U11', name: 'yay!', coords: [24, -1], reqs: [[25,-1]], borderColor: 'orange', desc: 'boost D1/2/3/4/5/6/7/8 gain based on essence.', effects: [{ type: 'currency_mult', currency: 'D1', formula: (lvl) => Math.pow(Math.log10(getCurr('essence')+10)*5-4,1.2) },{ type: 'currency_mult', currency: 'D2', formula: (lvl) => Math.pow(Math.log10(getCurr('essence')+10)*5-4,1) },{ type: 'currency_mult', currency: 'D3', formula: (lvl) => Math.pow(Math.log10(getCurr('essence')+10)*5-4,0.8) },{ type: 'currency_mult', currency: 'D4', formula: (lvl) => Math.pow(Math.log10(getCurr('essence')+10)*5-4,0.65) },{ type: 'currency_mult', currency: 'D5', formula: (lvl) => Math.pow(Math.log10(getCurr('essence')+10)*5-4,0.5) },{ type: 'currency_mult', currency: 'D6', formula: (lvl) => Math.pow(Math.log10(getCurr('essence')+10)*5-4,0.4) },{ type: 'currency_mult', currency: 'D7', formula: (lvl) => Math.pow(Math.log10(getCurr('essence')+10)*5-4,0.3) },{ type: 'currency_mult', currency: 'D8', formula: (lvl) => Math.pow(Math.log10(getCurr('essence')+10)*5-4,0.2) }], costCurrency: 'essence', costFormula: (lvl) => 150, maxLevel: 1 },
     { id: 'U12', type: 'upgrade', code: 'U12', name: 'reset too', coords: [24, -2], reqs: [[24,-1]], borderColor: 'orange', desc: 'boost dim-essence passive gain based on essence.', effects: [{ type: 'currency_mult', currency: 'DE', formula: (lvl) => Math.pow(getCurr('essence')/1e1+10,0.25) }], costCurrency: 'essence', costFormula: (lvl) => 125, maxLevel: 1 },
     { id: 'U13', type: 'upgrade', code: 'U13', name: 'layers', coords: [25, 2], reqs: [[25,1]], borderColor: 'orange', desc: '+5% resc/prestige/asc gain on reset per second (not boosted by other mults).', effects: [{ type: 'base_gain_raw', currency: 'R', formula: (lvl) => 0.05*getResetGain('R')},{ type: 'base_gain_raw', currency: '€', formula: (lvl) => 0.05*getResetGain('€')},{ type: 'base_gain_raw', currency: 'A', formula: (lvl) => 0.05*getResetGain('A')}], costCurrency: 'essence', costFormula: (lvl) => 150, maxLevel: 1 },
-    { id: 'U14', type: 'upgrade', code: 'U14', name: 'sub-layers', coords: [26, 2], reqs: [[25,2]], borderColor: 'orange', desc: '+5% mult/water/ sunpower/dim-essence gain on reset per second (not boosted by other mults).', effects: [{ type: 'base_gain_raw', currency: '×', formula: (lvl) => 0.05*getResetGain('×')},{ type: 'base_gain_raw', currency: 'water', formula: (lvl) => 0.05*getResetGain('water')},{ type: 'base_gain_raw', currency: 'sunpower', formula: (lvl) => 0.05*getResetGain('sunpower')},{ type: 'base_gain_raw', currency: 'DE', formula: (lvl) => 0.05*getResetGain('DE')}], costCurrency: 'essence', costFormula: (lvl) => 150, maxLevel: 1 },
-    { id: 'U15', type: 'upgrade', code: 'U15', name: 'efficiency III', coords: [25, -2], reqs: [[25,-1]], borderColor: 'green', desc: '+50% grass/dirt/stone/ copper/silver/ gold/lapis per level', effects: [{ type: 'currency_mult', currency: 'grass', formula: (lvl) => 1+0.5*lvl },{ type: 'currency_mult', currency: 'dirt', formula: (lvl) => 1+0.5*lvl },{ type: 'currency_mult', currency: 'stone', formula: (lvl) => 1+0.5*lvl },{ type: 'currency_mult', currency: 'copper', formula: (lvl) => 1+0.5*lvl },{ type: 'currency_mult', currency: 'silver', formula: (lvl) => 1+0.5*lvl },{ type: 'currency_mult', currency: 'gold', formula: (lvl) => 1+0.5*lvl },{ type: 'currency_mult', currency: 'lapis', formula: (lvl) => 1+0.5*lvl },{ type: 'currency_mult', currency: 'diamonds', formula: (lvl) => 1+0.5*lvl },{ type: 'currency_mult', currency: 'netherite', formula: (lvl) => 1+0.5*lvl }], costCurrency: 'essence', costFormula: (lvl) => 50*Math.pow(2,lvl), maxLevel: 5 },
+    { id: 'U14', type: 'upgrade', code: 'U14', name: 'sub-layers', coords: [26, 2], reqs: [[25,2]], borderColor: 'orange', desc: '+5% mult/water/level/sunpower/dim-essence gain on reset per second (not boosted by other mults).', effects: [{ type: 'base_gain_raw', currency: '×', formula: (lvl) => 0.05*getResetGain('×')},{ type: 'base_gain_raw', currency: 'water', formula: (lvl) => 0.05*getResetGain('water')},{ type: 'base_gain_raw', currency: 'L', formula: (lvl) => 0.05*getResetGain('L')},{ type: 'base_gain_raw', currency: 'sunpower', formula: (lvl) => 0.05*getResetGain('sunpower')},{ type: 'base_gain_raw', currency: 'DE', formula: (lvl) => 0.05*getResetGain('DE')}], costCurrency: 'essence', costFormula: (lvl) => 150, maxLevel: 1 },
+    { id: 'U15', type: 'upgrade', code: 'U15', name: 'efficiency III', coords: [25, -2], reqs: [[25,-1]], borderColor: 'orange', desc: '+50% grass/dirt/stone/ copper/silver/ gold/lapis per level', effects: [{ type: 'currency_mult', currency: 'grass', formula: (lvl) => 1+0.5*lvl },{ type: 'currency_mult', currency: 'dirt', formula: (lvl) => 1+0.5*lvl },{ type: 'currency_mult', currency: 'stone', formula: (lvl) => 1+0.5*lvl },{ type: 'currency_mult', currency: 'copper', formula: (lvl) => 1+0.5*lvl },{ type: 'currency_mult', currency: 'silver', formula: (lvl) => 1+0.5*lvl },{ type: 'currency_mult', currency: 'gold', formula: (lvl) => 1+0.5*lvl },{ type: 'currency_mult', currency: 'lapis', formula: (lvl) => 1+0.5*lvl },{ type: 'currency_mult', currency: 'diamonds', formula: (lvl) => 1+0.5*lvl },{ type: 'currency_mult', currency: 'netherite', formula: (lvl) => 1+0.5*lvl }], costCurrency: 'essence', costFormula: (lvl) => 50*Math.pow(2,lvl), maxLevel: 5 },
     { id: 'U16', type: 'upgrade', code: 'U16', name: 'blue', coords: [26, 1], reqs: [[26,2]], borderColor: 'green', desc: 'get raw base resc gain based on essence.', effects: [{ type: 'base_gain_raw', currency: 'R', formula: (lvl) => 1+Math.min(Math.pow(getCurr('essence')/1e2+2, 2.5),1e8*Math.pow(getCurr('essence')/1e2,0.25)) }], costCurrency: 'essence', costFormula: (lvl) => 250, maxLevel: 1 },
     { id: 'U17', type: 'upgrade', code: 'U17', name: 'yellow', coords: [26, 0], reqs: [[26,1]], borderColor: 'green', desc: 'get raw base prestige gain based on essence.', effects: [{ type: 'base_gain_raw', currency: '€', formula: (lvl) => 0.2*Math.pow(Math.log(getCurr('essence')/3e2+10),2.5) }], costCurrency: 'essence', costFormula: (lvl) => 500, maxLevel: 1 },
     { id: 'U18', type: 'upgrade', code: 'U18', name: 'red', coords: [26, -1], reqs: [[26,0]], borderColor: 'green', desc: 'get raw base ascension gain based on essence.', effects: [{ type: 'base_gain_raw', currency: 'A', formula: (lvl) => 0.05*Math.pow(Math.log(getCurr('essence')/3e2+10),1.8) }], costCurrency: 'essence', costFormula: (lvl) => 5000, maxLevel: 1 },
     { id: 'U19', type: 'upgrade', code: 'U19', name: 'plates', coords: [26, -2], reqs: [[25,-2]], borderColor: 'orange', desc: 'boost plate gain based on essence.', effects: [{ type: 'currency_mult', currency: 'plates', formula: (lvl) => Math.pow(getCurr('essence')/1e2+10,0.28) }], costCurrency: 'essence', costFormula: (lvl) => 750, maxLevel: 1 },
-    { id: 'U20', type: 'upgrade', code: 'U20', name: 'how about ONE', coords: [27, -2], reqs: [[26,-2]], borderColor: 'red', desc: 'automate ALL dimension upgrades!', effects: [{ type: 'automation', targetPrefix: 'AD' }], costCurrency: 'essence', costFormula: (lvl) => 8000, maxLevel: 1 },
+    { id: 'U20', type: 'upgrade', code: 'U20', name: 'how about ONE', coords: [27, -2], reqs: [[26,-2]], borderColor: 'red', desc: 'automate ALL dimension upgrades!', effects: [{ type: 'automation', targetPrefix: 'AD' },{ type: 'automation', targetPrefix: 'AAD' }], costCurrency: 'essence', costFormula: (lvl) => 8000, maxLevel: 1 },
     { id: 'U21', type: 'upgrade', code: 'U21', name: 'how about ONE MORE', coords: [27, -1], reqs: [[27,-2]], borderColor: 'red', desc: 'automate ALL mining upgrades! (and cap M05)', effects: [{ type: 'automation', targetPrefix: 'M' }], costCurrency: 'essence', costFormula: (lvl) => 12500, maxLevel: 1 },
     { id: 'U22', type: 'upgrade', code: 'U22', name: 'auto auto?', coords: [27, 0], reqs: [[27,-1]], borderColor: 'red', desc: 'automate ALL au__ upgrades!', effects: [{ type: 'automation', targetPrefix: 'AU' }], costCurrency: 'essence', costFormula: (lvl) => 25000, maxLevel: 1 },
     { id: 'U23', type: 'upgrade', code: 'U23', name: 'yea...', coords: [27, 1], reqs: [[27,0]], borderColor: 'red', desc: 'automate ALL point upgrades (point extensions included)!', effects: [{ type: 'automation', targetPrefix: '#' }], costCurrency: 'essence', costFormula: (lvl) => 25000, maxLevel: 1 },
-    { id: 'U24', type: 'upgrade', code: 'U24', name: 'thats a lot', coords: [27, 2], reqs: [[27,1]], borderColor: 'red', desc: 'automate ALL tree/water/sunlight upgrades! and unlock new things', effects: [{ type: 'automation', targetPrefix: 'T' },{ type: 'automation', targetPrefix: '+T' },{ type: 'automation', targetPrefix: 'W' },{ type: 'automation', targetPrefix: 'AS' }], costCurrency: 'essence', costFormula: (lvl) => 50000, maxLevel: 1 },
+    { id: 'U24', type: 'upgrade', code: 'U24', name: 'thats a lot', coords: [27, 2], reqs: [[27,1]], borderColor: 'red', desc: 'automate ALL tree/water/sunlight upgrades! and unlock new things', effects: [{ type: 'automation', targetPrefix: 'T' },{ type: 'automation', targetPrefix: '+T' },{ type: 'automation', targetPrefix: 'W' },{ type: 'automation', targetPrefix: 'AW' },{ type: 'automation', targetPrefix: 'AS' }], costCurrency: 'essence', costFormula: (lvl) => 50000, maxLevel: 1 },
     { id: 'U25', type: 'upgrade', code: 'U25', name: 'yes, ok', coords: [27, 3], reqs: [[27,2]], borderColor: 'red', desc: 'automate ALL ascension upgrades!', effects: [{ type: 'automation', targetPrefix: 'A0' },{ type: 'automation', targetPrefix: 'A1' },{ type: 'automation', targetPrefix: 'A2' }], costCurrency: 'essence', costFormula: (lvl) => 50000, maxLevel: 1 },
     { id: 'U26', type: 'upgrade', code: 'U26', name: 'well ye', coords: [28, 2], reqs: [[27,2]], borderColor: 'red', desc: 'automate ALL resc upgrades!', effects: [{ type: 'automation', targetPrefix: 'R0' },{ type: 'automation', targetPrefix: 'R1' },{ type: 'automation', targetPrefix: 'R2' },{ type: 'automation', targetPrefix: 'R3' },{ type: 'automation', targetPrefix: 'R4' },{ type: 'automation', targetPrefix: 'R5' },{ type: 'automation', targetPrefix: 'R6' },{ type: 'automation', targetPrefix: 'R7' },{ type: 'automation', targetPrefix: 'R8' },{ type: 'automation', targetPrefix: 'R9' }], costCurrency: 'essence', costFormula: (lvl) => 50000, maxLevel: 1 },
     { id: 'U27', type: 'upgrade', code: 'U27', name: 'you recovered?', coords: [28, 3], reqs: [[27,3],[28,2]], borderColor: 'green', desc: 'unlock content!', effects: [], costCurrency: 'essence', costFormula: (lvl) => 125000, maxLevel: 1 },
@@ -995,10 +1044,10 @@ if (typeof gameState.currencies.P !== 'number' || isNaN(gameState.currencies.P))
     { id: 'UB20', type: 'upgrade', code: 'UB20', name: 'advertize', coords: [32, 3], reqs: [[32,4]], borderColor: 'orange', desc: 'deposit money for fame.', effects: [{type: 'base_gain_raw', currency: 'fame', formula: (lvl) => 0.5*Math.pow(lvl, 1.5) }], costCurrency: '$', costFormula: (lvl) => 500000*Math.pow(1.5,Math.pow(lvl,1.25)), maxLevel: 10 },
     { id: 'UB21', type: 'upgrade', code: 'UB21', name: 'advertize+', coords: [31, 3], reqs: [[32,3]], borderColor: 'orange', desc: 'deposit money for fame mult from customers.', effects: [{type: 'currency_mult', currency: 'fame', formula: (lvl) => 1+0.25*Math.pow(lvl, 1.5) }], costCurrency: '$', costFormula: (lvl) => 500000*Math.pow(1.5,Math.pow(lvl,1.25)), maxLevel: 10 },
     { id: 'UB22', type: 'upgrade', code: 'UB22', name: 'more chance+', coords: [28, 4], reqs: [[28,5]], borderColor: 'ornage', desc: 'double customers chance.', effects: [], costCurrency: 'customers', costFormula: (lvl) => 18000, maxLevel: 1 },
-    { id: 'UB23', type: 'upgrade', code: 'UB23', name: 'advertize+', coords: [30, 3], reqs: [[31,3]], borderColor: 'orange', desc: 'fame for customers.', effects: [{type: 'currency_mult', currency: 'customers', formula: (lvl) => 1+0.2*Math.pow(lvl, 1.5) }], costCurrency: 'fame', costFormula: (lvl) => 500*Math.pow(1.25,Math.pow(lvl,1.25)), maxLevel: 10 },
+    { id: 'UB23', type: 'upgrade', code: 'UB23', name: 'advertize+', coords: [30, 3], reqs: [[31,3]], borderColor: 'orange', desc: 'fame for customers.', effects: [{type: 'currency_mult', currency: 'customers', formula: (lvl) => 1+0.2*Math.pow(lvl, 1.5) }], costCurrency: 'fame', costFormula: (lvl) => 80*Math.pow(1.25,Math.pow(lvl,1.25)), maxLevel: 10 },
     { id: 'UB24', type: 'upgrade', code: 'UB24', name: 'qualities!', coords: [29, 3], reqs: [[30,3]], borderColor: 'green', desc: 'unlock something again.', effects: [], costCurrency: 'customers', costFormula: (lvl) => 40000, maxLevel: 1 },
-    { id: 'UB25', type: 'upgrade', code: 'UB25', name: 'get stars.', coords: [29, 2], reqs: [[29,3]], borderColor: 'green', desc: 'slowly get star score.', effects: [{ type: 'base_gain_raw', currency: 'stars', formula: (lvl) => ((1+Math.min((0.05*getLevel('UB31')*Math.log10((1000+getCurr('fame'))/100)),0.25)+0.05*getLevel('UB26')+0.01*getLevel('UB35')+0.005*getLevel('UB32')+0.05*getLevel('UB28')+0.05*getLevel('UB29'))-getCurr('stars'))*0.05}], costCurrency: '$', costFormula: (lvl) => 1000000, maxLevel: 1 },
-    { id: 'UB26', type: 'upgrade', code: 'UB26', name: 'better.', coords: [30, 2], reqs: [[29,2]], borderColor: 'green', desc: 'enhance quality and get more score.[0.05/]', effects: [], costCurrency: '$', costFormula: (lvl) => 500000*Math.pow(1.5, Math.max(lvl-10,0)), maxLevel: 20 },
+    { id: 'UB25', type: 'upgrade', code: 'UB25', name: 'get stars.', coords: [29, 2], reqs: [[29,3]], borderColor: 'green', desc: 'slowly get star score.', effects: [{ type: 'base_gain', currency: 'stars', formula: (lvl) => ((1+Math.min((0.05*getLevel('UB31')*Math.log10((1000+getCurr('fame'))/100)),0.25)+0.05*getLevel('UB26')+0.01*getLevel('UB35')+0.005*getLevel('UB32')+0.05*getLevel('UB28')+0.05*getLevel('UB29'))-getCurr('stars'))*0.05}], costCurrency: '$', costFormula: (lvl) => 500000, maxLevel: 1 },
+    { id: 'UB26', type: 'upgrade', code: 'UB26', name: 'better.', coords: [30, 2], reqs: [[29,2]], borderColor: 'green', desc: 'enhance quality and get more score.[0.05/]', effects: [], costCurrency: '$', costFormula: (lvl) => 250000*Math.pow(1.5, Math.max(lvl-10,0)), maxLevel: 20 },
     { id: 'UB27', type: 'upgrade', code: 'UB27', name: 'sell for more.', coords: [29, 1], reqs: [[29,2]], borderColor: 'green', desc: 'star score boost money.', effects: [{ type: 'currency_mult', currency: '$', formula: (lvl) => 1+0.25*Math.pow(2, Math.pow(getCurr('stars')+1,2)-1)}], costCurrency: '$', costFormula: (lvl) => 1250000, maxLevel: 1 },
     { id: 'UB28', type: 'upgrade', code: 'UB28', name: 'people giv rating!', coords: [31, 2], reqs: [[30,2]], borderColor: 'green', desc: 'get more stars.[0.05/]', effects: [], costCurrency: 'customers', costFormula: (lvl) => 25000*Math.pow(1.25,lvl), maxLevel: 10 },
     { id: 'UB29', type: 'upgrade', code: 'UB29', name: 'popularity!', coords: [32, 2], reqs: [[31,2]], borderColor: 'green', desc: 'get more stars.[0.05/]', effects: [], costCurrency: 'fame', costFormula: (lvl) => 750*Math.pow(1.25,lvl), maxLevel: 10 },
@@ -1009,7 +1058,56 @@ if (typeof gameState.currencies.P !== 'number' || isNaN(gameState.currencies.P))
     { id: 'UB34', type: 'upgrade', code: 'UB34', name: 'nice!', coords: [30, 0], reqs: [[30,1]], borderColor: 'green', desc: 'x1.5 custuomers; double fame', effects: [{ type: 'currency_mult', currency: 'customers', formula: (lvl) => 1.5},{ type: 'currency_mult', currency: 'fame', formula: (lvl) => 2}], costCurrency: 'stars', costFormula: (lvl) => 3, maxLevel: 1 },
     { id: 'UB35', type: 'upgrade', code: 'UB35', name: 'popularity+', coords: [32, -1], reqs: [[32,0]], borderColor: 'green', desc: 'get more stars.[0.01/]', effects: [], costCurrency: 'fame', costFormula: (lvl) => 2500*Math.pow(1.25,lvl), maxLevel: 20 },
     { id: 'UB36', type: 'upgrade', code: 'UB36', name: 'indexed.', coords: [28, 1], reqs: [[29,1]], borderColor: 'green', desc: 'star score boost customers.', effects: [{ type: 'currency_mult', currency: 'customers', formula: (lvl) => 1+Math.pow(1.25, Math.log2(Math.pow(16,getCurr('stars'))+2))/16}], costCurrency: 'stars', costFormula: (lvl) => 3.15, maxLevel: 1 },
-    { id: 'UB37', type: 'upgrade', code: 'UB37', name: 'better advertisements?', coords: [31, 0], reqs: [[31,1]], borderColor: 'green', desc: 'x1.2 customer chance per level.', effects: [], costCurrency: '$', costFormula: (lvl) => 5e10*Math.pow(1.25, lvl), maxLevel: 5 },
+    { id: 'UB37', type: 'upgrade', code: 'UB37', name: 'better advertisements?', coords: [31, 0], reqs: [[31,1]], borderColor: 'orange', desc: 'x1.2 customer chance per level.', effects: [], costCurrency: '$', costFormula: (lvl) => 5e10*Math.pow(1.25, lvl), maxLevel: 5 },
+    { id: 'UB38', type: 'upgrade', code: 'UB38', name: 'back!', coords: [28, 0], reqs: [[28,1]], borderColor: 'orange', desc: 'star score transition a lot faster.', effects: [{ type: 'currency_mult', currency: 'stars', formula: (lvl) => 8}], costCurrency: 'stars', costFormula: (lvl) => 1, maxLevel: 1 },
+    { id: 'UB39', type: 'upgrade', code: 'UB39', name: 'enough now :D', coords: [32, -2], reqs: [[32,-1]], borderColor: 'green', desc: 'perchase new discoveries, a main progress thing.', effects: [], costCurrency: '$', costFormula: (lvl) => 2e11, maxLevel: 1 },
+    { id: 'UI01', type: 'upgrade', code: 'UI01', name: 'automation more', coords: [33, -2], reqs: [[32,-2]], borderColor: 'green', desc: 'automate plate plate. note that buying these may make essence generate slower giving less boost.', effects: [{ type: 'automation', targetPrefix: 'AP' }], costCurrency: 'IP', costFormula: (lvl) => 0.2, maxLevel: 1 },
+    { id: 'UI02', type: 'upgrade', code: 'UI02', name: 'small boost but still need', coords: [34, -2], reqs: [[33,-2]], borderColor: 'green', desc: 'automate decoration plate.', effects: [{ type: 'automation', targetPrefix: 'D' }], costCurrency: 'IP', costFormula: (lvl) => 0.2, maxLevel: 1 },
+    { id: 'UI03', type: 'upgrade', code: 'UI03', name: 'small boost but still need 2', coords: [33, -1], reqs: [[33,-2]], borderColor: 'green', desc: 'automate finale plate.', effects: [{ type: 'automation', targetPrefix: 'F0' }, {type: 'automation', targetPrefix: 'F1' }, {type: 'automation', targetPrefix: 'F2' }], costCurrency: 'IP', costFormula: (lvl) => 0.2, maxLevel: 1 },
+    { id: 'UI04', type: 'upgrade', code: 'UI04', name: 'small boost but still need 3', coords: [35, -2], reqs: [[34,-2]], borderColor: 'green', desc: 'automate score plate.', effects: [{ type: 'automation', targetPrefix: 'S0' },{ type: 'automation', targetPrefix: 'S1' },{ type: 'automation', targetPrefix: 'S2' },{ type: 'automation', targetPrefix: 'S3' },{ type: 'automation', targetPrefix: 'S4' }], costCurrency: 'IP', costFormula: (lvl) => 0.2, maxLevel: 1 },
+    { id: 'UI05', type: 'upgrade', code: 'UI05', name: 'small boost but still need 4', coords: [36, -2], reqs: [[35,-2]], borderColor: 'green', desc: 'automate energy plate.', effects: [{ type: 'automation', targetPrefix: 'E0' },{ type: 'automation', targetPrefix: 'E1' },{ type: 'automation', targetPrefix: 'E2' },{ type: 'automation', targetPrefix: 'E3' },{ type: 'automation', targetPrefix: 'E4' }], costCurrency: 'IP', costFormula: (lvl) => 0.2, maxLevel: 1 },
+    { id: 'UI06', type: 'upgrade', code: 'UI06', name: 'small boost but still need 5', coords: [37, -2], reqs: [[36,-2]], borderColor: 'green', desc: 'automate resc, prestige plate.', effects: [{ type: 'automation', targetPrefix: 'R0' },{ type: 'automation', targetPrefix: 'R1' },{ type: 'automation', targetPrefix: 'R2' },{ type: 'automation', targetPrefix: '+R11' },{ type: 'automation', targetPrefix: 'P0' },{ type: 'automation', targetPrefix: 'P1' },{ type: 'automation', targetPrefix: 'P2' }], costCurrency: 'IP', costFormula: (lvl) => 0.2, maxLevel: 1 },
+    { id: 'UI07', type: 'upgrade', code: 'UI07', name: 'small boost but still need 6', coords: [34, -1], reqs: [[33,-1]], borderColor: 'green', desc: 'automate plus, mult, exp, aau', effects: [{ type: 'automation', targetPrefix: 'EX' },{ type: 'automation', targetPrefix: 'G0' },{ type: 'automation', targetPrefix: 'G1' },{ type: 'automation', targetPrefix: 'G2' },{ type: 'automation', targetPrefix: 'G3' },{ type: 'automation', targetPrefix: 'G4' },{ type: 'automation', targetPrefix: 'G5' },{ type: 'automation', targetPrefix: 'AAU' }], costCurrency: 'IP', costFormula: (lvl) => 0.2, maxLevel: 1 },
+    { id: 'UI08', type: 'upgrade', code: 'UI08', name: 'currency boost I', coords: [33, 0], reqs: [[33,-1]], borderColor: 'orange', desc: 'x3 plate/level.', effects: [{ type: 'currency_mult', currency: 'plates', formula: (lvl) => Math.pow(3,lvl) }], costCurrency: 'IP', costFormula: (lvl) => 0.5+0.2*lvl, maxLevel: 2 },
+    { id: 'UI09', type: 'upgrade', code: 'UI09', name: 'currency boost II', coords: [33, 1], reqs: [[33,0]], borderColor: 'orange', desc: 'x15 points/level.', effects: [{ type: 'currency_mult', currency: 'P', formula: (lvl) => Math.pow(15,lvl) }], costCurrency: 'IP', costFormula: (lvl) => 0.5+0.2*lvl, maxLevel: 2 },
+    { id: 'UI10', type: 'upgrade', code: 'UI10', name: 'currency boost III', coords: [34, 0], reqs: [[33,0]], borderColor: 'orange', desc: 'x3 ascension/level.', effects: [{ type: 'currency_mult', currency: 'A', formula: (lvl) => Math.pow(3,lvl) }], costCurrency: 'IP', costFormula: (lvl) => 0.5+0.2*lvl, maxLevel: 2 },
+    { id: 'UI11', type: 'upgrade', code: 'UI11', name: 'currency boost IV', coords: [35, 0], reqs: [[34,0]], borderColor: 'orange', desc: '+50% grass/dirt/stone/ copper/silver/ gold/lapis per level', effects: [{ type: 'currency_mult', currency: 'grass', formula: (lvl) => 1+0.5*lvl },{ type: 'currency_mult', currency: 'dirt', formula: (lvl) => 1+0.5*lvl },{ type: 'currency_mult', currency: 'stone', formula: (lvl) => 1+0.5*lvl },{ type: 'currency_mult', currency: 'copper', formula: (lvl) => 1+0.5*lvl },{ type: 'currency_mult', currency: 'silver', formula: (lvl) => 1+0.5*lvl },{ type: 'currency_mult', currency: 'gold', formula: (lvl) => 1+0.5*lvl },{ type: 'currency_mult', currency: 'lapis', formula: (lvl) => 1+0.5*lvl },{ type: 'currency_mult', currency: 'diamonds', formula: (lvl) => 1+0.5*lvl },{ type: 'currency_mult', currency: 'netherite', formula: (lvl) => 1+0.5*lvl }], costCurrency: 'IP', costFormula: (lvl) => 0.1+0.02*lvl, maxLevel: 25 },
+    { id: 'UI12', type: 'upgrade', code: 'UI12', name: 'recovery', coords: [35, -1], reqs: [[34,-1]], borderColor: 'orange', desc: 'basiclly get 1 million essence back on reset, 1 million more per level after.', effects: [{ type: 'base_gain_raw', currency: 'essence', formula: (lvl) => 0.25*Math.max(0,1e6*(1+Math.max(0, lvl-1))-getCurr('essence')) }], costCurrency: 'IP', costFormula: (lvl) => 0.5+0.2*lvl, maxLevel: 5 },
+    { id: 'UI13', type: 'upgrade', code: 'UI13', name: 'big boost!!', coords: [36, -1], reqs: [[35,-1]], borderColor: 'orange', desc: 'x10000 dim-1, x10 per level after', effects: [{ type: 'currency_mult', currency: 'D1', formula: (lvl) => 10000*Math.pow(10, Math.max(lvl-1,0)) }], costCurrency: 'IP', costFormula: (lvl) => 0.5+0.2*lvl, maxLevel: 3 },
+    { id: 'UI14', type: 'upgrade', code: 'UI14', name: 'currency boost V', coords: [33, 2], reqs: [[33,1]], borderColor: 'orange', desc: 'x8 prestige/level.', effects: [{ type: 'currency_mult', currency: 'P', formula: (lvl) => Math.pow(15,lvl) }], costCurrency: 'IP', costFormula: (lvl) => 0.5+0.2*lvl, maxLevel: 2 },
+    { id: 'UI15', type: 'upgrade', code: 'UI15', name: 'infinity boost', coords: [34, 1], reqs: [[34,0]], borderColor: 'orange', desc: '+1x infinity/lvl.', effects: [{ type: 'reset_gain_mult', targetCurrency: 'IP', formula: (lvl) => 2+Math.max(lvl-1, 0) }], costCurrency: 'IP', costFormula: (lvl) => 0.75+0.5*lvl, maxLevel: 2 },
+    { id: 'UI16', type: 'upgrade', code: 'UI16', name: 'infinity boost II', coords: [34, 2], reqs: [[34,1]], borderColor: 'orange', desc: 'multiply infinity based on points.', effects: [{ type: 'reset_gain_mult', targetCurrency: 'IP', formula: (lvl) => Math.pow((getCurr('P')/1e85)+1,0.05) }], costCurrency: 'IP', costFormula: (lvl) => 1.5, maxLevel: 1 },
+    { id: 'UI17', type: 'upgrade', code: 'UI17', name: 'currency boost VI', coords: [35, 1], reqs: [[35,0]], borderColor: 'orange', desc: 'x7 sunlight/level.', effects: [{ type: 'currency_mult', currency: 'sunlight', formula: (lvl) => Math.pow(7,lvl) }], costCurrency: 'IP', costFormula: (lvl) => 0.8+0.32*lvl, maxLevel: 2 },
+    { id: 'UI18', type: 'upgrade', code: 'UI18', name: 'currency boost VII', coords: [36, 1], reqs: [[35,1]], borderColor: 'orange', desc: 'x2 level gen/level.', effects: [{ type: 'currency_mult', currency: 'L', formula: (lvl) => Math.pow(2,lvl) }], costCurrency: 'IP', costFormula: (lvl) => 0.8+0.32*lvl, maxLevel: 2 },
+    { id: 'UI19', type: 'upgrade', code: 'UI19', name: 'infinity boost III', coords: [35, 2], reqs: [[34,2]], borderColor: 'orange', desc: 'multiply infinity based on netherite.', effects: [{ type: 'reset_gain_mult', targetCurrency: 'IP', formula: (lvl) => Math.pow((getCurr('netherite')/1e18)+1,0.08) }], costCurrency: 'IP', costFormula: (lvl) => 3, maxLevel: 1 },
+    { id: 'UI20', type: 'upgrade', code: 'UI20', name: 'infinity boost IV', coords: [36, 2], reqs: [[35,2]], borderColor: 'orange', desc: 'multiply infinity based on sunlight.', effects: [{ type: 'reset_gain_mult', targetCurrency: 'IP', formula: (lvl) => Math.pow((getCurr('netherite')/1e18)+1,0.08) }], costCurrency: 'IP', costFormula: (lvl) => 3, maxLevel: 1 },
+    { id: 'UI21', type: 'upgrade', code: 'UI21', name: 'currency boost V', coords: [36, 0], reqs: [[35,0]], borderColor: 'orange', desc: '+50% grass/dirt/stone/ copper/silver/ gold/lapis per level again!', effects: [{ type: 'currency_mult', currency: 'grass', formula: (lvl) => 1+0.5*lvl },{ type: 'currency_mult', currency: 'dirt', formula: (lvl) => 1+0.5*lvl },{ type: 'currency_mult', currency: 'stone', formula: (lvl) => 1+0.5*lvl },{ type: 'currency_mult', currency: 'copper', formula: (lvl) => 1+0.5*lvl },{ type: 'currency_mult', currency: 'silver', formula: (lvl) => 1+0.5*lvl },{ type: 'currency_mult', currency: 'gold', formula: (lvl) => 1+0.5*lvl },{ type: 'currency_mult', currency: 'lapis', formula: (lvl) => 1+0.5*lvl },{ type: 'currency_mult', currency: 'diamonds', formula: (lvl) => 1+0.5*lvl },{ type: 'currency_mult', currency: 'netherite', formula: (lvl) => 1+0.5*lvl }], costCurrency: 'IP', costFormula: (lvl) => 1+0.2*lvl, maxLevel: 5 },
+    { id: 'UI22', type: 'upgrade', code: 'UI22', name: 'cap high!!', coords: [37, -1], reqs: [[36,-1]], borderColor: 'orange', desc: 'x10 IP essence gen/lvl', effects: [{ type: 'currency_mult', currency: 'essence', formula: (lvl) => 10*Math.pow(10, Math.max(lvl-1,0)) }], costCurrency: 'IP', costFormula: (lvl) => 3.5*Math.pow(2,lvl), maxLevel: 3 },
+    { id: 'UI23', type: 'upgrade', code: 'UI23', name: 'pointers', coords: [37, 0], reqs: [[37,-1]], borderColor: 'orange', desc: '+1e25 raw points per second, x1e5 per level after', effects: [{ type: 'base_gain_raw', currency: 'P', formula: (lvl) => 1e25*Math.pow(1e5, Math.max(0, lvl-1)) }], costCurrency: 'IP', costFormula: (lvl) => 5*Math.pow(1.25,lvl), maxLevel: 10 },
+    { id: 'UI24', type: 'upgrade', code: 'UI24', name: 'tree yay', coords: [37, 1], reqs: [[37,0]], borderColor: 'orange', desc: '+100 raw tree mass per second, x100 per level after', effects: [{ type: 'base_gain_raw', currency: 'TM', formula: (lvl) => 1e2*Math.pow(1e2, Math.max(0, lvl-1)) }], costCurrency: 'IP', costFormula: (lvl) => 7*Math.pow(1.2,lvl), maxLevel: 10 },
+    { id: 'UI25', type: 'upgrade', code: 'UI25', name: 'life is full of colours', coords: [37, 2], reqs: [[37,1]], borderColor: 'green', desc: 'unlock baseplate', effects: [], costCurrency: 'IP', costFormula: (lvl) => 15, maxLevel: 10 },
+
+    //colour
+    { id: 'CB01', type: 'upgrade', code: 'CB01', name: 'progress bar is not gone', coords: [37, 3], reqs: [[37,2]], borderColor: 'green', desc: 'generate black slowly.', effects: [{ type: 'base_gain', currency: 'black', formula: (lvl) => 0.01 }], costCurrency: 'black', costFormula: (lvl) => 0, maxLevel: 1 },
+    { id: 'CB02', type: 'upgrade', code: 'CB02', name: 'check back', coords: [36, 3], reqs: [[37,3]], borderColor: 'green', desc: 'cb -> colour black! generate black more.', effects: [{ type: 'base_gain', currency: 'black', formula: (lvl) => 0.01*Math.pow(lvl,1.25)*Math.pow(2, getLevel('CB07')) }], costCurrency: 'black', costFormula: (lvl) => 0.1*Math.pow(1.15,lvl), maxLevel: 25 },
+    { id: 'CB03', type: 'upgrade', code: 'CB03', name: 'better formula', coords: [35, 3], reqs: [[36,3]], borderColor: 'green', desc: 'this one have higher exponent.', effects: [{ type: 'base_gain', currency: 'black', formula: (lvl) => 0.01*Math.pow(lvl,1.5) }], costCurrency: 'black', costFormula: (lvl) => 1.25*Math.pow(1.15,lvl), maxLevel: 25 },
+    { id: 'CB04', type: 'upgrade', code: 'CB04', name: 'better base', coords: [34, 3], reqs: [[35,3]], borderColor: 'green', desc: 'this one have higher base than CB03.', effects: [{ type: 'base_gain', currency: 'black', formula: (lvl) => 0.075*Math.pow(lvl,1.5+0.05*getLevel('CB08')) }], costCurrency: 'black', costFormula: (lvl) => 10*Math.pow(1.15,lvl), maxLevel: 25 },
+    { id: 'CB05', type: 'upgrade', code: 'CB05', name: 'better notation', coords: [33, 3], reqs: [[34,3]], borderColor: 'green', desc: 'multiplier.', effects: [{ type: 'currency_mult', currency: 'black', formula: (lvl) => 1+0.075*Math.pow(lvl,1.5) }], costCurrency: 'black', costFormula: (lvl) => 10*Math.pow(1.15,lvl), maxLevel: 25 },
+    { id: 'CB06', type: 'upgrade', code: 'CB06', name: 'interesting', coords: [35, 4], reqs: [[35,3]], borderColor: 'orange', desc: 'multiply black based on self.', effects: [{ type: 'currency_mult', currency: 'black', formula: (lvl) => 1+0.5*Math.pow(getCurr('black'),0.125) }], costCurrency: 'black', costFormula: (lvl) => 12, maxLevel: 1 },
+    { id: 'CB07', type: 'upgrade', code: 'CB07', name: 'more levels', coords: [36, 4], reqs: [[35,4]], borderColor: 'green', desc: '+25 max level to CB02, and double CB02 effect per level.', effects: [{ type: 'max_level_mod', target: 'CB02', amount: (lvl) => 25*lvl }], costCurrency: 'black', costFormula: (lvl) => 2e3*Math.pow(2.5,lvl), maxLevel: 3 },
+    { id: 'CB08', type: 'upgrade', code: 'CB08', name: 'more expo', coords: [34, 4], reqs: [[35,4]], borderColor: 'green', desc: '+^0.05 to CB04 exponent per level.', effects: [], costCurrency: 'black', costFormula: (lvl) => 5e3*Math.pow(1.25,lvl), maxLevel: 10 },
+    { id: 'CB09', type: 'upgrade', code: 'CB09', name: 'there is only two main', coords: [35, 5], reqs: [[35,4]], borderColor: 'orange', desc: 'multiply black based on self. the formula is log!', effects: [{ type: 'currency_mult', currency: 'black', formula: (lvl) => 1+0.5*Math.pow(0.2*Math.log((getCurr('black')/1000)+1)+1,1.5) }], costCurrency: 'black', costFormula: (lvl) => 15000, maxLevel: 1 },
+    { id: 'CB10', type: 'upgrade', code: 'CB10', name: 'multiplier can be log!', coords: [33, 4], reqs: [[33,3]], borderColor: 'green', desc: 'multiplier.', effects: [{ type: 'currency_mult', currency: 'black', formula: (lvl) => Math.pow(Math.log10(lvl+10),3) }], costCurrency: 'black', costFormula: (lvl) => 3e4*Math.pow(1.06,Math.pow(lvl,0.7)), maxLevel: 1000 },
+    { id: 'CB11', type: 'upgrade', code: 'CB11', name: 'log means safely stackable!', coords: [33, 5], reqs: [[33,4]], borderColor: 'green', desc: 'run it again.', effects: [{ type: 'currency_mult', currency: 'black', formula: (lvl) => Math.pow(Math.log10(lvl+10),3) }], costCurrency: 'black', costFormula: (lvl) => 2e5*Math.pow(1.06,Math.pow(lvl,0.7)), maxLevel: 1000 },
+    { id: 'CB12', type: 'upgrade', code: 'CB12', name: 'stack me', coords: [34, 5], reqs: [[35,5]], borderColor: 'orange', desc: 'multiply black based on self again. the formula is log!', effects: [{ type: 'currency_mult', currency: 'black', formula: (lvl) => 1+0.5*Math.pow(0.2*Math.log((getCurr('black')/1000)+1)+1,1.5) }], costCurrency: 'black', costFormula: (lvl) => 2e6, maxLevel: 1 },
+    { id: 'CB13', type: 'upgrade', code: 'CB13', name: 'is it all dark?', coords: [34, 6], reqs: [[34,5]], borderColor: 'green', desc: 'maybe not. unlock new things. [wip]', effects: [], costCurrency: 'black', costFormula: (lvl) => 2e7, maxLevel: 1 },
+    { id: 'CB14', type: 'upgrade', code: 'CB14', name: 'path I', coords: [34, 7], reqs: [[34,6]], borderColor: 'green', desc: 'unlock red [wip]', effects: [], costCurrency: 'black', costFormula: (lvl) => 1e8, maxLevel: 1 },
+    
+
+
+    
+
+    
     
     //progression
     { id: 'S01', type: 'upgrade', code: 'S01', name: 'score', coords: [-3, 15], reqs: [[-2, 15]], borderColor: 'green', desc: 'get rating based on progression. (pt/resc/prestige/ascn)', effects: [{ type: 'base_gain', currency: 'S', formula: (lvl) => Math.pow((0.01*Math.log10(getCurr('P')+10)*Math.log10(getCurr('R')+10)*Math.log10(getCurr('€')+10)*Math.pow(Math.log10(getCurr('A')+12),5)),1*Math.pow(1.03, getLevel('S07'))) }], costCurrency: 'S', costFormula: (lvl) => 0, maxLevel: 1 },
@@ -1093,7 +1191,7 @@ if (typeof gameState.currencies.P !== 'number' || isNaN(gameState.currencies.P))
     
     //sunlight!
     { id: 'sunreset', type: 'reset', code: 'sun', name: 'light', coords: [8, 13], reqs: [[8, 12]], desc: 'Reset prev. T1-T29 & W1-W16 progress for sunpower! [recommended first amount: >=0.1]', targetCurrency: 'sunpower', resetCurrencies: ['TM','water','sunlight'], resettedCoords: ['W','T'], calculateGain: (lvl, getCurr, getLvl) => { return 0.1*Math.pow(getCurr('water')/1e7,0.25); } },
-    { id: 'AS01', type: 'upgrade', code: 'AS01', name: 'generators!', coords: [8, 14], reqs: [[8, 12]], borderColor: 'green', desc: 'generate sunlight based on sunpower. sunlight is reset on sun reset.', effects: [{ type: 'base_gain', currency: 'sunlight', formula: lvl => getCurr('sunpower')}], costCurrency: 'sunpower', costFormula: (lvl) => 0.05, maxLevel: 1 },
+    { id: 'AS01', type: 'upgrade', code: 'AS01', name: 'generators!', coords: [8, 14], reqs: [[8, 12]], borderColor: 'green', desc: 'generate sunlight based on sunpower. sunlight is reset on sun reset.', effects: [{ type: 'base_gain', currency: 'sunlight', formula: lvl => 1.25*getCurr('sunpower')}], costCurrency: 'sunpower', costFormula: (lvl) => 0.05, maxLevel: 1 },
     { id: 'AS02', type: 'upgrade', code: 'AS02', name: 'LIGHT', coords: [8, 15], reqs: [[8, 14]], borderColor: 'orange', desc: 'boost tree mass by x10 and water by x5. recover!', effects: [{ type: 'currency_mult', currency: 'TM', formula: lvl => 10},{ type: 'reset_gain_mult', targetCurrency: 'water', formula: lvl => 5}], costCurrency: 'sunlight', costFormula: (lvl) => 0.25, maxLevel: 1 },
     { id: 'AS03', type: 'upgrade', code: 'AS03', name: 'water addition', coords: [8, 16], reqs: [[8, 15]], borderColor: 'green', desc: 'new water upgrades', effects: [], costCurrency: 'sunlight', costFormula: (lvl) => 8, maxLevel: 1 },
     { id: 'AS04', type: 'upgrade', code: 'AS04', name: 'hope', coords: [9, 15], reqs: [[8, 15]], borderColor: 'orange', desc: '+1% base water generation/s/lvl', effects: [{ type: 'base_gain', currency: 'water', formula: lvl => lvl*0.01*getResetGain('water')}], costCurrency: 'sunlight', costFormula: (lvl) => 0.5*Math.pow(1.1,lvl)*(1+lvl), maxLevel: 25 },
@@ -1283,19 +1381,18 @@ if (typeof gameState.currencies.P !== 'number' || isNaN(gameState.currencies.P))
     
     
     //cash
-    { id: 'C01', type: 'upgrade', code: 'C01', name: 'mmm cash', coords: [-3, -6], reqs: [[0, -6]], borderColor: 'green', desc: 'Unlock methods to get more cash.', effects: [], costCurrency: 'C', costFormula: (lvl) => 5, maxLevel: 1 },
-    { id: 'C02', height: 0.5,type: 'upgrade', code: 'C02', name: '1', coords: [-3, -5.4375], reqs: [[-3, -6]], borderColor: 'green', desc: '+1C/s/lvl.', effects: [{type: 'max_level_mod', target:'C02', amount:(lvl)=>lvl},{ type: 'base_gain', currency: 'C', formula: (lvl) => 1 * lvl }], costCurrency: 'C', costFormula: (lvl) => 10, maxLevel: 1 },
-    { id: 'C03', height: 0.5,type: 'upgrade', code: 'C03', name: '2', coords: [-3, -5.0625], reqs: [[-3, -6]], borderColor: 'green', desc: '+25C/s/lvl.', effects: [{type: 'max_level_mod', target:'C03', amount:(lvl)=>lvl},{ type: 'base_gain', currency: 'C', formula: (lvl) => 25 * lvl }], costCurrency: 'C', costFormula: (lvl) => 1000, maxLevel: 1 },
-    { id: 'C04', height: 0.5,type: 'upgrade', code: 'C04', name: '3', coords: [-3, -4.6875], reqs: [[-3, -5.0625]], borderColor: 'green', desc: '+500C/s/lvl.', effects: [{type: 'max_level_mod', target:'C04', amount:(lvl)=>lvl},{ type: 'base_gain', currency: 'C', formula: (lvl) => 500 * lvl }], costCurrency: 'C', costFormula: (lvl) => 100000, maxLevel: 1 },
-    { id: 'C05', height: 0.5,type: 'upgrade', code: 'C05', name: '4', coords: [-3, -4.3125], reqs: [[-3, -4.6875]], borderColor: 'green', desc: '+10kC/s/lvl.', effects: [{type: 'max_level_mod', target:'C05', amount:(lvl)=>lvl},{ type: 'base_gain', currency: 'C', formula: (lvl) => 1e4 * lvl }], costCurrency: 'C', costFormula: (lvl) => 4e6, maxLevel: 1 },
-    { id: 'C06', height: 0.5,type: 'upgrade', code: 'C06', name: '5', coords: [-3, -3.9375], reqs: [[-3, -4.3125]], borderColor: 'green', desc: '+100kC/s/lvl.', effects: [{type: 'max_level_mod', target:'C06', amount:(lvl)=>lvl},{ type: 'base_gain', currency: 'C', formula: (lvl) => 1e5 * lvl }], costCurrency: 'C', costFormula: (lvl) => 7.5e7, maxLevel: 1 },
-    { id: 'C07', height: 0.5,type: 'upgrade', code: 'C07', name: '6', coords: [-3, -3.5625], reqs: [[-3, -3.9375]], borderColor: 'green', desc: '+1C/s/lvl.', effects: [{type: 'max_level_mod', target:'C07', amount:(lvl)=>lvl},{ type: 'base_gain', currency: 'C', formula: (lvl) => 1 * lvl }], costCurrency: 'C', costFormula: (lvl) => 5, maxLevel: 1 },
-    { id: 'C08', height: 0.5,type: 'upgrade', code: 'C08', name: '7', coords: [-3, -3.1875], reqs: [[-3, -3.5625]], borderColor: 'green', desc: '+1C/s/lvl.', effects: [{type: 'max_level_mod', target:'C08', amount:(lvl)=>lvl},{ type: 'base_gain', currency: 'C', formula: (lvl) => 1 * lvl }], costCurrency: 'C', costFormula: (lvl) => 5, maxLevel: 1 },
-    { id: 'C09', height: 0.5,type: 'upgrade', code: 'C09', name: '8', coords: [-3, -2.8125], reqs: [[-3, -3.1875]], borderColor: 'green', desc: '+1C/s/lvl.', effects: [{type: 'max_level_mod', target:'C09', amount:(lvl)=>lvl},{ type: 'base_gain', currency: 'C', formula: (lvl) => 1 * lvl }], costCurrency: 'C', costFormula: (lvl) => 5, maxLevel: 1 },
-    { id: 'C10', type: 'upgrade', code: 'C10', name: 'my mouse/finger hurts', coords: [-4, -6], reqs: [[-3, -6]], borderColor: 'red', desc: '+1 max buy to C01s upgrade towers/perchase/lvl.', effects: [{type: 'max_level_mod', target:['C02','C03','C04','C05','C06','C07','C08','C09'], amount:(lvl)=>lvl}], costCurrency: 'C', costFormula: (lvl) => 5000*Math.pow(10, Math.pow(lvl, 0.7)), maxLevel: 99 },
-    { id: 'C11', height: 0.5,type: 'upgrade', code: 'C11', name: '1', coords: [-4, -5.4375], reqs: [[-4, -6]], borderColor: 'orange', desc: '+1%C/s/lvl.', effects: [{type: 'max_level_mod', target:'C11', amount:(lvl)=>lvl},{ type: 'currency_mult', currency: 'C', formula: (lvl) => 1+0.01 * lvl }], costCurrency: 'C', costFormula: (lvl) => 50000*Math.pow(2, Math.pow(lvl, 0.5)), maxLevel: 1 },
-    { id: 'C12', height: 0.5,type: 'upgrade', code: 'C12', name: '2', coords: [-4, -5.0625], reqs: [[-4, -6]], borderColor: 'orange', desc: '+1%C/s/lvl.', effects: [{type: 'max_level_mod', target:'C12', amount:(lvl)=>lvl},{ type: 'currency_mult', currency: 'C', formula: (lvl) => 1+0.01 * lvl }], costCurrency: 'C', costFormula: (lvl) => 2000000*Math.pow(2, Math.pow(lvl, 0.3)), maxLevel: 1 },
-    
+    { id: 'BCBP01', type: 'upgrade', code: 'C01', name: 'mmm cash', coords: [-3, -6], reqs: [[0, -6]], borderColor: 'green', desc: 'Unlock methods to get more cash.', effects: [], costCurrency: 'C', costFormula: (lvl) => 5, maxLevel: 1 },
+{ id: 'BCBP02', height: 0.5,type: 'upgrade', code: 'C02', name: '1', coords: [-3, -5.4375], reqs: [[-3, -6]], borderColor: 'green', desc: '+1C/s/lvl.', effects: [{type: 'max_level_mod', target:'BCBP02', amount:(lvl)=>lvl},{ type: 'base_gain', currency: 'C', formula: (lvl) => 1 * lvl }], costCurrency: 'C', costFormula: (lvl) => 10, maxLevel: 1 },
+{ id: 'BCBP03', height: 0.5,type: 'upgrade', code: 'C03', name: '2', coords: [-3, -5.0625], reqs: [[-3, -6]], borderColor: 'green', desc: '+25C/s/lvl.', effects: [{type: 'max_level_mod', target:'BCBP03', amount:(lvl)=>lvl},{ type: 'base_gain', currency: 'C', formula: (lvl) => 25 * lvl }], costCurrency: 'C', costFormula: (lvl) => 1000, maxLevel: 1 },
+{ id: 'BCBP04', height: 0.5,type: 'upgrade', code: 'C04', name: '3', coords: [-3, -4.6875], reqs: [[-3, -5.0625]], borderColor: 'green', desc: '+500C/s/lvl.', effects: [{type: 'max_level_mod', target:'BCBP04', amount:(lvl)=>lvl},{ type: 'base_gain', currency: 'C', formula: (lvl) => 500 * lvl }], costCurrency: 'C', costFormula: (lvl) => 100000, maxLevel: 1 },
+{ id: 'BCBP05', height: 0.5,type: 'upgrade', code: 'C05', name: '4', coords: [-3, -4.3125], reqs: [[-3, -4.6875]], borderColor: 'green', desc: '+10kC/s/lvl.', effects: [{type: 'max_level_mod', target:'BCBP05', amount:(lvl)=>lvl},{ type: 'base_gain', currency: 'C', formula: (lvl) => 1e4 * lvl }], costCurrency: 'C', costFormula: (lvl) => 4e6, maxLevel: 1 },
+{ id: 'BCBP06', height: 0.5,type: 'upgrade', code: 'C06', name: '5', coords: [-3, -3.9375], reqs: [[-3, -4.3125]], borderColor: 'green', desc: '+100kC/s/lvl.', effects: [{type: 'max_level_mod', target:'BCBP06', amount:(lvl)=>lvl},{ type: 'base_gain', currency: 'C', formula: (lvl) => 1e5 * lvl }], costCurrency: 'C', costFormula: (lvl) => 7.5e7, maxLevel: 1 },
+{ id: 'BCBP07', height: 0.5,type: 'upgrade', code: 'C07', name: '6', coords: [-3, -3.5625], reqs: [[-3, -3.9375]], borderColor: 'green', desc: '+10MC/s/lvl.', effects: [{type: 'max_level_mod', target:'BCBP07', amount:(lvl)=>lvl},{ type: 'base_gain', currency: 'C', formula: (lvl) => 2e7 * lvl }], costCurrency: 'C', costFormula: (lvl) => 5, maxLevel: 1 },
+{ id: 'BCBP08', height: 0.5,type: 'upgrade', code: 'C08', name: '7', coords: [-3, -3.1875], reqs: [[-3, -3.5625]], borderColor: 'green', desc: '+1BC/s/lvl.', effects: [{type: 'max_level_mod', target:'BCBP08', amount:(lvl)=>lvl},{ type: 'base_gain', currency: 'C', formula: (lvl) => 4e9 * lvl }], costCurrency: 'C', costFormula: (lvl) => 5, maxLevel: 1 },
+{ id: 'BCBP09', height: 0.5,type: 'upgrade', code: 'C09', name: '8', coords: [-3, -2.8125], reqs: [[-3, -3.1875]], borderColor: 'green', desc: '+100BC/s/lvl.', effects: [{type: 'max_level_mod', target:'BCBP09', amount:(lvl)=>lvl},{ type: 'base_gain', currency: 'C', formula: (lvl) => 8e10 * lvl }], costCurrency: 'C', costFormula: (lvl) => 5, maxLevel: 1 },
+{ id: 'BCBP10', type: 'upgrade', code: 'C10', name: 'my mouse/finger hurts', coords: [-4, -6], reqs: [[-3, -6]], borderColor: 'red', desc: '+1 max buy to C01s upgrade towers/perchase/lvl.', effects: [{type: 'max_level_mod', target:['BCBP02','BCBP03','BCBP04','BCBP05','BCBP06','BCBP07','BCBP08','BCBP09'], amount:(lvl)=>lvl}], costCurrency: 'C', costFormula: (lvl) => 5000*Math.pow(10, Math.pow(lvl, 0.7)), maxLevel: 99 },
+{ id: 'BCBP11', height: 0.5,type: 'upgrade', code: 'C11', name: '1', coords: [-4, -5.4375], reqs: [[-4, -6]], borderColor: 'orange', desc: '+1%C/s/lvl.', effects: [{type: 'max_level_mod', target:'BCBP11', amount:(lvl)=>lvl},{ type: 'currency_mult', currency: 'C', formula: (lvl) => 1+0.01 * lvl }], costCurrency: 'C', costFormula: (lvl) => 50000*Math.pow(2, Math.pow(lvl, 0.5)), maxLevel: 1 },
+{ id: 'BCBP12', height: 0.5,type: 'upgrade', code: 'C12', name: '2', coords: [-4, -5.0625], reqs: [[-4, -6]], borderColor: 'orange', desc: '+1%C/s/lvl.', effects: [{type: 'max_level_mod', target:'BCBP12', amount:(lvl)=>lvl},{ type: 'currency_mult', currency: 'C', formula: (lvl) => 1+0.01 * lvl }], costCurrency: 'C', costFormula: (lvl) => 2000000*Math.pow(2, Math.pow(lvl, 0.3)), maxLevel: 1 },
     //infinity
     { id: 'InfoInf', type: 'info', code: 'Infinity', name: 'Infinity baseplate', coords: [3, -3], reqs: [[0, -2]], desc: 'Central infinity generator.', getInfoText: () => `For upgrades I.xx, you only pay for the last level!` },
     { bulkFinalCost: true, id: 'I01', type: 'upgrade', code: 'I01', name: 'Infinite', coords: [4, -3], reqs: [[1, -6]], borderColor: 'green', desc: 'Gain 0.01∞/s/level', effects: [{ type: 'base_gain', currency: '∞', formula: (lvl) => 0.01 *lvl }, { type: 'max_level_mod', target: 'I01', amount: (lvl) => 10 * lvl }], costCurrency: '∞', costFormula: (lvl) => (lvl >= 2) * 0.000001 * (Math.pow(lvl + 9, 5) - 1e5) / (Math.pow(1.5, getLevel('I06')) * Math.pow(5, getLevel('IF03'))), maxLevel: 1000 },
@@ -1745,7 +1842,7 @@ const DEPTH_BG = {
 function initDepthBackground() {
     if (DEPTH_BG.initialized) return;
     DEPTH_BG.initialized = true;
-    const particleCount = Math.min(120, Math.max(60, Math.floor((window.innerWidth * window.innerHeight) / 20000)));
+    const particleCount = Math.min(300, Math.max(150, Math.floor((window.innerWidth * window.innerHeight) / 7000)));
     DEPTH_BG.particles = [];
     for (let i = 0; i < particleCount; i++) {
         DEPTH_BG.particles.push({
@@ -1946,6 +2043,7 @@ function draw() {
             }
             // Safety: ensure mult is never 0 or negative (prevents any buggy formula from killing gain)
             if (mult <= 0) mult = 1;
+            // BOTH base and baseRaw should be multiplied by currency_mult effects!
             const result = base * mult + baseRaw;
             cache.gainRate.set(currency, result);
             _currencyRateCache[currency] = result;
@@ -2662,6 +2760,117 @@ document.getElementById('font-size-label').textContent = 11;
             document.getElementById('buy-mode-label').textContent = `BUY: x${buyMode}`;
             playSound('buy');
         };
+        // ==================== HOTKEYS ====================
+        const DEFAULT_HOTKEYS = { buy1: '1', buy5: '2', buy10: '3', buyMax: '4' };
+        let hotkeyBindings = { ...DEFAULT_HOTKEYS };
+        if (gameState.hotkeyBindings) hotkeyBindings = { ...hotkeyBindings, ...gameState.hotkeyBindings };
+        let _rebindingAction = null;
+
+        function applyHotkeyMode(mode) {
+            if (mode === 1) { buyMode = 1; }
+            else if (mode === 5) { buyMode = 5; }
+            else if (mode === 10) { buyMode = 10; }
+            else if (mode === 'MAX') { buyMode = 'MAX'; }
+            gameState.buyMode = buyMode;
+            document.getElementById('buy-mode-label').textContent = `BUY: x${buyMode}`;
+            playSound('buy');
+        }
+
+        function updateHotkeyButtonLabels() {
+            document.querySelectorAll('.hotkey-btn').forEach(btn => {
+                const action = btn.dataset.action;
+                if (action && hotkeyBindings[action]) {
+                    btn.textContent = hotkeyBindings[action];
+                }
+            });
+        }
+
+        function handleHotkeyRebinding(key) {
+            if (!_rebindingAction) return false;
+            const action = _rebindingAction;
+            _rebindingAction = null;
+            // Remove focus styling from all hotkey buttons
+            document.querySelectorAll('.hotkey-btn').forEach(b => {
+                b.classList.remove('ring-1', 'ring-emerald-400');
+                b.textContent = hotkeyBindings[b.dataset.action] || '?';
+            });
+            // Update binding, handling duplicates: remove any other action using this key
+            for (const act of Object.keys(hotkeyBindings)) {
+                if (hotkeyBindings[act] === key && act !== action) {
+                    delete hotkeyBindings[act];
+                }
+            }
+            hotkeyBindings[action] = key;
+            gameState.hotkeyBindings = { ...hotkeyBindings };
+            updateHotkeyButtonLabels();
+            showToast(`Hotkey set: ${key}`);
+            return true;
+        }
+
+        function setupHotkeyListeners() {
+            updateHotkeyButtonLabels();
+
+            document.querySelectorAll('.hotkey-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    const action = btn.dataset.action;
+                    // If already rebinding this button, cancel
+                    if (_rebindingAction === action) {
+                        _rebindingAction = null;
+                        btn.classList.remove('ring-1', 'ring-emerald-400');
+                        btn.textContent = hotkeyBindings[action] || '?';
+                        return;
+                    }
+                    // Cancel any previous rebinding
+                    if (_rebindingAction) {
+                        document.querySelectorAll('.hotkey-btn').forEach(b => {
+                            b.classList.remove('ring-1', 'ring-emerald-400');
+                            b.textContent = hotkeyBindings[b.dataset.action] || '?';
+                        });
+                    }
+                    _rebindingAction = action;
+                    btn.textContent = '...';
+                    btn.classList.add('ring-1', 'ring-emerald-400');
+                });
+            });
+
+            document.addEventListener('keydown', (e) => {
+                // Ignore if typing in an input/textarea
+                if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+                // Ignore if a modal is open
+                if (!document.getElementById('reset-modal').classList.contains('hidden') ||
+                    !document.getElementById('wipe-modal').classList.contains('hidden') ||
+                    !document.getElementById('offline-modal').classList.contains('hidden')) return;
+
+                const key = e.key;
+                
+                // If currently rebinding, capture the key
+                if (_rebindingAction) {
+                    e.preventDefault();
+                    handleHotkeyRebinding(key);
+                    return;
+                }
+
+                // Check if the pressed key matches any hotkey
+                for (const [action, boundKey] of Object.entries(hotkeyBindings)) {
+                    if (boundKey === key) {
+                        e.preventDefault();
+                        if (action === 'buy1') applyHotkeyMode(1);
+                        else if (action === 'buy5') applyHotkeyMode(5);
+                        else if (action === 'buy10') applyHotkeyMode(10);
+                        else if (action === 'buyMax') applyHotkeyMode('MAX');
+                        break;
+                    }
+                }
+            });
+        }
+
+        // Call setup after DOM is ready
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', setupHotkeyListeners);
+        } else {
+            setupHotkeyListeners();
+        }
         document.getElementById('btn-toggle-effects').onclick = () => {
             gameState.showEffects = !gameState.showEffects;
             document.getElementById('effects-mode-label').textContent = `EFFECTS: ${gameState.showEffects?'ON':'OFF'}`;
@@ -2708,7 +2917,8 @@ document.getElementById('font-size-label').textContent = 11;
                         if (!gameState.hiddenCurrencies) gameState.hiddenCurrencies = [];
                         if (!gameState.unlockedDecorations) gameState.unlockedDecorations = [];
                         if (!gameState.skipResetConfirm) gameState.skipResetConfirm = {};
-                        if (!gameState.currencyOrder) gameState.currencyOrder = ['P'];
+            if (!gameState.hotkeyBindings) gameState.hotkeyBindings = null;
+            if (!gameState.currencyOrder) gameState.currencyOrder = ['P'];
                         if (gameState.camera) {
                             panX = gameState.camera.panX || 0;
                             panY = gameState.camera.panY || 0;
@@ -3019,7 +3229,7 @@ document.getElementById('btn-font-up').onclick = (e) => {
         };
         document.getElementById('btn-settings-toggle').onclick = (e) => { e.stopPropagation(); const menu = document
                 .getElementById('settings-menu');
-            menu.classList.toggle('hidden'); if (!menu.classList.contains('hidden')) renderCurrencyToggles(); };
+            menu.classList.toggle('hidden'); if (!menu.classList.contains('hidden')) { renderCurrencyToggles(); updateHotkeyButtonLabels(); } };
         window.addEventListener('click', e => { if (!e.target.closest('#settings-menu') && !e.target.closest(
                 '#btn-settings-toggle')) document.getElementById('settings-menu').classList.add('hidden'); });
         // ==================== PERSISTENCE ====================
@@ -3231,6 +3441,8 @@ document.getElementById('btn-font-up').onclick = (e) => {
             cacheDirty = true;
             const gains = {};
             for (const key of Object.keys(CURRENCIES)) {
+                // Skip currencies excluded from offline progress (diminishing returns, random chance, tick-based)
+                if (OFFLINE_EXCLUDED_CURRENCIES.has(key)) continue;
                 const rate = calculateGainRate(key);
                 if (rate > 0 && (gameState.currencies[key] || 0) > 0) {
                     const earned = rate * dt;
