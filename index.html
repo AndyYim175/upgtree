@@ -373,12 +373,17 @@ const OFFLINE_EXCLUDED_CURRENCIES = new Set([
             { type: 'text', coords: [22.5, 2.5], text: 'Business II', alignment: 'Bottom-left', color: 'lightgreen', fontSize: 28, opacity: 0.9, requirements: ['U27'] },
             { type: 'text', coords: [27.5, -2.5], text: 'Business III', alignment: 'Bottom-left', color: 'lightgreen', fontSize: 28, opacity: 0.9, requirements: ['U27'] },
             { type: 'text', coords: [32.5, -2.5], text: 'Infinity', alignment: 'Bottom-left', color: '#fcd221', fontSize: 28, opacity: 0.9, requirements: ['UB39'] },
-            { type: 'text', coords: [37.5, -2.5], text: 'Black', alignment: 'Bottom-left', color: 'black', fontSize: 28, opacity: 0.9, requirements: ['UB39'] },
+            { type: 'text', coords: [32.5, 2.5], text: 'Black', alignment: 'Bottom-left', color: 'white', fontSize: 28, opacity: 0.9, requirements: ['UI25'] },
             { type: 'text', coords: [-7.5, 17.5], text: 'Dimension baseplate III', alignment: 'Bottom-left', color: '#8B0000', fontSize: 28, opacity: 0.9, requirements: ['A50'] },
             { type: 'text', coords: [-7.5, 12.5], text: 'Progression baseplate', alignment: 'Bottom-left', color: '#ffa500', fontSize: 28, opacity: 0.9, requirements: ['A12'] },
             { type: 'text', coords: [-2.5, 7.65], text: 'Reset all your progress again!', alignment: 'Bottom-left', color: 'lightyellow', fontSize: 15, opacity: 0.9, requirements: ['D16'] },
             { type: 'text', coords: [2.5, 7.5], text: 'Operation baseplate', alignment: 'Bottom-left', color: 'turquoise', fontSize: 28, opacity: 0.9, requirements: ['P09'] },
-            { type: 'text', coords: [-7.5, 7.5], text: 'Experience baseplate', alignment: 'Bottom-left', color: 'lightgrey', fontSize: 28, opacity: 0.9, requirements: ['P04'] }
+            { type: 'text', coords: [-7.5, 7.5], text: 'Experience baseplate', alignment: 'Bottom-left', color: 'lightgrey', fontSize: 28, opacity: 0.9, requirements: ['P04'] },
+            { type: 'text', coords: [32.5, 7.5], text: 'Red', alignment: 'Bottom-left', color: 'Red', fontSize: 28, opacity: 0.9, requirements: ['CB14'] },
+            { type: 'rect', coords: [32.5, 7.5], width: 800, height: 800, fillColor: '#ff7f7f', fillOpacity: 0.5, strokeColor: '#8B0000', strokeOpacity: 0.9, strokeWidth: 2, requirements: ['CB14'] },
+            { type: 'text', coords: [37.5, 2.5], text: 'Yellow', alignment: 'Bottom-left', color: 'Yellow', fontSize: 28, opacity: 0.9, requirements: ['....'] },
+            { type: 'text', coords: [37.5, 7.5], text: 'Blue', alignment: 'Bottom-left', color: 'LightBlue', fontSize: 28, opacity: 0.9, requirements: ['....'] },
+            
         ];
         // ==================== AUDIO ENGINE ====================
         let audioCtx = null,
@@ -491,7 +496,11 @@ const OFFLINE_EXCLUDED_CURRENCIES = new Set([
             '♦': { id: '♦', name: 'Infinity fragments', color: 'text-purple-400', fillBg: 'rgba(34,197,94,0.18)' }, 
             E: { id: 'E', name: 'Energy', color: 'text-orange-400', fillBg: 'rgba(255,165,0,0.535)' },
             black: { id: 'black', name: 'Black', color: 'text-zinc-900', fillBg: 'rgba(0,0,0,0.2)' },
-        red: { id: 'red', name: 'Red', color: 'text-red-400', fillBg: 'rgba(255,99,71,0.2)' },
+        red: { id: 'red', name: 'Red', color: 'text-red-500', fillBg: 'rgba(255, 0, 0, 0.2)' },
+        crimson: { id: 'crimson', name: 'Crimson', color: 'text-red-600', fillBg: 'rgba(220, 20, 60, 0.2)' },
+        firebrick: { id: 'firebrick', name: 'Firebrick', color: 'text-red-700', fillBg: 'rgba(178, 34, 34, 0.2)' },
+        maroon: { id: 'maroon', name: 'Maroon', color: 'text-red-800', fillBg: 'rgba(128, 0, 0, 0.2)' },
+        burgundy: { id: 'burgundy', name: 'Dark Burgundy', color: 'text-red-950', fillBg: 'rgba(74, 4, 4, 0.2)' },
         yellow: { id: 'yellow', name: 'Yellow', color: 'text-yellow-400', fillBg: 'rgba(255,235,59,0.2)' },
         blue: { id: 'blue', name: 'Blue', color: 'text-blue-400', fillBg: 'rgba(59,130,246,0.2)' },
         orange: { id: 'orange', name: 'Orange', color: 'text-orange-400', fillBg: 'rgba(255,165,0,0.2)' },
@@ -1102,12 +1111,25 @@ if (typeof gameState.currencies.P !== 'number' || isNaN(gameState.currencies.P))
     { id: 'CB12', type: 'upgrade', code: 'CB12', name: 'stack me', coords: [34, 5], reqs: [[35,5]], borderColor: 'orange', desc: 'multiply black based on self again. the formula is log!', effects: [{ type: 'currency_mult', currency: 'black', formula: (lvl) => 1+0.5*Math.pow(0.2*Math.log((getCurr('black')/1000)+1)+1,1.5) }], costCurrency: 'black', costFormula: (lvl) => 2e6, maxLevel: 1 },
     { id: 'CB13', type: 'upgrade', code: 'CB13', name: 'is it all dark?', coords: [34, 6], reqs: [[34,5]], borderColor: 'green', desc: 'maybe not. unlock new things. [wip]', effects: [], costCurrency: 'black', costFormula: (lvl) => 2e7, maxLevel: 1 },
     { id: 'CB14', type: 'upgrade', code: 'CB14', name: 'path I', coords: [34, 7], reqs: [[34,6]], borderColor: 'green', desc: 'unlock red [wip]', effects: [], costCurrency: 'black', costFormula: (lvl) => 1e8, maxLevel: 1 },
+    { id: 'CR01', type: 'upgrade', code: 'CR01', name: 'red', coords: [33, 8], reqs: [[34,7]], borderColor: 'green', desc: 'generate red.', effects: [{ type: 'base_gain', currency: 'red', formula: (lvl) => 1 }], costCurrency: 'red', costFormula: (lvl) => 0, maxLevel: 1 },
+    { id: 'CR02', type: 'upgrade', code: 'CR02', name: 'more', coords: [33, 9], reqs: [[33,8]], borderColor: 'green', desc: '+25% red/lvl.', effects: [{ type: 'currency_mult', currency: 'red', formula: (lvl) => 1+0.25*lvl }], costCurrency: 'red', costFormula: (lvl) => 5*(1+0.4*lvl)*Math.pow(1.1,Math.pow(lvl,0.8)), maxLevel: 80 },
+    { id: 'CR03', type: 'upgrade', code: 'CR03', name: 'even more', coords: [34, 9], reqs: [[33,9]], borderColor: 'green', desc: '+8% red/lvl ^3.', effects: [{ type: 'currency_mult', currency: 'red', formula: (lvl) => Math.pow(1+0.08*lvl, 3) }], costCurrency: 'red', costFormula: (lvl) => 25*(1+0.5*lvl)*Math.pow(1.25,Math.pow(lvl,0.9)), maxLevel: 100 },
+    { id: 'CR04', type: 'upgrade', code: 'CR04', name: 'something new', coords: [34, 8], reqs: [[34,9]], borderColor: 'green', desc: 'Unlock something.', effects: [], costCurrency: 'red', costFormula: (lvl) => 125, maxLevel: 1 },
+    { id: 'CR05', type: 'reset',   code: 'CR05', name: 'Red -> crimson', coords: [35, 8], reqs: [[34,8]], desc: 'Reset all red for crimson. [req:100]', targetCurrency: 'crimson', resetCurrencies: ['red'], resettedCoords: [], calculateGain: (lvl, getCurr, getLvl) => { const r = getCurr('red'); if (r < 100) return 0; return Math.pow(r / 100, 0.28); } },
+    { id: 'CR06', type: 'upgrade', code: 'CR06', name: 'something nice', coords: [35, 9], reqs: [[34,8]], borderColor: 'orange', desc: 'Boost red based on crimson.', effects: [{ type: 'currency_mult', currency: 'red', formula: (lvl) => Math.min(1+Math.pow(getCurr('crimson'),0.3),100*Math.pow(getCurr('crimson')/50000+1,0.15)) }], costCurrency: 'crimson', costFormula: (lvl) => 0.25, maxLevel: 1 },
+    { id: 'CR07', type: 'upgrade', code: 'CR07', name: 'the greatest upgrade in history', coords: [35, 10], reqs: [[35,9]], borderColor: 'orange', desc: 'haha cr07 okok. more red based on 1 -> 3 -> 6 -> 10 *0.01', effects: [{ type: 'currency_mult', currency: 'red', formula: (lvl) => 1+0.01*(lvl*(lvl+1)/2) }], costCurrency: 'crimson', costFormula: (lvl) => 1+0.1*(lvl+1)*(lvl+2)/2, maxLevel: 25 },
+    { id: 'CR08', type: 'upgrade', code: 'CR08', name: 'why not', coords: [34, 10], reqs: [[35,10]], borderColor: 'orange', desc: 'boost crimson based on lvl and red', effects: [{ type: 'reset_gain_mult', targetCurrency: 'crimson', formula: (lvl) => 1+0.05*Math.pow(lvl,1.25)*Math.log10(getCurr('red')+10) }], costCurrency: 'crimson', costFormula: (lvl) => 10*Math.pow(1.25+0.0125*lvl,lvl), maxLevel: 20 },
+    { id: 'CR09', type: 'upgrade', code: 'CR09', name: 'why not?', coords: [33, 10], reqs: [[34,10]], borderColor: 'orange', desc: 'boost red based on lvl and red', effects: [{ type: 'currency_mult', currency: 'red', formula: (lvl) => 1+0.075*Math.pow(lvl,1.28)*Math.log10(getCurr('red')+10) }], costCurrency: 'crimson', costFormula: (lvl) => 30*Math.pow(1.375+0.01875*lvl,lvl), maxLevel: 20 },
+    { id: 'CR10', type: 'upgrade', code: 'CR10', name: 'something new', coords: [36, 9], reqs: [[35,9]], borderColor: 'green', desc: 'Unlock something.', effects: [], costCurrency: 'crimson', costFormula: (lvl) => 125, maxLevel: 1 },
+    { id: 'CR11', type: 'reset',   code: 'CR11', name: 'Crimson -> firebrick', coords: [36, 8], reqs: [[36,9]], desc: 'Reset all red/crimson for firebrick. [req:100]', targetCurrency: 'firebrick', resetCurrencies: ['red','crimson'], resettedCoords: [], calculateGain: (lvl, getCurr, getLvl) => { const r = getCurr('crimson'); if (r < 100) return 0; return Math.pow(r / 100, 0.28); } },
+    { id: 'CR12', type: 'upgrade', code: 'CR12', name: 'something nicer', coords: [37, 8], reqs: [[36,9]], borderColor: 'orange', desc: 'Boost crimson based on firebrick.', effects: [{ type: 'reset_gain_mult', targetCurrency: 'crimson', formula: (lvl) => Math.min(1+Math.pow(getCurr('firebrick'),0.3),100*Math.pow(getCurr('firebrick')/50000+1,0.15)) }], costCurrency: 'firebrick', costFormula: (lvl) => 0.25, maxLevel: 1 },
+    { id: 'CR13', type: 'upgrade', code: 'CR13', name: 'something different', coords: [37, 9], reqs: [[37,8]], borderColor: 'orange', desc: 'Boost red based on firebrick.', effects: [{ type: 'currency_mult', currency: 'red', formula: (lvl) => Math.pow(Math.min(1+Math.pow(getCurr('firebrick'),0.3),100*Math.pow(getCurr('firebrick')/50000+1,0.15)),1.25) }], costCurrency: 'firebrick', costFormula: (lvl) => 8, maxLevel: 1 },
     
 
 
     
 
-    
+     
     
     //progression
     { id: 'S01', type: 'upgrade', code: 'S01', name: 'score', coords: [-3, 15], reqs: [[-2, 15]], borderColor: 'green', desc: 'get rating based on progression. (pt/resc/prestige/ascn)', effects: [{ type: 'base_gain', currency: 'S', formula: (lvl) => Math.pow((0.01*Math.log10(getCurr('P')+10)*Math.log10(getCurr('R')+10)*Math.log10(getCurr('€')+10)*Math.pow(Math.log10(getCurr('A')+12),5)),1*Math.pow(1.03, getLevel('S07'))) }], costCurrency: 'S', costFormula: (lvl) => 0, maxLevel: 1 },
