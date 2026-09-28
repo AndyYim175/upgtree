@@ -40,6 +40,10 @@
     background: rgba(255,255,255,0.15);
     border-radius: 0;
 }
+/* Smooth scroll for currency bar */
+#currency-bar {
+    scroll-behavior: smooth;
+}
 /* Items themselves: invisible to pointer events → clicks fall through to canvas */
 #currency-bar > * {
     pointer-events: none !important;
@@ -148,6 +152,10 @@
                     <span id="font-size-label" class="w-9 text-center text-[10px] font-mono text-zinc-300">11</span>
                     <button id="btn-font-up" class="w-6 h-6 bg-zinc-800 hover:bg-zinc-700 text-zinc-200 border border-zinc-700 flex items-center justify-center font-bold text-xs">+</button>
                 </div>
+            </div>
+            <div class="flex items-center justify-between gap-1 w-full px-2.5 py-1.5 bg-zinc-950 border border-zinc-800 text-zinc-300 text-[11px]">
+                <span class="font-bold text-zinc-400">NOTATION</span>
+                <button id="btn-notation" class="px-1.5 py-0.5 bg-zinc-800 hover:bg-zinc-700 text-cyan-300 border border-zinc-700 text-[10px] transition"><span id="notation-label">Standard</span></button>
             </div>
             <button id="btn-buy-multiplier" class="w-full px-2.5 py-1.5 bg-zinc-950 hover:bg-zinc-800 text-amber-400 border border-zinc-800 transition text-left font-bold text-[11px]"><span id="buy-mode-label">BUY: x1</span></button>
             <!-- Hotkey settings row -->
@@ -439,6 +447,145 @@ const OFFLINE_EXCLUDED_CURRENCIES = new Set([
                 osc.stop(ctxNow + 0.3);
             } catch (e) {}
         }
+        // ==================== NOTATION SYSTEM ====================
+        // Notation modes. Add new ones here. "key" is stored in save.
+        // format(num, precision) returns the formatted string.
+        const NOTATION_MODES = [
+            { key: 'standard', name: 'Standard', threshold: 1e3, // uses suffix system (K, M, B, etc.)
+                format: (num, precision) => formatNumberStandard(num, precision) },
+            { key: 'sci_e9', name: 'Sci e9', threshold: 1e9,
+                format: (num, precision) => formatNumberScientific(num, 9) },
+            { key: 'sci_e6', name: 'Sci e6', threshold: 1e6,
+                format: (num, precision) => formatNumberScientific(num, 6) },
+            { key: 'sci_e3', name: 'Sci e3', threshold: 1e3,
+                format: (num, precision) => formatNumberScientific(num, 3) },
+            { key: 'sci_e0', name: 'Sci e0', threshold: 1,
+                format: (num, precision) => formatNumberScientific(num, 0) },
+            { key: 'long', name: 'Long', threshold: 1e3,
+                format: (num, precision) => formatNumberLong(num, precision) },
+            { key: 'letter', name: 'letter', threshold: 1e3,
+                format: (num, precision) => formatNumberLetter(num, precision) },
+            { key: 'full', name: 'stubid', threshold: 1e3,
+                format: (num, precision) => formatNumberFull(num, precision) },
+        ];
+        const DEFAULT_NOTATION = 'standard';
+        let currentNotation = DEFAULT_NOTATION;
+
+        function getNotationMode() {
+            return NOTATION_MODES.find(m => m.key === currentNotation) || NOTATION_MODES[0];
+        }
+
+        // Suffix-based standard formatting (same as original formatNum)
+        function formatNumberStandard(num, precision) {
+            if (num === Infinity) return 'MAX';
+            if (num === undefined || num === null || isNaN(num)) return '0';
+            if (num === 0) return '0';
+            const abs = Math.abs(num);
+            let result;
+            if (abs >= 1e45) { const exp = Math.floor(Math.log10(abs)); const mantissa = num / Math.pow(10, exp); result = mantissa.toPrecision(3) + 'e' + exp; }
+            else if (abs >= 1e42) result = (num / 1e42).toPrecision(3) + 'TDe';
+            else if (abs >= 1e39) result = (num / 1e39).toPrecision(3) + 'DDe';
+            else if (abs >= 1e36) result = (num / 1e36).toPrecision(3) + 'UDe';
+            else if (abs >= 1e33) result = (num / 1e33).toPrecision(3) + 'De';
+            else if (abs >= 1e30) result = (num / 1e30).toPrecision(3) + 'No';
+            else if (abs >= 1e27) result = (num / 1e27).toPrecision(3) + 'Oc';
+            else if (abs >= 1e24) result = (num / 1e24).toPrecision(3) + 'Sp';
+            else if (abs >= 1e21) result = (num / 1e21).toPrecision(3) + 'Sx';
+            else if (abs >= 1e18) result = (num / 1e18).toPrecision(3) + 'Qn';
+            else if (abs >= 1e15) result = (num / 1e15).toPrecision(3) + 'Qd';
+            else if (abs >= 1e12) result = (num / 1e12).toPrecision(3) + 'T';
+            else if (abs >= 1e9) result = (num / 1e9).toPrecision(3) + 'B';
+            else if (abs >= 1e6) result = (num / 1e6).toPrecision(3) + 'M';
+            else if (abs >= 1e3) result = (num / 1e3).toPrecision(3) + 'K';
+            else result = parseFloat(Number(num).toPrecision(3)).toString();
+            return result;
+        }
+
+        // Scientific notation: always "1.23e45" except below threshold
+        function formatNumberScientific(num, thresholdDigits) {
+            if (num === Infinity) return 'MAX';
+            if (num === undefined || num === null || isNaN(num)) return '0';
+            if (num === 0) return '0';
+            const threshold = Math.pow(10, thresholdDigits);
+            if (Math.abs(num) < threshold) return parseFloat(Number(num).toPrecision(3)).toString();
+            const exp = Math.floor(Math.log10(Math.abs(num)));
+            const mantissa = num / Math.pow(10, exp);
+            return mantissa.toFixed(2) + 'e' + exp;
+        }
+
+        // Long notation: uses word names (Septillion, etc.) same threshold as standard
+        function formatNumberLong(num, precision) {
+            if (num === Infinity) return 'MAX';
+            if (num === undefined || num === null || isNaN(num)) return '0';
+            if (num === 0) return '0';
+            const abs = Math.abs(num);
+            // Use same named suffixes as standard but with full words
+            if (abs >= 1e45) return formatNumberStandard(num, precision); // fallback to e notation
+            if (abs >= 1e42) return (num / 1e42).toPrecision(3) + ' tredecillion';
+            if (abs >= 1e39) return (num / 1e39).toPrecision(3) + ' duodecillion';
+            if (abs >= 1e36) return (num / 1e36).toPrecision(3) + ' undecillion';
+            if (abs >= 1e33) return (num / 1e33).toPrecision(3) + ' decillion';
+            if (abs >= 1e30) return (num / 1e30).toPrecision(3) + ' nonillion';
+            if (abs >= 1e27) return (num / 1e27).toPrecision(3) + ' octillion';
+            if (abs >= 1e24) return (num / 1e24).toPrecision(3) + ' septillion';
+            if (abs >= 1e21) return (num / 1e21).toPrecision(3) + ' sextillion';
+            if (abs >= 1e18) return (num / 1e18).toPrecision(3) + ' quintillion';
+            if (abs >= 1e15) return (num / 1e15).toPrecision(3) + ' quadrillion';
+            if (abs >= 1e12) return (num / 1e12).toPrecision(3) + ' trillion';
+            if (abs >= 1e9) return (num / 1e9).toPrecision(3) + ' billion';
+            if (abs >= 1e6) return (num / 1e6).toPrecision(3) + ' million';
+            if (abs >= 1e3) return (num / 1e3).toPrecision(3) + ' thousand';
+            return parseFloat(Number(num).toPrecision(3)).toString();
+        }
+        
+        function formatNumberLetter(num, precision) {
+            if (num === Infinity) return 'MAX';
+            if (num === undefined || num === null || isNaN(num)) return '0';
+            if (num === 0) return '0';
+            const abs = Math.abs(num);
+            // Use same named suffixes as standard but with full words
+            if (abs >= 1e45) return formatNumberStandard(num, precision); // fallback to e notation
+            if (abs >= 1e42) return (num / 1e42).toPrecision(3) + 'n';
+            if (abs >= 1e39) return (num / 1e39).toPrecision(3) + 'm';
+            if (abs >= 1e36) return (num / 1e36).toPrecision(3) + 'l';
+            if (abs >= 1e33) return (num / 1e33).toPrecision(3) + 'k';
+            if (abs >= 1e30) return (num / 1e30).toPrecision(3) + 'j';
+            if (abs >= 1e27) return (num / 1e27).toPrecision(3) + 'i';
+            if (abs >= 1e24) return (num / 1e24).toPrecision(3) + 'h';
+            if (abs >= 1e21) return (num / 1e21).toPrecision(3) + 'g';
+            if (abs >= 1e18) return (num / 1e18).toPrecision(3) + 'f';
+            if (abs >= 1e15) return (num / 1e15).toPrecision(3) + 'e';
+            if (abs >= 1e12) return (num / 1e12).toPrecision(3) + 'd';
+            if (abs >= 1e9) return (num / 1e9).toPrecision(3) + 'c';
+            if (abs >= 1e6) return (num / 1e6).toPrecision(3) + 'b';
+            if (abs >= 1e3) return (num / 1e3).toPrecision(3) + 'a';
+            return parseFloat(Number(num).toPrecision(3)).toString();
+        }
+        
+        function formatNumberFull(num, precision) {
+            if (num === Infinity) return 'MAX';
+            if (num === undefined || num === null || isNaN(num)) return '0';
+            if (num === 0) return '0';
+            const abs = Math.abs(num);
+            // Use same named suffixes as standard but with full words
+            if (abs >= 1e45) return formatNumberStandard(num, precision)+'×1.0000000000000000000000000000000000000000000'; // fallback to e notation
+            if (abs >= 1e42) return (num / 1e42).toPrecision(3) + '×1,000,000,000,000,000,000,000,000,000,000,000,000,000,000';
+            if (abs >= 1e39) return (num / 1e39).toPrecision(3) + '×1,000,000,000,000,000,000,000,000,000,000,000,000,000';
+            if (abs >= 1e36) return (num / 1e36).toPrecision(3) + '×1,000,000,000,000,000,000,000,000,000,000,000,000';
+            if (abs >= 1e33) return (num / 1e33).toPrecision(3) + '×1,000,000,000,000,000,000,000,000,000,000,000';
+            if (abs >= 1e30) return (num / 1e30).toPrecision(3) + '×1,000,000,000,000,000,000,000,000,000,000';
+            if (abs >= 1e27) return (num / 1e27).toPrecision(3) + '×1,000,000,000,000,000,000,000,000,000';
+            if (abs >= 1e24) return (num / 1e24).toPrecision(3) + '×1,000,000,000,000,000,000,000,000';
+            if (abs >= 1e21) return (num / 1e21).toPrecision(3) + '×1,000,000,000,000,000,000,000';
+            if (abs >= 1e18) return (num / 1e18).toPrecision(3) + '×1,000,000,000,000,000,000';
+            if (abs >= 1e15) return (num / 1e15).toPrecision(3) + '×1,000,000,000,000,000';
+            if (abs >= 1e12) return (num / 1e12).toPrecision(3) + '×1,000,000,000,000';
+            if (abs >= 1e9) return (num / 1e9).toPrecision(3) + '×1,000,000,000';
+            if (abs >= 1e6) return (num / 1e6).toPrecision(3) + '×1,000,000';
+            if (abs >= 1e3) return (num / 1e3).toPrecision(3) + '×1,000';
+            return parseFloat(Number(num).toPrecision(3)).toString();
+        }
+
         // ==================== GAME CONSTANTS ====================
         const NODE_SIZE = 120,
             NODE_GAP = 160;
@@ -508,7 +655,7 @@ const OFFLINE_EXCLUDED_CURRENCIES = new Set([
         purple: { id: 'purple', name: 'Purple', color: 'text-purple-400', fillBg: 'rgba(168,85,247,0.2)' },
         white: { id: 'white', name: 'White', color: 'text-zinc-100', fillBg: 'rgba(255,255,255,0.2)' }};
         // ==================== GAME STATE ====================
-        let gameState = { currencies: { P: 0, PR: 0, QT: 0, T: 0, D1: 0, D2: 0, D3: 0, D4: 0, D5: 0, D6: 0, D7: 0, D8: 0 }, discoveredCurrencies: ['P'], currencyOrder: ['P'], hiddenCurrencies: [], userHiddenCurrencies: [], levels: {}, unlockedDecorations: [], camera: { panX: 0, panY: 0, scale: 1 }, soundMuted: false, showEffects: true, buyMode: 1, skipResetConfirm: {}, paused: false, currencyFontSize: 11, offlineTimestamp: Date.now(), hotkeyBindings: null };
+        let gameState = { currencies: { P: 0, PR: 0, QT: 0, T: 0, D1: 0, D2: 0, D3: 0, D4: 0, D5: 0, D6: 0, D7: 0, D8: 0 }, discoveredCurrencies: ['P'], currencyOrder: ['P'], hiddenCurrencies: [], userHiddenCurrencies: [], levels: {}, unlockedDecorations: [], camera: { panX: 0, panY: 0, scale: 1 }, soundMuted: false, showEffects: true, buyMode: 1, skipResetConfirm: {}, paused: false, currencyFontSize: 11, offlineTimestamp: Date.now(), hotkeyBindings: null, notation: 'standard' };
 // Always ensure P is a valid number (defence against undefined save corruption)
 if (typeof gameState.currencies.P !== 'number' || isNaN(gameState.currencies.P)) gameState.currencies.P = 0;
         let displayLevels = {},
@@ -1124,6 +1271,8 @@ if (typeof gameState.currencies.P !== 'number' || isNaN(gameState.currencies.P))
     { id: 'CR11', type: 'reset',   code: 'CR11', name: 'Crimson -> firebrick', coords: [36, 8], reqs: [[36,9]], desc: 'Reset all red/crimson for firebrick. [req:100]', targetCurrency: 'firebrick', resetCurrencies: ['red','crimson'], resettedCoords: [], calculateGain: (lvl, getCurr, getLvl) => { const r = getCurr('crimson'); if (r < 100) return 0; return Math.pow(r / 100, 0.28); } },
     { id: 'CR12', type: 'upgrade', code: 'CR12', name: 'something nicer', coords: [37, 8], reqs: [[36,9]], borderColor: 'orange', desc: 'Boost crimson based on firebrick.', effects: [{ type: 'reset_gain_mult', targetCurrency: 'crimson', formula: (lvl) => Math.min(1+Math.pow(getCurr('firebrick'),0.3),100*Math.pow(getCurr('firebrick')/50000+1,0.15)) }], costCurrency: 'firebrick', costFormula: (lvl) => 0.25, maxLevel: 1 },
     { id: 'CR13', type: 'upgrade', code: 'CR13', name: 'something different', coords: [37, 9], reqs: [[37,8]], borderColor: 'orange', desc: 'Boost red based on firebrick.', effects: [{ type: 'currency_mult', currency: 'red', formula: (lvl) => Math.pow(Math.min(1+Math.pow(getCurr('firebrick'),0.3),100*Math.pow(getCurr('firebrick')/50000+1,0.15)),1.25) }], costCurrency: 'firebrick', costFormula: (lvl) => 8, maxLevel: 1 },
+    { id: 'CR14', type: 'upgrade', code: 'CR14', name: 'yes, yes', coords: [37, 10], reqs: [[37,9]], borderColor: 'orange', desc: '+5% crimson on reset per second multiplied by sqrt of level', effects: [{ type: 'base_gain_raw', currency: 'crimson', formula: (lvl) => getResetGain('crimson')*0.05*Math.pow(lvl, 0.5)}], costCurrency: 'firebrick', costFormula: (lvl) => 12*Math.pow(1.5,Math.pow(lvl,0.5)), maxLevel: 100 },
+    { id: 'CR15', type: 'upgrade', code: 'CR15', name: 'done!', coords: [36, 10], reqs: [[37,10]], borderColor: 'green', desc: 'unlock green.', effects: [], costCurrency: 'firebrick', costFormula: (lvl) => 50, maxLevel: 1 },
     
 
 
@@ -1469,28 +1618,10 @@ if (typeof gameState.currencies.P !== 'number' || isNaN(gameState.currencies.P))
             if (num === Infinity) return 'MAX';
             if (num === undefined || num === null || isNaN(num)) return '0';
             if (num === 0) return '0';
-            const key = num;
-            if (_formatCache.hasOwnProperty && _formatCache[key] !== undefined) return _formatCache[key];
-            // also check non-numeric keys for speed
+            const key = num + '|' + currentNotation;
             if (_formatCache[key] !== undefined) return _formatCache[key];
-            const abs = Math.abs(num);
-            let result;
-            if (abs >= 1e45) { const exp = Math.floor(Math.log10(abs)); const mantissa = num / Math.pow(10, exp); result = mantissa.toPrecision(3) + 'e' + exp; }
-            else if (abs >= 1e42) result = (num / 1e42).toPrecision(3) + 'TDe';
-            else if (abs >= 1e39) result = (num / 1e39).toPrecision(3) + 'DDe';
-            else if (abs >= 1e36) result = (num / 1e36).toPrecision(3) + 'UDe';
-            else if (abs >= 1e33) result = (num / 1e33).toPrecision(3) + 'De';
-            else if (abs >= 1e30) result = (num / 1e30).toPrecision(3) + 'No';
-            else if (abs >= 1e27) result = (num / 1e27).toPrecision(3) + 'Oc';
-            else if (abs >= 1e24) result = (num / 1e24).toPrecision(3) + 'Sp';
-            else if (abs >= 1e21) result = (num / 1e21).toPrecision(3) + 'Sx';
-            else if (abs >= 1e18) result = (num / 1e18).toPrecision(3) + 'Qn';
-            else if (abs >= 1e15) result = (num / 1e15).toPrecision(3) + 'Qd';
-            else if (abs >= 1e12) result = (num / 1e12).toPrecision(3) + 'T';
-            else if (abs >= 1e9) result = (num / 1e9).toPrecision(3) + 'B';
-            else if (abs >= 1e6) result = (num / 1e6).toPrecision(3) + 'M';
-            else if (abs >= 1e3) result = (num / 1e3).toPrecision(3) + 'K';
-            else result = parseFloat(Number(num).toPrecision(3)).toString();
+            const mode = getNotationMode();
+            const result = mode.format(num, 3);
             _formatCache[key] = result;
             _formatFrame = cacheDirtyFrame;
             return result;
@@ -2275,7 +2406,23 @@ function buyUpgrade(nodeId, isAutomated = false, isFree = false) {
             }, delayMs);
         }
         // ==================== CURRENCY ORDER MANAGEMENT ====================
-        function addCurrencyToOrder(currKey) {
+        function scrollCurrencyBarToBottom(smooth = true) {
+    const bar = document.getElementById('currency-bar');
+    if (!bar) return;
+    const target = bar.scrollHeight - bar.clientHeight;
+    if (target <= 0) return;
+    if (smooth && 'scrollBehavior' in document.documentElement.style) {
+        bar.style.scrollBehavior = 'smooth';
+        // Use a small delay to let the DOM settle (new currency line just added)
+        requestAnimationFrame(() => {
+            bar.scrollTo({ top: target, behavior: 'smooth' });
+        });
+    } else {
+        bar.scrollTop = target;
+    }
+}
+
+function addCurrencyToOrder(currKey) {
     if (!gameState.currencyOrder) gameState.currencyOrder = [];
     if (!gameState.discoveredCurrencies.includes(currKey)) gameState.discoveredCurrencies.push(currKey);
     // Only auto-unhide if NOT in userHiddenCurrencies
@@ -2286,10 +2433,13 @@ function buyUpgrade(nodeId, isAutomated = false, isFree = false) {
             if (typeof renderCurrencyToggles === 'function') renderCurrencyToggles();
         }
     }
-    if (!gameState.currencyOrder.includes(currKey)) { 
+    const isNew = !gameState.currencyOrder.includes(currKey);
+    if (isNew) { 
         gameState.currencyOrder.push(currKey); 
         // Force bar rebuild on next render cycle
         _lastRenderedBarOrder = '';
+        // Auto-scroll to bottom when a brand new currency is added
+        requestAnimationFrame(() => scrollCurrencyBarToBottom(true));
     } else if (gameState.currencyOrder.indexOf(currKey) > gameState.currencyOrder.lastIndexOf(currKey)) {
         // Remove duplicate if somehow present twice
         const idx = gameState.currencyOrder.lastIndexOf(currKey);
@@ -2751,13 +2901,15 @@ document.getElementById('btn-pause').onclick = () => {
             gameState = { currencies: { P: 0, PR: 0, QT: 0, T: 0, D1: 0, D2: 0, D3: 0, D4: 0, D5: 0, D6: 0, D7: 0, D8: 0 }, discoveredCurrencies: ['P'], currencyOrder: ['P'],
                 hiddenCurrencies: [], levels: {}, unlockedDecorations: [], camera: { panX: 0, panY: 0,
                     scale: 1 }, soundMuted: false, showEffects: true, buyMode: 1, skipResetConfirm: {},
-                paused: false, offlineTimestamp: Date.now() };
+                paused: false, offlineTimestamp: Date.now(), notation: 'standard' };
             panX = 0;
             panY = 0;
             scale = 1;
             currencyFontSize = 11;
 gameState.currencyFontSize = 11;
 document.getElementById('font-size-label').textContent = 11;
+currentNotation = 'standard';
+applyNotation('standard');
             document.getElementById('wipe-modal').classList.add('hidden');
             playSound('reset');
             showToast('All data wiped.');
@@ -2780,6 +2932,23 @@ document.getElementById('font-size-label').textContent = 11;
             buyMode = buyModes[(idx + 1) % buyModes.length];
             gameState.buyMode = buyMode;
             document.getElementById('buy-mode-label').textContent = `BUY: x${buyMode}`;
+            playSound('buy');
+        };
+        // Notation settings
+        function applyNotation(key) {
+            currentNotation = key;
+            gameState.notation = key;
+            const mode = NOTATION_MODES.find(m => m.key === key) || NOTATION_MODES[0];
+            document.getElementById('notation-label').textContent = mode.name;
+            _formatCache = {};
+            clearCaches(true);
+            if (typeof renderCurrencyBar === 'function') renderCurrencyBar();
+            requestCanvasRedraw(true);
+        }
+        document.getElementById('btn-notation').onclick = () => {
+            const idx = NOTATION_MODES.findIndex(m => m.key === currentNotation);
+            const next = (idx + 1) % NOTATION_MODES.length;
+            applyNotation(NOTATION_MODES[next].key);
             playSound('buy');
         };
         // ==================== HOTKEYS ====================
@@ -3425,6 +3594,12 @@ document.getElementById('btn-font-up').onclick = (e) => {
                 currencyFontSize = 11;
             }
             document.getElementById('font-size-label').textContent = currencyFontSize;
+            // Notation — if missing from save, default silently (no corruption)
+            if (gameState.notation && NOTATION_MODES.some(m => m.key === gameState.notation)) {
+                applyNotation(gameState.notation);
+            } else {
+                applyNotation(DEFAULT_NOTATION);
+            }
             document.getElementById('buy-mode-label').textContent = `BUY: x${buyMode}`;
             if (gameState.paused) { document.getElementById('pause-icon').setAttribute('data-lucide', 'play');
                 document.getElementById('pause-label').textContent = 'Continue'; } else { document
@@ -3724,7 +3899,13 @@ document.getElementById('btn-font-up').onclick = (e) => {
                 initDepthBackground();
                 restoreScrollState();
                 try { processOfflineProgress(); } catch(e) { console.warn('offline progress failed:', e); }
-                if (gameState.showEffects === undefined) gameState.showEffects = true;
+                // Ensure notation is applied at startup
+            if (gameState.notation && NOTATION_MODES.some(m => m.key === gameState.notation)) {
+                applyNotation(gameState.notation);
+            } else {
+                applyNotation(DEFAULT_NOTATION);
+            }
+            if (gameState.showEffects === undefined) gameState.showEffects = true;
                 if (!gameState.unlockedDecorations) gameState.unlockedDecorations = [];
                 renderDecorationsUnlock();
                 lucide.createIcons();
