@@ -92,10 +92,95 @@
         .grid-bg {
             background: transparent;
         }
+        /* Settings sections: highlight when scrolled into view */
+#settings-scroll > div {
+    scroll-margin-top: 8px;
+}
+.settings-nav-btn[data-section].active {
+    background: rgba(255,255,255,0.08);
+}
+#settings-scroll::-webkit-scrollbar {
+    width: 4px;
+}
+#settings-scroll::-webkit-scrollbar-track {
+    background: transparent;
+}
+#settings-scroll::-webkit-scrollbar-thumb {
+    background: rgba(255,255,255,0.12);
+    border-radius: 0;
+}
         .reset-skip-check {
             accent-color: #f59e0b;
             width: 14px;
             height: 14px;
+            cursor: pointer;
+        }
+        #news-ticker {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 25;
+            height: 20px;
+            background: rgba(9, 9, 11, 0.92);
+            border-bottom: 1px solid rgba(255,255,255,0.08);
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            pointer-events: none;
+        }
+        .news-item {
+            position: absolute;
+            white-space: nowrap;
+            font-size: 11px;
+            color: #a1a1aa;
+            font-family: 'Fira Code', monospace;
+            padding: 0 24px;
+            pointer-events: auto;
+        }
+        .news-group-tag {
+            display: inline-block;
+            padding: 0 4px;
+            margin-right: 6px;
+            font-size: 9px;
+            text-transform: uppercase;
+            letter-spacing: 0.03em;
+            background: rgba(255,255,255,0.08);
+            color: #d4d4d8;
+        }
+        #news-ticker.hidden {
+            display: none !important;
+        }
+        /* Teleport hotkey rows in settings */
+        .teleport-row .teleport-key-btn {
+            pointer-events: auto !important;
+        }
+        .teleport-row .teleport-delete-btn {
+            pointer-events: auto !important;
+        }
+        #viewport.teleport-capturing {
+            cursor: crosshair !important;
+        }
+        .news-slider {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 100%;
+            height: 4px;
+            background: rgba(255,255,255,0.1);
+            outline: none;
+        }
+        .news-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 12px;
+            height: 12px;
+            background: #22c55e;
+            cursor: pointer;
+        }
+        .news-slider::-moz-range-thumb {
+            width: 12px;
+            height: 12px;
+            background: #22c55e;
             cursor: pointer;
         }
         #canvas-layer {
@@ -116,7 +201,11 @@
     </style>
 </head>
 <body class="h-full w-full flex flex-col relative overflow-hidden select-none bg-zinc-950">
-    <main id="viewport" class="relative flex-1 w-full h-full overflow-hidden cursor-grab active:cursor-grabbing grid-bg">
+    <!-- News ticker -->
+    <div id="news-ticker">
+        <div id="news-track" class="relative w-full h-full"></div>
+    </div>
+    <main id="viewport" class="relative flex-1 w-full h-full overflow-hidden cursor-grab active:cursor-grabbing grid-bg" style="margin-top: 20px;">
         <canvas id="canvas-layer"></canvas>
     </main>
     <!-- Bottom-left HUD -->
@@ -136,59 +225,124 @@
     </div>
     <!-- Bottom-right settings -->
     <div class="z-30 fixed flex flex-col items-end gap-2" style="bottom: max(1.25rem, env(safe-area-inset-bottom, 1.25rem)); right: max(1.25rem, env(safe-area-inset-right, 1.25rem));">
-        <div id="settings-menu" class="hidden flex flex-col gap-1.5 bg-zinc-900/95 border border-zinc-800 p-2 shadow-2xl min-w-[180px] text-xs max-h-[70vh] overflow-y-auto">
-            <div class="flex items-center justify-between gap-1 w-full px-2.5 py-1.5 bg-zinc-950 border border-zinc-800 text-zinc-300 text-[11px]">
-                <span class="font-bold text-zinc-400">ZOOM</span>
-                <div class="flex items-center gap-1">
-                    <button id="btn-zoom-out" class="w-6 h-6 bg-zinc-800 hover:bg-zinc-700 text-zinc-200 border border-zinc-700 flex items-center justify-center font-bold text-xs">-</button>
-                    <span id="zoom-label" class="w-9 text-center text-[10px] font-mono text-zinc-300">100%</span>
-                    <button id="btn-zoom-in" class="w-6 h-6 bg-zinc-800 hover:bg-zinc-700 text-zinc-200 border border-zinc-700 flex items-center justify-center font-bold text-xs">+</button>
+        <!-- Settings menu (collapsible + fullscreen) -->
+        <div id="settings-menu" class="hidden flex flex-col bg-zinc-900/95 border border-zinc-800 shadow-2xl text-xs overflow-hidden" style="max-height: 0; transition: max-height 0.25s ease, width 0.25s ease;">
+            <div id="settings-inner" class="flex overflow-hidden" style="max-height: 0; transition: max-height 0.25s ease;">
+                <!-- Left nav bar (icons) -->
+                <div id="settings-nav" class="flex flex-col gap-0.5 p-1.5 bg-zinc-950/80 border-r border-zinc-800 flex-shrink-0">
+                    <button class="settings-nav-btn p-1.5 hover:bg-zinc-800 text-zinc-400 hover:text-cyan-300 transition rounded-none" data-section="view" title="View &amp; Camera"><i data-lucide="eye" class="w-3.5 h-3.5"></i></button>
+                    <button class="settings-nav-btn p-1.5 hover:bg-zinc-800 text-zinc-400 hover:text-amber-300 transition rounded-none" data-section="prefs" title="Buy Mode &amp; Notation"><i data-lucide="sliders" class="w-3.5 h-3.5"></i></button>
+                    <button class="settings-nav-btn p-1.5 hover:bg-zinc-800 text-zinc-400 hover:text-red-300 transition rounded-none" data-section="hotkeys" title="Hotkeys"><i data-lucide="keyboard" class="w-3.5 h-3.5"></i></button>
+                    <button class="settings-nav-btn p-1.5 hover:bg-zinc-800 text-zinc-400 hover:text-purple-300 transition rounded-none" data-section="currency" title="Currency Order"><i data-lucide="list" class="w-3.5 h-3.5"></i></button>
+                    <button class="settings-nav-btn p-1.5 hover:bg-zinc-800 text-zinc-400 hover:text-yellow-300 transition rounded-none" data-section="news" title="News Ticker"><i data-lucide="newspaper" class="w-3.5 h-3.5"></i></button>
+                    <button class="settings-nav-btn p-1.5 hover:bg-zinc-800 text-zinc-400 hover:text-emerald-300 transition rounded-none" data-section="save" title="Save &amp; Data"><i data-lucide="save" class="w-3.5 h-3.5"></i></button>
+                </div>
+                <!-- Scrollable content -->
+                <div id="settings-scroll" class="flex flex-col gap-1.5 p-2 overflow-y-auto flex-1 min-w-0" style="max-height: 70vh;">
+                    <!-- SECTION: View & Camera -->
+                    <div id="section-view" class="flex flex-col gap-1">
+                        <div class="text-[9px] font-bold text-zinc-500 tracking-wider px-1 mb-0.5 uppercase">View &amp; Camera</div>
+                        <div class="flex items-center justify-between gap-1 w-full px-2.5 py-1.5 bg-zinc-950 border border-zinc-800 text-zinc-300 text-[11px]">
+                            <span class="font-bold text-zinc-400">ZOOM</span>
+                            <div class="flex items-center gap-1">
+                                <button id="btn-zoom-out" class="w-6 h-6 bg-zinc-800 hover:bg-zinc-700 text-zinc-200 border border-zinc-700 flex items-center justify-center font-bold text-xs">-</button>
+                                <span id="zoom-label" class="w-9 text-center text-[10px] font-mono text-zinc-300">100%</span>
+                                <button id="btn-zoom-in" class="w-6 h-6 bg-zinc-800 hover:bg-zinc-700 text-zinc-200 border border-zinc-700 flex items-center justify-center font-bold text-xs">+</button>
+                            </div>
+                        </div>
+                        <div class="flex items-center justify-between gap-1 w-full px-2.5 py-1.5 bg-zinc-950 border border-zinc-800 text-zinc-300 text-[11px]">
+                            <span class="font-bold text-zinc-400">FONT SIZE</span>
+                            <div class="flex items-center gap-1">
+                                <button id="btn-font-down" class="w-6 h-6 bg-zinc-800 hover:bg-zinc-700 text-zinc-200 border border-zinc-700 flex items-center justify-center font-bold text-xs">-</button>
+                                <span id="font-size-label" class="w-9 text-center text-[10px] font-mono text-zinc-300">11</span>
+                                <button id="btn-font-up" class="w-6 h-6 bg-zinc-800 hover:bg-zinc-700 text-zinc-200 border border-zinc-700 flex items-center justify-center font-bold text-xs">+</button>
+                            </div>
+                        </div>
+                        <button id="btn-recenter" class="w-full px-2.5 py-1.5 bg-zinc-950 hover:bg-zinc-800 text-zinc-300 border border-zinc-800 transition flex items-center justify-between text-[11px] rounded-none"><span>Recenter Cam</span><i data-lucide="crosshair" class="w-3.5 h-3.5 text-zinc-400"></i></button>
+                        <button id="btn-toggle-effects" class="w-full px-2.5 py-1.5 bg-zinc-950 hover:bg-zinc-800 text-cyan-400 border border-zinc-800 transition text-left font-bold text-[11px] rounded-none"><span id="effects-mode-label">EFFECTS: ON</span></button>
+                    </div>
+                    <!-- SECTION: Buy Mode & Notation -->
+                    <div id="section-prefs" class="flex flex-col gap-1 pt-1 border-t border-zinc-800">
+                        <div class="text-[9px] font-bold text-zinc-500 tracking-wider px-1 mb-0.5 uppercase">Buy Mode &amp; Notation</div>
+                        <button id="btn-buy-multiplier" class="w-full px-2.5 py-1.5 bg-zinc-950 hover:bg-zinc-800 text-amber-400 border border-zinc-800 transition text-left font-bold text-[11px] rounded-none"><span id="buy-mode-label">BUY: x1</span></button>
+                        <div class="flex items-center justify-between gap-1 w-full px-2.5 py-1.5 bg-zinc-950 border border-zinc-800 text-zinc-300 text-[11px]">
+                            <span class="font-bold text-zinc-400">NOTATION</span>
+                            <button id="btn-notation" class="px-1.5 py-0.5 bg-zinc-800 hover:bg-zinc-700 text-cyan-300 border border-zinc-700 text-[10px] transition rounded-none"><span id="notation-label">Standard</span></button>
+                        </div>
+                    </div>
+                    <!-- SECTION: Hotkeys -->
+                    <div id="section-hotkeys" class="flex flex-col gap-1 pt-1 border-t border-zinc-800">
+                        <div class="text-[9px] font-bold text-zinc-500 tracking-wider px-1 mb-0.5 uppercase">Hotkeys <span class="text-[8px] font-normal text-zinc-600">(click to rebind)</span></div>
+                        <div id="hotkey-rows" class="flex flex-col gap-0.5">
+                            <div class="flex items-center justify-between px-2.5 py-1 bg-zinc-950/80 border border-zinc-800 text-[10px]">
+                                <span class="text-zinc-400">Buy x1</span>
+                                <span><button class="hotkey-btn px-1.5 py-0.5 bg-zinc-800 hover:bg-zinc-700 text-zinc-200 border border-zinc-700 min-w-[28px] text-center text-[10px] rounded-none" data-action="buy1">1</button></span>
+                            </div>
+                            <div class="flex items-center justify-between px-2.5 py-1 bg-zinc-950/80 border border-zinc-800 text-[10px]">
+                                <span class="text-zinc-400">Buy x5</span>
+                                <span><button class="hotkey-btn px-1.5 py-0.5 bg-zinc-800 hover:bg-zinc-700 text-zinc-200 border border-zinc-700 min-w-[28px] text-center text-[10px] rounded-none" data-action="buy5">2</button></span>
+                            </div>
+                            <div class="flex items-center justify-between px-2.5 py-1 bg-zinc-950/80 border border-zinc-800 text-[10px]">
+                                <span class="text-zinc-400">Buy x10</span>
+                                <span><button class="hotkey-btn px-1.5 py-0.5 bg-zinc-800 hover:bg-zinc-700 text-zinc-200 border border-zinc-700 min-w-[28px] text-center text-[10px] rounded-none" data-action="buy10">3</button></span>
+                            </div>
+                            <div class="flex items-center justify-between px-2.5 py-1 bg-zinc-950/80 border border-zinc-800 text-[10px]">
+                                <span class="text-zinc-400">Buy MAX</span>
+                                <span><button class="hotkey-btn px-1.5 py-0.5 bg-zinc-800 hover:bg-zinc-700 text-zinc-200 border border-zinc-700 min-w-[28px] text-center text-[10px] rounded-none" data-action="buyMax">4</button></span>
+                            </div>
+                        </div>
+                        <div class="text-[9px] text-zinc-600 italic px-1">Click a key, then press a new key to rebind. Duplicates are auto-resolved.</div>
+                        <div class="pt-2 border-t border-zinc-800 mt-2">
+                            <div class="text-[9px] font-bold text-zinc-500 tracking-wider px-1 mb-1 uppercase">Camera Teleport Spots <span class="text-[8px] font-normal text-zinc-600">(click key to teleport, rename, or delete)</span></div>
+                            <div id="teleport-rows" class="flex flex-col gap-0.5"></div>
+                            <button id="btn-add-teleport" class="w-full px-2.5 py-1 bg-zinc-950 hover:bg-zinc-800 text-cyan-400 border border-zinc-800 transition text-left text-[10px] mt-1 rounded-none flex items-center gap-1.5"><i data-lucide="plus" class="w-3 h-3"></i><span>Add current camera position</span></button>
+                        </div>
+                    </div>
+                    <!-- SECTION: Currency Order -->
+                    <div id="section-currency" class="flex flex-col gap-1 pt-1 border-t border-zinc-800">
+                        <div class="text-[9px] font-bold text-zinc-500 tracking-wider px-1 mb-0.5 uppercase">Currencies <span class="text-[8px] font-normal text-zinc-600">(eye to hide, arrows to reorder)</span></div>
+                        <div id="currency-toggles-list" class="flex flex-col gap-0.5 max-h-48 overflow-y-auto"></div>
+                    </div>
+                    <!-- SECTION: News Ticker -->
+                    <div id="section-news" class="flex flex-col gap-1 pt-1 border-t border-zinc-800">
+                        <div class="text-[9px] font-bold text-zinc-500 tracking-wider px-1 mb-0.5 uppercase">News Ticker</div>
+                        <button id="btn-news-toggle" class="w-full px-2.5 py-1.5 bg-zinc-950 hover:bg-zinc-800 text-emerald-400 border border-zinc-800 transition text-left font-bold text-[11px] rounded-none"><span id="news-toggle-label">NEWS: ON</span></button>
+                        <div class="flex items-center justify-between gap-2 w-full px-2.5 py-1.5 bg-zinc-950 border border-zinc-800 text-zinc-300 text-[11px]">
+                            <span class="font-bold text-zinc-400">AUTO-ADD</span>
+                            <input type="checkbox" id="news-auto-add" class="reset-skip-check" checked>
+                        </div>
+                        <div class="flex flex-col gap-0.5 w-full px-2.5 py-1.5 bg-zinc-950 border border-zinc-800 text-zinc-300 text-[11px]">
+                            <div class="flex items-center justify-between">
+                                <span class="font-bold text-zinc-400">SCROLL SPEED</span>
+                                <span id="news-speed-label" class="text-[10px] text-zinc-400">1.0x</span>
+                            </div>
+                            <input type="range" id="news-speed" min="0.2" max="3.0" step="0.1" value="1.0" class="news-slider">
+                        </div>
+                        <div class="flex flex-col gap-0.5 w-full px-2.5 py-1.5 bg-zinc-950 border border-zinc-800 text-zinc-300 text-[11px]">
+                            <div class="flex items-center justify-between">
+                                <span class="font-bold text-zinc-400">DUPLICATE PREVENTION</span>
+                                <span id="news-dup-label" class="text-[10px] text-zinc-400">20</span>
+                            </div>
+                            <input type="range" id="news-dup" min="0" max="100" step="1" value="20" class="news-slider">
+                        </div>
+                        <div class="flex flex-col gap-0.5 w-full px-2.5 py-1.5 bg-zinc-950 border border-zinc-800 text-zinc-300 text-[11px]">
+                            <div class="flex items-center justify-between">
+                                <span class="font-bold text-zinc-400">NEW WEIGHT</span>
+                                <span id="news-weight-label" class="text-[10px] text-zinc-400">2.0x</span>
+                            </div>
+                            <input type="range" id="news-weight" min="1" max="3" step="0.1" value="2" class="news-slider">
+                        </div>
+                        <div id="news-groups-list" class="flex flex-col gap-0.5 max-h-40 overflow-y-auto"></div>
+                    </div>
+                    <!-- SECTION: Save & Data -->
+                    <div id="section-save" class="flex flex-col gap-1 pt-1 border-t border-zinc-800">
+                        <div class="text-[9px] font-bold text-zinc-500 tracking-wider px-1 mb-0.5 uppercase">Save &amp; Data</div>
+                        <button id="btn-export-save" class="w-full px-2.5 py-1.5 bg-zinc-950 hover:bg-zinc-800 text-emerald-400 border border-zinc-800 hover:border-emerald-800 transition flex items-center justify-between text-[11px] rounded-none"><span>Export Save</span><i data-lucide="download" class="w-3.5 h-3.5 text-emerald-400"></i></button>
+                        <button id="btn-import-save" class="w-full px-2.5 py-1.5 bg-zinc-950 hover:bg-zinc-800 text-cyan-400 border border-zinc-800 hover:border-cyan-800 transition flex items-center justify-between text-[11px] rounded-none"><span>Import Save <br><small>(refresh page afterwards)</small></span><i data-lucide="upload" class="w-3.5 h-3.5 text-cyan-400"></i></button>
+                        <button id="btn-wipe" class="w-full px-2.5 py-1.5 bg-zinc-950 hover:bg-red-950 text-red-400 border border-zinc-800 hover:border-red-800 transition flex items-center justify-between text-[11px] rounded-none"><span>Wipe Save</span><i data-lucide="trash-2" class="w-3.5 h-3.5 text-red-400"></i></button>
+                    </div>
                 </div>
             </div>
-            <div class="flex items-center justify-between gap-1 w-full px-2.5 py-1.5 bg-zinc-950 border border-zinc-800 text-zinc-300 text-[11px]">
-                <span class="font-bold text-zinc-400">FONT SIZE</span>
-                <div class="flex items-center gap-1">
-                    <button id="btn-font-down" class="w-6 h-6 bg-zinc-800 hover:bg-zinc-700 text-zinc-200 border border-zinc-700 flex items-center justify-center font-bold text-xs">-</button>
-                    <span id="font-size-label" class="w-9 text-center text-[10px] font-mono text-zinc-300">11</span>
-                    <button id="btn-font-up" class="w-6 h-6 bg-zinc-800 hover:bg-zinc-700 text-zinc-200 border border-zinc-700 flex items-center justify-center font-bold text-xs">+</button>
-                </div>
-            </div>
-            <div class="flex items-center justify-between gap-1 w-full px-2.5 py-1.5 bg-zinc-950 border border-zinc-800 text-zinc-300 text-[11px]">
-                <span class="font-bold text-zinc-400">NOTATION</span>
-                <button id="btn-notation" class="px-1.5 py-0.5 bg-zinc-800 hover:bg-zinc-700 text-cyan-300 border border-zinc-700 text-[10px] transition"><span id="notation-label">Standard</span></button>
-            </div>
-            <button id="btn-buy-multiplier" class="w-full px-2.5 py-1.5 bg-zinc-950 hover:bg-zinc-800 text-amber-400 border border-zinc-800 transition text-left font-bold text-[11px]"><span id="buy-mode-label">BUY: x1</span></button>
-            <!-- Hotkey settings row -->
-            <div class="border-t border-zinc-800 pt-1.5 mt-0.5">
-                <div class="text-[9px] font-bold text-zinc-500 tracking-wider px-1 mb-1">Hotkeys <span class="text-[8px] font-normal text-zinc-600">(click to rebind)</span></div>
-                <div id="hotkey-rows" class="flex flex-col gap-0.5">
-                    <div class="flex items-center justify-between px-2.5 py-1 bg-zinc-950/80 border border-zinc-800 text-[10px]">
-                        <span class="text-zinc-400">Buy x1</span>
-                        <span><button class="hotkey-btn px-1.5 py-0.5 bg-zinc-800 hover:bg-zinc-700 text-zinc-200 border border-zinc-700 min-w-[28px] text-center text-[10px]" data-action="buy1">1</button></span>
-                    </div>
-                    <div class="flex items-center justify-between px-2.5 py-1 bg-zinc-950/80 border border-zinc-800 text-[10px]">
-                        <span class="text-zinc-400">Buy x5</span>
-                        <span><button class="hotkey-btn px-1.5 py-0.5 bg-zinc-800 hover:bg-zinc-700 text-zinc-200 border border-zinc-700 min-w-[28px] text-center text-[10px]" data-action="buy5">2</button></span>
-                    </div>
-                    <div class="flex items-center justify-between px-2.5 py-1 bg-zinc-950/80 border border-zinc-800 text-[10px]">
-                        <span class="text-zinc-400">Buy x10</span>
-                        <span><button class="hotkey-btn px-1.5 py-0.5 bg-zinc-800 hover:bg-zinc-700 text-zinc-200 border border-zinc-700 min-w-[28px] text-center text-[10px]" data-action="buy10">3</button></span>
-                    </div>
-                    <div class="flex items-center justify-between px-2.5 py-1 bg-zinc-950/80 border border-zinc-800 text-[10px]">
-                        <span class="text-zinc-400">Buy MAX</span>
-                        <span><button class="hotkey-btn px-1.5 py-0.5 bg-zinc-800 hover:bg-zinc-700 text-zinc-200 border border-zinc-700 min-w-[28px] text-center text-[10px]" data-action="buyMax">4</button></span>
-                    </div>
-                </div>
-            </div>
-            <button id="btn-toggle-effects" class="w-full px-2.5 py-1.5 bg-zinc-950 hover:bg-zinc-800 text-cyan-400 border border-zinc-800 transition text-left font-bold text-[11px]"><span id="effects-mode-label">EFFECTS: ON</span></button>
-            <div id="currency-toggles-container" class="border-t border-zinc-800 pt-1.5 mt-0.5">
-                <div class="text-[9px] font-bold text-zinc-500 tracking-wider px-1 mb-1">Currencies <span class="text-[8px] font-normal text-zinc-600">(eye to hide, arrows to reorder)</span></div>
-                <div id="currency-toggles-list" class="flex flex-col gap-0.5"></div>
-            </div>
-            <button id="btn-recenter" class="w-full px-2.5 py-1.5 bg-zinc-950 hover:bg-zinc-800 text-zinc-300 border border-zinc-800 transition flex items-center justify-between text-[11px]"><span>Recenter Cam</span><i data-lucide="crosshair" class="w-3.5 h-3.5 text-zinc-400"></i></button>
-            <button id="btn-export-save" class="w-full px-2.5 py-1.5 bg-zinc-950 hover:bg-zinc-800 text-emerald-400 border border-zinc-800 hover:border-emerald-800 transition flex items-center justify-between text-[11px]"><span>Export Save</span><i data-lucide="download" class="w-3.5 h-3.5 text-emerald-400"></i></button>
-            <button id="btn-import-save" class="w-full px-2.5 py-1.5 bg-zinc-950 hover:bg-zinc-800 text-cyan-400 border border-zinc-800 hover:border-cyan-800 transition flex items-center justify-between text-[11px]"><span>Import Save <br><small>(refresh page afterwards)</small></span><i data-lucide="upload" class="w-3.5 h-3.5 text-cyan-400"></i></button>
-            <button id="btn-wipe" class="w-full px-2.5 py-1.5 bg-zinc-950 hover:bg-red-950 text-red-400 border border-zinc-800 hover:border-red-800 transition flex items-center justify-between text-[11px]"><span>Wipe Save</span><i data-lucide="trash-2" class="w-3.5 h-3.5 text-red-400"></i></button>
         </div>
         <button id="btn-settings-toggle" class="p-2.5 bg-zinc-900/90 hover:bg-zinc-800 text-zinc-200 border border-zinc-800 shadow-md transition flex items-center justify-center"><i data-lucide="menu" class="w-4 h-4"></i></button>
     </div>
@@ -670,8 +824,8 @@ if (typeof gameState.currencies.P !== 'number' || isNaN(gameState.currencies.P))
         let rafId = null;
         let uiUpdateThrottle = 0;
         
-        const CURRENCY_UI_INTERVAL_MS = 100; // currency bar update interval (faster, cheaper now)
-        const CANVAS_UPDATE_INTERVAL_MS = 120; // canvas redraw interval (reduced from 120 to lower CPU)
+        const CURRENCY_UI_INTERVAL_MS = 120; // currency bar update interval
+        const CANVAS_UPDATE_INTERVAL_MS = 150; // canvas redraw interval
         let currencyFontSize = 11;
         
         // ---- PERFORMANCE CACHES ----
@@ -1692,7 +1846,7 @@ if (typeof gameState.currencies.P !== 'number' || isNaN(gameState.currencies.P))
         }
 
         const _wrapCache = new Map();
-const _wrapCacheMax = 1000;
+const _wrapCacheMax = 500;
 // Lightweight word-wrap using character-count approximation (~0.6 * fontSize per char)
 function wrapTextCached(text, maxWidth, fontSize) {
     if (!text) return [];
@@ -1995,7 +2149,7 @@ const DEPTH_BG = {
 function initDepthBackground() {
     if (DEPTH_BG.initialized) return;
     DEPTH_BG.initialized = true;
-    const particleCount = Math.min(300, Math.max(150, Math.floor((window.innerWidth * window.innerHeight) / 7000)));
+    const particleCount = Math.min(120, Math.max(60, Math.floor((window.innerWidth * window.innerHeight) / 20000)));
     DEPTH_BG.particles = [];
     for (let i = 0; i < particleCount; i++) {
         DEPTH_BG.particles.push({
@@ -2134,8 +2288,28 @@ function draw() {
             ctx.translate(vw / 2 + panX, vh / 2 + panY);
             ctx.scale(scale, scale);
             
+            // Viewport culling: compute visible world bounds (with a generous margin)
+            const margin = NODE_SIZE * 2; // 2-node margin to avoid pop-in
+            const halfVw = vw / 2;
+            const halfVh = vh / 2;
+            // World coords of screen corners, accounting for pan & scale
+            const worldLeft = (-halfVw - panX) / scale - margin;
+            const worldRight = (halfVw - panX) / scale + margin;
+            const worldTop = (-halfVh - panY) / scale - margin;
+            const worldBottom = (halfVh - panY) / scale + margin;
+            
             for (const node of TREE_NODES) {
                 if (!isNodeUnlocked(node)) continue;
+                // Quick culling: skip node if outside viewport (node center based)
+                const nodeX = node.coords[0] * NODE_GAP;
+                const nodeY = -node.coords[1] * NODE_GAP;
+                const w = (node.width || 1) * NODE_SIZE;
+                const h = (node.height || 1) * NODE_SIZE;
+                // AABB check
+                if (nodeX + w / 2 < worldLeft || nodeX - w / 2 > worldRight ||
+                    nodeY + h / 2 < worldTop || nodeY - h / 2 > worldBottom) {
+                    continue;
+                }
                 drawNode(node, hoveredNode === node.id);
             }
             
@@ -2985,16 +3159,26 @@ applyNotation('standard');
                 b.classList.remove('ring-1', 'ring-emerald-400');
                 b.textContent = hotkeyBindings[b.dataset.action] || '?';
             });
-            // Update binding, handling duplicates: remove any other action using this key
-            for (const act of Object.keys(hotkeyBindings)) {
-                if (hotkeyBindings[act] === key && act !== action) {
-                    delete hotkeyBindings[act];
+            // Find any OTHER action that already uses this key
+            const conflictAct = Object.keys(hotkeyBindings).find(act => hotkeyBindings[act] === key && act !== action);
+            if (conflictAct) {
+                // Swap: the conflicting action gets the old key from the action being rebound
+                const oldKey = hotkeyBindings[action];
+                if (oldKey && oldKey !== key) {
+                    hotkeyBindings[conflictAct] = oldKey;
+                    showToast(`Swapped: "${key}" → ${action}, "${oldKey}" → ${conflictAct}`);
+                } else {
+                    // No old key to swap, just remove the conflict (shouldn't happen)
+                    delete hotkeyBindings[conflictAct];
+                    showToast(`Rebound "${key}" → ${action} (freed from ${conflictAct})`);
                 }
+            } else {
+                // No conflict: just set
+                showToast(`Hotkey set: ${key} → ${action}`);
             }
             hotkeyBindings[action] = key;
             gameState.hotkeyBindings = { ...hotkeyBindings };
             updateHotkeyButtonLabels();
-            showToast(`Hotkey set: ${key}`);
             return true;
         }
 
@@ -3028,6 +3212,11 @@ applyNotation('standard');
             document.addEventListener('keydown', (e) => {
                 // Ignore if typing in an input/textarea
                 if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+                // Check teleport spots first
+                if (checkTeleportKey(e.key)) {
+                    e.preventDefault();
+                    return;
+                }
                 // Ignore if a modal is open
                 if (!document.getElementById('reset-modal').classList.contains('hidden') ||
                     !document.getElementById('wipe-modal').classList.contains('hidden') ||
@@ -3056,12 +3245,130 @@ applyNotation('standard');
             });
         }
 
-        // Call setup after DOM is ready
-        if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', setupHotkeyListeners);
-        } else {
-            setupHotkeyListeners();
+        // ==================== CAMERA TELEPORT HOTKEYS ====================
+// Data stored in gameState.teleportSpots: array of {name, key, panX, panY, scale}
+const MAX_TELEPORT_SPOTS = 5;
+if (!gameState.teleportSpots) gameState.teleportSpots = [];
+if (!Array.isArray(gameState.teleportSpots)) gameState.teleportSpots = [];
+// Cap at max
+if (gameState.teleportSpots.length > MAX_TELEPORT_SPOTS) {
+    gameState.teleportSpots = gameState.teleportSpots.slice(0, MAX_TELEPORT_SPOTS);
+}
+
+function renderTeleportRows() {
+    const container = document.getElementById('teleport-rows');
+    if (!container) return;
+    const spots = gameState.teleportSpots || [];
+    let html = '';
+    for (let i = 0; i < spots.length; i++) {
+        const spot = spots[i];
+        const keyDisplay = spot.key || '?';
+        html += `<div class="teleport-row flex items-center justify-between gap-1 px-2 py-1 bg-zinc-950/80 border border-zinc-800 text-[10px]">
+            <button class="teleport-key-btn px-1.5 py-0.5 bg-zinc-800 hover:bg-zinc-700 text-cyan-300 border border-zinc-700 min-w-[24px] text-center text-[10px] rounded-none" data-teleport="${i}">${keyDisplay}</button>
+            <input class="teleport-name-input flex-1 mx-1 bg-transparent border-b border-zinc-700 text-zinc-200 text-[10px] px-1 py-0 outline-none focus:border-cyan-500 min-w-0" type="text" value="${spot.name || 'Teleport spot ' + (i+1)}" data-teleport="${i}" maxlength="28" style="width:60px">
+            <span class="text-zinc-600 truncate max-w-[40px]">(${Math.round(spot.panX)},${Math.round(spot.panY)})</span>
+            <button class="teleport-delete-btn p-0.5 hover:bg-zinc-700 text-zinc-500 hover:text-red-400 transition rounded-none" data-teleport="${i}"><i data-lucide="x" class="w-3 h-3"></i></button>
+        </div>`;
+    }
+    container.innerHTML = html || '<div class="text-[9px] text-zinc-600 italic px-1">No teleport spots saved. Use the button below!</div>';
+    lucide.createIcons();
+
+    // Click teleport key button → teleport
+    container.querySelectorAll('.teleport-key-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const idx = parseInt(btn.dataset.teleport);
+            const spot = gameState.teleportSpots[idx];
+            if (!spot) return;
+            panX = spot.panX;
+            panY = spot.panY;
+            scale = spot.scale;
+            updateTransform();
+            playSound('buy');
+            showToast(`Teleported to "${spot.name || 'spot ' + (idx+1)}"`);
+        });
+    });
+
+    // Rename on input change (blur/enter)
+    container.querySelectorAll('.teleport-name-input').forEach(inp => {
+        inp.addEventListener('change', (e) => {
+            e.stopPropagation();
+            const idx = parseInt(inp.dataset.teleport);
+            const spot = gameState.teleportSpots[idx];
+            if (!spot) return;
+            const val = inp.value.trim();
+            if (val) spot.name = val;
+            inp.value = spot.name;
+        });
+        inp.addEventListener('keydown', (e) => { if (e.key === 'Enter') inp.blur(); });
+        inp.addEventListener('click', (e) => e.stopPropagation());
+    });
+
+    // Delete
+    container.querySelectorAll('.teleport-delete-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const idx = parseInt(btn.dataset.teleport);
+            if (idx >= 0 && idx < gameState.teleportSpots.length) {
+                gameState.teleportSpots.splice(idx, 1);
+                renderTeleportRows();
+                playSound('buy');
+                showToast('Teleport spot deleted');
+            }
+        });
+    });
+}
+
+// Handle the "Add current camera position" button
+document.addEventListener('click', (e) => {
+    const addBtn = e.target.closest('#btn-add-teleport');
+    if (addBtn) {
+        e.stopPropagation();
+        if (gameState.teleportSpots.length >= MAX_TELEPORT_SPOTS) {
+            showToast('⚠️ Max ' + MAX_TELEPORT_SPOTS + ' teleport spots. Delete one first.');
+            playSound('fail');
+            return;
         }
+        const existing = gameState.teleportSpots.find(s => Math.abs(s.panX - panX) < 1 && Math.abs(s.panY - panY) < 1);
+        if (existing) {
+            showToast('⚠️ Already have a spot at this position');
+            playSound('fail');
+            return;
+        }
+        gameState.teleportSpots.push({ name: 'Teleport spot ' + (gameState.teleportSpots.length + 1), key: String.fromCharCode(97 + gameState.teleportSpots.length), panX, panY, scale });
+        renderTeleportRows();
+        playSound('buy');
+        showToast('Teleport spot added!');
+    }
+});
+
+// Key handling for teleport spots (in main hotkey handler)
+function checkTeleportKey(key) {
+    const spots = gameState.teleportSpots || [];
+    for (let i = 0; i < spots.length; i++) {
+        if (spots[i].key === key) {
+            panX = spots[i].panX;
+            panY = spots[i].panY;
+            scale = spots[i].scale;
+            updateTransform();
+            playSound('buy');
+            showToast(`Teleported to "${spots[i].name || 'spot ' + (i+1)}"`);
+            return true;
+        }
+    }
+    return false;
+}
+
+// Call setup after DOM is ready
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', () => {
+        setupHotkeyListeners();
+        renderTeleportRows();
+    });
+} else {
+    setupHotkeyListeners();
+    renderTeleportRows();
+}
         document.getElementById('btn-toggle-effects').onclick = () => {
             gameState.showEffects = !gameState.showEffects;
             document.getElementById('effects-mode-label').textContent = `EFFECTS: ${gameState.showEffects?'ON':'OFF'}`;
@@ -3418,11 +3725,528 @@ document.getElementById('btn-font-up').onclick = (e) => {
                 label.textContent = 'SFX: ON'; }
             lucide.createIcons();
         };
-        document.getElementById('btn-settings-toggle').onclick = (e) => { e.stopPropagation(); const menu = document
-                .getElementById('settings-menu');
-            menu.classList.toggle('hidden'); if (!menu.classList.contains('hidden')) { renderCurrencyToggles(); updateHotkeyButtonLabels(); } };
-        window.addEventListener('click', e => { if (!e.target.closest('#settings-menu') && !e.target.closest(
-                '#btn-settings-toggle')) document.getElementById('settings-menu').classList.add('hidden'); });
+        // ==================== SETTINGS (fullscreen, sections, nav) ====================
+        const settingsMenu = document.getElementById('settings-menu');
+        const settingsInner = document.getElementById('settings-inner');
+        const settingsScroll = document.getElementById('settings-scroll');
+        
+        function openSettings() {
+            settingsMenu.classList.remove('hidden');
+            // Start with collapsed state
+            settingsInner.style.maxHeight = '0px';
+            settingsMenu.style.maxHeight = '0px';
+            settingsMenu.style.width = 'auto';
+            // Force reflow so the browser starts with 0 before animating
+            void settingsMenu.offsetHeight;
+            requestAnimationFrame(() => {
+                const scrollH = settingsScroll.scrollHeight;
+                const navH = document.getElementById('settings-nav').offsetHeight;
+                const innerH = Math.max(scrollH + 12, navH + 12); // padding
+                // Max inner height is capped at 70vh
+                const maxH = Math.min(innerH, window.innerHeight * 0.7);
+                settingsInner.style.maxHeight = maxH + 'px';
+                settingsMenu.style.maxHeight = (maxH + 28) + 'px'; // button row + padding
+                settingsMenu.style.width = Math.min(380, window.innerWidth - 20) + 'px';
+            });
+            renderCurrencyToggles();
+            updateHotkeyButtonLabels();
+            try { renderNewsGroups(); } catch(e) { console.warn('renderNewsGroups error:', e); }
+            // Update nav active state
+            document.querySelectorAll('.settings-nav-btn').forEach(b => b.classList.remove('text-cyan-300', 'text-amber-300', 'text-red-300', 'text-purple-300', 'text-emerald-300', 'text-yellow-300'));
+        }
+        
+        function closeSettings() {
+            settingsInner.style.maxHeight = '0px';
+            settingsMenu.style.maxHeight = '0px';
+            setTimeout(() => { settingsMenu.classList.add('hidden'); }, 200);
+        }
+        
+        function toggleSettings() {
+            if (settingsMenu.classList.contains('hidden')) {
+                openSettings();
+            } else {
+                closeSettings();
+            }
+        }
+        
+        // Observe section visibility to highlight nav icons
+        function setupSectionObserver() {
+            const sections = ['view', 'prefs', 'hotkeys', 'currency', 'save'];
+            const colors = { view: 'text-cyan-300', prefs: 'text-amber-300', hotkeys: 'text-red-300', currency: 'text-purple-300', save: 'text-emerald-300' };
+            const observer = new IntersectionObserver((entries) => {
+                for (const entry of entries) {
+                    if (entry.isIntersecting) {
+                        const section = entry.target.id.replace('section-', '');
+                        document.querySelectorAll('.settings-nav-btn').forEach(b => {
+                            b.classList.remove('text-cyan-300', 'text-amber-300', 'text-red-300', 'text-purple-300', 'text-emerald-300');
+                            if (colors[section]) b.classList.remove('text-zinc-400');
+                        });
+                        const activeBtn = document.querySelector(`.settings-nav-btn[data-section="${section}"]`);
+                        if (activeBtn) activeBtn.classList.add(colors[section] || 'text-cyan-300');
+                    }
+                }
+            }, { root: settingsScroll, threshold: 0.3 });
+            for (const sec of sections) {
+                const el = document.getElementById('section-' + sec);
+                if (el) observer.observe(el);
+            }
+        }
+        setTimeout(setupSectionObserver, 100);
+        
+        // Nav: scroll to section and highlight icon
+        document.querySelectorAll('.settings-nav-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const section = btn.dataset.section;
+                const target = document.getElementById('section-' + section);
+                if (target) {
+                    target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }
+                // Highlight active
+                document.querySelectorAll('.settings-nav-btn').forEach(b => {
+                    b.classList.remove('text-cyan-300', 'text-amber-300', 'text-red-300', 'text-purple-300', 'text-emerald-300');
+                });
+                const colors = { view: 'text-cyan-300', prefs: 'text-amber-300', hotkeys: 'text-red-300', currency: 'text-purple-300', save: 'text-emerald-300' };
+                btn.classList.add(colors[section] || 'text-cyan-300');
+            });
+        });
+        
+        document.getElementById('btn-settings-toggle').onclick = (e) => { e.stopPropagation(); toggleSettings(); };
+        window.addEventListener('click', e => { 
+            if (!e.target.closest('#settings-menu') && !e.target.closest('#btn-settings-toggle') && !e.target.closest('.hotkey-btn') && !e.target.closest('.settings-nav-btn')) {
+                if (!settingsMenu.classList.contains('hidden')) closeSettings();
+            }
+        });
+        // Re-measure on font/theme change
+        window.addEventListener('resize', () => {
+            if (!settingsMenu.classList.contains('hidden')) {
+                // Re-calc width on resize
+                settingsMenu.style.width = Math.min(380, window.innerWidth - 20) + 'px';
+            }
+        });
+        // ==================== NEWS TICKER ====================
+        // Renders coloured text with simple tag syntax: [red]text[/red], [green]text[/green], [cyan]text[/cyan], [yellow]text[/yellow], [purple]text[/purple], [orange]text[/orange], [rainbow]text[/rainbow]
+        // Also supports **bold** and newlines.
+        function parseNewsMarkup(msg) {
+            const colorMap = {
+                red: '#ef4444', green: '#22c55e', cyan: '#06b6d4', yellow: '#eab308',
+                purple: '#a855f7', orange: '#f97316', pink: '#ec4899', blue: '#3b82f6',
+                white: '#f4f4f5', grey: '#a1a1aa', emerald: '#34d399', amber: '#f59e0b',
+                rainbow: 'RAINBOW'
+            };
+            // First, escape HTML
+            msg = msg.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+            // **bold**
+            msg = msg.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+            // [color]text[/color]
+            msg = msg.replace(/\[(\w+)\](.*?)\[\/\1\]/g, (m, col, inner) => {
+                const c = colorMap[col.toLowerCase()];
+                if (c === 'RAINBOW') return `<span style="background:linear-gradient(90deg,#ff0000,#ff7f00,#ffff00,#00ff00,#0000ff,#4b0082,#9400d3,#ff0000);background-size:200% auto;-webkit-background-clip:text;background-clip:text;color:transparent;animation:rainbow-shift 2s linear infinite">${inner}</span>`;
+                if (c) return `<span style="color:${c}">${inner}</span>`;
+                return inner;
+            });
+            // Replace newlines with <br>
+            msg = msg.replace(/\n/g, '<br>');
+            return msg;
+        }
+        
+        // Configure news groups below. Add new groups easily here.
+        // unlockCheck: function returns true when group should be unlocked.
+        // weight: default relative weight among enabled groups.
+        // color: tag color.
+        const NEWS_GROUPS = {
+            general: {
+                name: 'Tips',
+                color: '#a1a1aa',
+                weight: 1,
+                defaultEnabled: true,
+                unlockCheck: () => true,
+                messages: [
+                    "Tip: buy bulk can be changed in settings.",
+                    "Tip: scroll speed can be changed in settings.",
+                    "Tip: whent he currency bar is too long press the scroll button to enable scrolling.",
+                    "Tip: the upgrade backgrounds correspond to cost currney",
+                    "Tip: Export save every now and then",
+                    "Tip: Have fun.",
+                    "Tip: Bonus layers don't boost gameplay!",
+                    "Tip: Useful settings in... settings",
+                    "Tip: You can append hotkeys to buy maxes and c tp!",
+                    "Tip: Autobuyers when they buy upgrades don't cost your currencies!",
+                    "Tip: there are many upgrades, try to get them (hehe useless tip).",
+                    "Tip: There are offline progress, but it gets softcapped after a certain amount."
+                ]
+            },
+            progression: {
+                name: 'Progression',
+                color: '#22c55e',
+                weight: 1,
+                defaultEnabled: true,
+                unlockCheck: () => getLevel('Resc') >= 1,
+                messages: [
+                    "Research is just points with extra steps.",
+                    "You prestige once and now you're addicted.",
+                    "Ascension: because prestige wasn't enough.",
+                    "Dimensions are like onions. They have layers.",
+                    "Tree mass is just compressed patience.",
+                    "Mining for netherite? In this economy?",
+                    "IP stands for Insane Progress.",
+                    "Colours are the new numbers.",
+                    "Every baseplate tells a story.",
+                    "You thought you were done? Cute."
+                ]
+            },
+            automation: {
+                name: 'Automation',
+                color: '#f59e0b',
+                weight: 1,
+                defaultEnabled: true,
+                unlockCheck: () => getLevel('P05') >= 1 || getLevel('AU01') >= 1,
+                messages: [
+                    "Let the robots do the clicking.",
+                    "Automation: now you can go touch grass.",
+                    "Auto buyers don't sleep. Neither should you?",
+                    "Set it and forget it.",
+                    "Your automations are working harder than you."
+                ]
+            },
+            jokes: {
+                name: 'Jokes',
+                color: '#a855f7',
+                weight: 1,
+                defaultEnabled: false,
+                unlockCheck: () => getLevel('Prestige') >= 1,
+                messages: [
+                    "Why did the upgrade cross the road? To reach the next layer.",
+                    "I told my computer to make me a sandwich. It bought a generator instead.",
+                    "Parallel lines have so much in common. It's a shame they'll never multiply.",
+                    "A reset walks into a bar. The bartender says, 'Why the long prestige?'",
+                    "I have a joke about infinity, but it never ends.",
+                    "My tree mass grew so big it's now tree class.",
+                    "Why don't dimensions play hide and seek? Because they always anti.",
+                    "I reset for research and all I got was this lousy news ticker."
+                ]
+            },
+            lateGame: {
+                name: 'Late Game',
+                color: '#ef4444',
+                weight: 1,
+                defaultEnabled: true,
+                unlockCheck: () => getCurr('IP') >= 0.1 || getLevel('U01') >= 1,
+                messages: [
+                    "Universe II: electric boogaloo.",
+                    "Fragments of infinity taste like chicken.",
+                    "You're running a business now. Good luck with the customers.",
+                    "Stars, fame, customers... this is basically a tycoon game now.",
+                    "How many colours can one game have? Yes.",
+                    "You have transcended baseplates.",
+                    "Black wasn't the absence of colour, it was the absence of stopping."
+                ]
+            }
+        };
+
+        // Per-group news state
+        function initNewsState() {
+            if (!gameState.news || typeof gameState.news !== 'object') gameState.news = {};
+            if (gameState.news.enabled === undefined) {
+                gameState.news.enabled = true;
+            }
+            if (!gameState.news.groupState) gameState.news.groupState = {};
+            if (gameState.news.autoAdd === undefined) gameState.news.autoAdd = true;
+            if (gameState.news.scrollSpeed === undefined) gameState.news.scrollSpeed = 1.0;
+            if (gameState.news.duplicatePrevention === undefined) gameState.news.duplicatePrevention = 20;
+            if (gameState.news.newWeight === undefined) gameState.news.newWeight = 2.0;
+            if (!Array.isArray(gameState.news.history)) gameState.news.history = [];
+            if (!gameState.news.seenMessages) gameState.news.seenMessages = {};
+            for (const groupKey of Object.keys(NEWS_GROUPS)) {
+                const group = NEWS_GROUPS[groupKey];
+                if (gameState.news.groupState[groupKey] === undefined) {
+                    gameState.news.groupState[groupKey] = group.defaultEnabled;
+                }
+            }
+        }
+
+        const newsTrack = document.getElementById('news-track');
+        const newsTicker = document.getElementById('news-ticker');
+        let newsItems = []; // { el, x, width, group, message, active }
+        let nextNewsTimer = 0;
+        let newsPaused = false;
+
+        function getUnlockedNewsGroups() {
+            const groups = [];
+            for (const [key, group] of Object.entries(NEWS_GROUPS)) {
+                try {
+                    if (group.unlockCheck()) groups.push(key);
+                } catch(e) { groups.push(key); }
+            }
+            return groups;
+        }
+
+        function isGroupEnabled(key) {
+            return gameState.news.groupState[key] === true;
+        }
+
+        function getAvailableNewsPool() {
+            const unlocked = getUnlockedNewsGroups();
+            const pool = [];
+            for (const key of unlocked) {
+                if (!isGroupEnabled(key)) continue;
+                const group = NEWS_GROUPS[key];
+                for (let i = 0; i < group.messages.length; i++) {
+                    // Use group key + array index as the stable ID — never depends on message text
+                    pool.push({ group: key, message: group.messages[i], id: key + '|idx|' + i });
+                }
+            }
+            return pool;
+        }
+
+        function pickNewsMessage() {
+            const pool = getAvailableNewsPool();
+            if (pool.length === 0) return null;
+            const history = gameState.news.history || [];
+            const dupCount = Math.min(pool.length - 1, Math.max(0, gameState.news.duplicatePrevention || 0));
+            const recent = dupCount > 0 ? history.slice(-dupCount) : [];
+            const unseenBoost = Math.max(1, gameState.news.newWeight || 1);
+            const unseenSet = gameState.news.seenMessages || {};
+
+            const candidates = pool.filter(p => !recent.includes(p.id));
+            if (candidates.length === 0) return pool[Math.floor(Math.random() * pool.length)];
+
+            const weights = candidates.map(p => {
+                const isNew = !unseenSet[p.id];
+                return (isNew ? unseenBoost : 1) * NEWS_GROUPS[p.group].weight;
+            });
+            const total = weights.reduce((a, b) => a + b, 0);
+            let r = Math.random() * total;
+            for (let i = 0; i < candidates.length; i++) {
+                r -= weights[i];
+                if (r <= 0) return candidates[i];
+            }
+            return candidates[candidates.length - 1];
+        }
+
+        function createNewsItem(item) {
+            const el = document.createElement('div');
+            el.className = 'news-item';
+            el.innerHTML = `<span>${parseNewsMarkup(item.message)}</span>`;
+            newsTrack.appendChild(el);
+            const width = el.offsetWidth || 200;
+            // Start just off the right edge
+            const startX = newsTicker.offsetWidth + (Math.random() * 40);
+            return { el, x: startX, width, group: item.group, message: item.message, id: item.id || (item.group + '|idx|' + item.message.length), active: true };
+        }
+
+        function escapeHtml(str) {
+            return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+        }
+
+        function addNewsItem(manual = false) {
+            if (!gameState.news.enabled) return;
+            const item = pickNewsMessage();
+            if (!item) return;
+            // Avoid spawning right on top of the most recent item
+            if (!manual && newsItems.length > 0) {
+                const last = newsItems[newsItems.length - 1];
+                if (last.x > newsTicker.offsetWidth - last.width - 40) return;
+            }
+            if (!gameState.news.seenMessages[item.id]) gameState.news.seenMessages[item.id] = 0;
+            gameState.news.seenMessages[item.id]++;
+            gameState.news.history.push(item.id);
+            if (gameState.news.history.length > 120) gameState.news.history.shift();
+            const ni = createNewsItem(item);
+            newsItems.push(ni);
+        }
+
+        let _lastNewsUpdateTime = 0;
+const NEWS_TICK_INTERVAL = 16; // ~60fps
+
+function updateNewsTicker(dtMs) {
+            // Safety: ensure news state is initialized
+            if (!gameState || typeof gameState !== 'object') return;
+            if (!gameState.news || typeof gameState.news !== 'object') {
+                gameState.news = { enabled: true, groupState: {}, history: [], seenMessages: {}, autoAdd: true, scrollSpeed: 1.0, duplicatePrevention: 20, newWeight: 2.0 };
+            }
+            if (!gameState.news.enabled) {
+                if (!newsTicker.classList.contains('hidden')) newsTicker.classList.add('hidden');
+                return;
+            }
+            if (newsTicker.classList.contains('hidden')) newsTicker.classList.remove('hidden');
+
+            // Read speed directly from slider every tick so it's immediate
+            const speedSlider = document.getElementById('news-speed');
+            if (speedSlider) {
+                const v = parseFloat(speedSlider.value);
+                gameState.news.scrollSpeed = v;
+                document.getElementById('news-speed-label').textContent = v.toFixed(1) + 'x';
+            }
+
+            const dt = dtMs / 1000;
+            const baseSpeed = 80; // pixels per second at 1.0x
+            const speed = baseSpeed * (gameState.news.scrollSpeed || 1);
+            const vw = newsTicker.offsetWidth || 400;
+
+            // Auto-add new messages
+            if ((gameState.news.autoAdd !== false) && !newsPaused) {
+                nextNewsTimer -= dt * 1000;
+                if (nextNewsTimer <= 0) {
+                    addNewsItem(false);
+                    nextNewsTimer = 4000 + Math.random() * 6000;
+                }
+            }
+
+            // Move items
+            for (let i = newsItems.length - 1; i >= 0; i--) {
+                const item = newsItems[i];
+                item.x -= speed * dt;
+                item.el.style.transform = `translateX(${item.x}px)`;
+                if (item.x + item.width < -20) {
+                    item.el.remove();
+                    newsItems.splice(i, 1);
+                }
+            }
+        }
+
+        function setNewsEnabled(enabled) {
+            // Safety: ensure gameState.news exists before modifying it
+            if (!gameState.news || typeof gameState.news !== 'object') {
+                gameState.news = { enabled: true, groupState: {}, history: [], seenMessages: {}, autoAdd: true, scrollSpeed: 1.0, duplicatePrevention: 20, newWeight: 2.0 };
+            }
+            gameState.news.enabled = enabled;
+            const label = document.getElementById('news-toggle-label');
+            const btn = document.getElementById('btn-news-toggle');
+            const ticker = document.getElementById('news-ticker');
+            if (enabled) {
+                label.textContent = 'NEWS: ON';
+                btn.classList.remove('text-zinc-500');
+                btn.classList.add('text-emerald-400');
+                if (ticker) {
+                    ticker.classList.remove('hidden');
+                    ticker.style.display = 'flex'; // restore flex display
+                }
+            } else {
+                label.textContent = 'NEWS: OFF';
+                btn.classList.remove('text-emerald-400');
+                btn.classList.add('text-zinc-500');
+                if (ticker) {
+                    ticker.classList.add('hidden');
+                    ticker.style.display = 'none'; // force hidden even if CSS class gets overridden
+                }
+                // Clear news items so they don't accumulate off-screen
+                newsItems.forEach(item => { try { item.el.remove(); } catch(e) {} });
+                newsItems = [];
+                nextNewsTimer = 0;
+            }
+        }
+
+        function toggleNewsGroup(key) {
+            gameState.news.groupState[key] = !gameState.news.groupState[key];
+            renderNewsGroups();
+            playSound('buy');
+        }
+
+        function renderNewsGroups() {
+            const list = document.getElementById('news-groups-list');
+            if (!list) return;
+            // Safety: ensure news state is initialized
+            if (!gameState || typeof gameState !== 'object') return;
+            if (!gameState.news || typeof gameState.news !== 'object') {
+                gameState.news = { enabled: true, groupState: {}, history: [], seenMessages: {}, autoAdd: true, scrollSpeed: 1.0, duplicatePrevention: 20, newWeight: 2.0 };
+            }
+            if (!gameState.news.groupState || typeof gameState.news.groupState !== 'object') {
+                initNewsState();
+            }
+            const unlocked = getUnlockedNewsGroups();
+            let html = '';
+            for (const key of Object.keys(NEWS_GROUPS)) {
+                const group = NEWS_GROUPS[key];
+                const isUnlocked = unlocked.includes(key);
+                const enabled = gameState.news.groupState[key];
+                if (!isUnlocked) {
+                    html += `<div class="flex items-center justify-between gap-1 px-2 py-1 bg-zinc-950/50 border border-zinc-800/50 opacity-50" title="Unlock condition not met">
+                        <span class="text-[10px] text-zinc-500 truncate">${group.name}</span>
+                        <i data-lucide="lock" class="w-3 h-3 text-zinc-600"></i>
+                    </div>`;
+                } else {
+                    html += `<button class="news-group-btn w-full flex items-center justify-between gap-1 px-2 py-1 bg-zinc-950 hover:bg-zinc-800 border border-zinc-800 transition" data-group="${key}">
+                        <span class="text-[10px]" style="color:${group.color}">${group.name}</span>
+                        <i data-lucide="${enabled ? 'check-square' : 'square'}" class="w-3.5 h-3.5 ${enabled ? 'text-emerald-400' : 'text-zinc-500'}"></i>
+                    </button>`;
+                }
+            }
+            list.innerHTML = html || '<div class="text-[9px] text-zinc-600 italic px-1">No news groups</div>';
+            lucide.createIcons();
+            list.querySelectorAll('.news-group-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    toggleNewsGroup(btn.dataset.group);
+                });
+            });
+        }
+
+        function bindNewsControls() {
+            if (!gameState.news || typeof gameState.news !== 'object') gameState.news = {};
+            initNewsState();
+            // If enabled is not a boolean, default to true
+            if (typeof gameState.news.enabled !== 'boolean') gameState.news.enabled = true;
+            // Default to enabled if save doesn't have it
+            if (gameState.news.enabled === undefined) gameState.news.enabled = true;
+            setNewsEnabled(gameState.news.enabled);
+
+            // Use addEventListener to avoid being overwritten by other code
+            const newsToggleBtn = document.getElementById('btn-news-toggle');
+            if (newsToggleBtn) {
+                // Remove any old listeners by replacing the button
+                const newBtn = newsToggleBtn.cloneNode(true);
+                newsToggleBtn.parentNode.replaceChild(newBtn, newsToggleBtn);
+                newBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    const newVal = !gameState.news.enabled;
+                    setNewsEnabled(newVal);
+                    playSound('buy');
+                });
+            }
+
+            const autoAdd = document.getElementById('news-auto-add');
+            autoAdd.checked = gameState.news.autoAdd !== false;
+            autoAdd.addEventListener('change', () => {
+                gameState.news.autoAdd = autoAdd.checked;
+                playSound('buy');
+            });
+
+            const speedSlider = document.getElementById('news-speed');
+            const speedLabel = document.getElementById('news-speed-label');
+            speedSlider.value = gameState.news.scrollSpeed;
+            speedLabel.textContent = gameState.news.scrollSpeed.toFixed(1) + 'x';
+            speedSlider.addEventListener('input', () => {
+                const v = parseFloat(speedSlider.value);
+                gameState.news.scrollSpeed = v;
+                speedLabel.textContent = v.toFixed(1) + 'x';
+            });
+
+            const dupSlider = document.getElementById('news-dup');
+            const dupLabel = document.getElementById('news-dup-label');
+            dupSlider.value = gameState.news.duplicatePrevention;
+            dupLabel.textContent = gameState.news.duplicatePrevention;
+            dupSlider.addEventListener('input', () => {
+                const v = parseInt(dupSlider.value);
+                gameState.news.duplicatePrevention = v;
+                dupLabel.textContent = v;
+            });
+
+            const weightSlider = document.getElementById('news-weight');
+            const weightLabel = document.getElementById('news-weight-label');
+            weightSlider.value = gameState.news.newWeight;
+            weightLabel.textContent = gameState.news.newWeight.toFixed(1) + 'x';
+            weightSlider.addEventListener('input', () => {
+                const v = parseFloat(weightSlider.value);
+                gameState.news.newWeight = v;
+                weightLabel.textContent = v.toFixed(1) + 'x';
+            });
+        }
+
+        // Pause news when settings menu is open so it doesn't distract while configuring
+        settingsMenu.addEventListener('mouseenter', () => { newsPaused = true; });
+        settingsMenu.addEventListener('mouseleave', () => { newsPaused = false; });
+
         // ==================== PERSISTENCE ====================
         const SAVE_KEY = 'UPGRADEX_SAVE_V7'; //why i use upgradex lol
         const SAVE_BACKUP_KEY = 'UPGRADEX_SAVE_BACKUP_V7';
@@ -3432,7 +4256,24 @@ document.getElementById('btn-font-up').onclick = (e) => {
 
         function saveGame() {
             // NEVER overwrite a good save with invalid data.
-            // Save into a temp string first, validate hard, then write.
+            // Validate gameState is sane before writing.
+            if (!gameState || typeof gameState !== 'object') {
+                console.warn('saveGame skipped — gameState is invalid');
+                return;
+            }
+            if (!gameState.currencies || typeof gameState.currencies !== 'object') {
+                console.warn('saveGame skipped — currencies is missing');
+                return;
+            }
+            if (typeof gameState.currencies.P !== 'number' || isNaN(gameState.currencies.P)) {
+                console.warn('saveGame skipped — P is NaN or not a number');
+                return;
+            }
+            // Ensure news object is complete but never corrupt the save if it's missing
+            if (!gameState.news || typeof gameState.news !== 'object') {
+                // Silently set defaults so setNewsEnabled etc. don't crash
+                gameState.news = { enabled: true, groupState: {}, history: [], seenMessages: {}, autoAdd: true, scrollSpeed: 1.0, duplicatePrevention: 20, newWeight: 2.0 };
+            }
             try {
                 // SAFETY: if loading failed but a save exists on disk, do NOT overwrite it.
                 if (!loadSucceeded && hasExistingSave) {
@@ -3679,6 +4520,38 @@ document.getElementById('btn-font-up').onclick = (e) => {
             document.getElementById('offline-modal').classList.add('hidden');
             playSound('buy');
         };
+
+        // Initial news ticker state on page load
+        let _newsTickerInitialized = false;
+        function initNewsTickerState() {
+            if (_newsTickerInitialized) return;
+            _newsTickerInitialized = true;
+            const ticker = document.getElementById('news-ticker');
+            if (!ticker) return;
+            const enabled = gameState && gameState.news && gameState.news.enabled;
+            if (!enabled) {
+                ticker.classList.add('hidden');
+                ticker.style.display = 'none';
+            } else {
+                ticker.classList.remove('hidden');
+                ticker.style.display = 'flex';
+            }
+        }
+        // Ensure news ticker starts hidden if news is disabled
+        function ensureNewsTickerState() {
+            const ticker = document.getElementById('news-ticker');
+            if (!ticker) return;
+            if (!gameState || !gameState.news || !gameState.news.enabled) {
+                ticker.classList.add('hidden');
+                ticker.style.display = 'none';
+            } else {
+                ticker.classList.remove('hidden');
+                ticker.style.display = 'flex';
+            }
+        }
+        // Also ensure on resize the ticker keeps its state
+        window.addEventListener('resize', ensureNewsTickerState);
+
         // ==================== MAIN LOOP ====================
         let lastTime = performance.now();
         const GAME_TICK_MS = 100;
@@ -3687,15 +4560,21 @@ document.getElementById('btn-font-up').onclick = (e) => {
         let lastCanvasUpdateTime = 0;
         let canvasFrameCounter = 0;
         let lastCanvasSnapshot = '';
+        let _lastNewsThrottleFrame = 0;
 
         function gameLoop(timestamp) {
     try {
-    const dt = Math.min(100, timestamp - lastTime);
+    const dt = Math.min(50, timestamp - lastTime);
     lastTime = timestamp;
     gameTickAccumulator += dt;
     while (gameTickAccumulator >= GAME_TICK_MS) {
         tickGame(GAME_TICK_MS);
         gameTickAccumulator -= GAME_TICK_MS;
+    }
+    // Update news ticker ~30 fps (every 33ms) — smooth enough, much less CPU
+    if (!_lastNewsThrottleFrame || timestamp - _lastNewsThrottleFrame > 33) {
+        try { updateNewsTicker(dt); } catch(e) { console.warn('news ticker error:', e); }
+        _lastNewsThrottleFrame = timestamp;
     }
     updateLevelAnimations();
     
@@ -3719,7 +4598,7 @@ document.getElementById('btn-font-up').onclick = (e) => {
         lastCurrencyUpdateTime = timestamp;
     }
     rafId = requestAnimationFrame(gameLoop);
-    } catch(e) { console.warn('gameLoop error:', e); rafId = requestAnimationFrame(gameLoop); }
+    } catch(e) { console.warn('gameLoop error:', e.message || e); rafId = requestAnimationFrame(gameLoop); }
 }
         function tickGame(dtMs) {
             try {
@@ -3896,6 +4775,14 @@ document.getElementById('btn-font-up').onclick = (e) => {
         window.onload = () => {
             try {
                 loadGame();
+                // Ensure news state is initialized before any tick runs
+                if (!gameState.news || typeof gameState.news !== 'object') {
+                    gameState.news = { enabled: true, groupState: {}, history: [], seenMessages: {}, autoAdd: true, scrollSpeed: 1.0, duplicatePrevention: 20, newWeight: 2.0 };
+                }
+                initNewsState();
+                // Ensure ticker shows correct state from the start
+                ensureNewsTickerState();
+                initNewsTickerState();
                 initDepthBackground();
                 restoreScrollState();
                 try { processOfflineProgress(); } catch(e) { console.warn('offline progress failed:', e); }
@@ -3923,6 +4810,32 @@ document.getElementById('btn-font-up').onclick = (e) => {
                 try { showToast('⚠️ Init failed — auto-save disabled'); } catch(_) {}
             }
         };
+        // Ensure news toggle works even if bindNewsControls didn't run
+        document.addEventListener('DOMContentLoaded', () => {
+            // Use a MutationObserver to detect when the btn-news-toggle is available
+            const ensureNewsToggle = () => {
+                const btn = document.getElementById('btn-news-toggle');
+                if (btn && !btn._newsListenerAttached) {
+                    btn._newsListenerAttached = true;
+                    btn.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        // Ensure gameState and gameState.news exist
+                        if (!gameState || typeof gameState !== 'object') return;
+                        if (!gameState.news || typeof gameState.news !== 'object') {
+                            gameState.news = { enabled: true, groupState: {}, history: [], seenMessages: {}, autoAdd: true, scrollSpeed: 1.0, duplicatePrevention: 20, newWeight: 2.0 };
+                        }
+                        const newVal = !gameState.news.enabled;
+                        setNewsEnabled(newVal);
+                        playSound('buy');
+                    });
+                }
+            };
+            // Try immediately
+            ensureNewsToggle();
+            // And re-try after a short delay in case DOM isn't ready
+            setTimeout(ensureNewsToggle, 500);
+        });
+        
         window.addEventListener('resize', () => {
             resizeCanvas();
             draw();
