@@ -428,6 +428,8 @@ const OFFLINE_EXCLUDED_CURRENCIES = new Set([
     'netherite',   // milestone-based gain (M73 automates, not base)
     'stars',       // diminishing-return formula capped by current amount — offline would over-earn
     'fame',        // depends on customers (random), offline would compute incorrectly
+    'green',
+    'antigreen',
 ]);
         // ==================== DECORATION DEFINITIONS ====================
         const DECORATIONS = [
@@ -549,8 +551,9 @@ const OFFLINE_EXCLUDED_CURRENCIES = new Set([
             { type: 'rect', coords: [32.5, 7.5], width: 800, height: 800, fillColor: '#ff7f7f', fillOpacity: 0.5, strokeColor: '#8B0000', strokeOpacity: 0.9, strokeWidth: 2, requirements: ['CB14'] },
             { type: 'text', coords: [37.5, 7.5], text: 'Green', alignment: 'Bottom-left', color: '#88e788', fontSize: 28, opacity: 0.9, requirements: ['CR25'] },
             { type: 'rect', coords: [37.5, 7.5], width: 800, height: 800, fillColor: '#88e788', fillOpacity: 0.5, strokeColor: '#88e788', strokeOpacity: 0.9, strokeWidth: 2, requirements: ['CR25'] },
-            { type: 'text', coords: [37.5, 2.5], text: 'Yellow', alignment: 'Bottom-left', color: 'Yellow', fontSize: 28, opacity: 0.9, requirements: ['....'] },
-            { type: 'text', coords: [37.5, 7.5], text: 'Blue', alignment: 'Bottom-left', color: 'LightBlue', fontSize: 28, opacity: 0.9, requirements: ['....'] },
+            { type: 'text', coords: [37.5, 2.5], text: 'Blue', alignment: 'Bottom-left', color: 'LightBlue', fontSize: 28, opacity: 0.9, requirements: ['CG18'] },
+            { type: 'rect', coords: [37.5, 2.5], width: 800, height: 800, fillColor: '#90d5ff', fillOpacity: 0.5, strokeColor: '#90d5ff', strokeOpacity: 0.9, strokeWidth: 2, requirements: ['CG18'] },
+            //{ type: 'text', coords: [37.5, 2.5], text: 'Yellow', alignment: 'Bottom-left', color: 'Yellow', fontSize: 28, opacity: 0.9, requirements: ['....'] },
             
         ];
         // ==================== AUDIO ENGINE ====================
@@ -809,7 +812,8 @@ const OFFLINE_EXCLUDED_CURRENCIES = new Set([
         maroon: { id: 'maroon', name: 'Maroon', color: 'text-red-800', fillBg: 'rgba(128, 0, 0, 0.2)' },
         burgundy: { id: 'burgundy', name: 'Burgundy', color: 'text-red-950', fillBg: 'rgba(74, 4, 4, 0.2)' },
         yellow: { id: 'yellow', name: 'Yellow', color: 'text-yellow-400', fillBg: 'rgba(255,235,59,0.2)' },
-        blue: { id: 'blue', name: 'Blue', color: 'text-blue-400', fillBg: 'rgba(59,130,246,0.2)' },
+        blue: { id: 'blue', name: 'Blue', color: 'text-blue-200', fillBg: 'rgba(59,130,246,0.2)' },
+        power: { id: 'power', name: 'Power', color: 'text-blue-500', fillBg: 'rgba(47,105,196,0.2)' },
         orange: { id: 'orange', name: 'Orange', color: 'text-orange-400', fillBg: 'rgba(255,165,0,0.2)' },
         green: { id: 'green', name: 'Green', color: 'text-green-400', fillBg: 'rgba(24,138,65,0.2)' },
         antigreen: { id: 'antigreen', name: 'Antigreen', color: 'text-green-600', fillBg: 'rgba(34,197,94,0.2)' },
@@ -1445,7 +1449,7 @@ if (typeof gameState.currencies.P !== 'number' || isNaN(gameState.currencies.P))
     { id: 'CR24', type: 'upgrade', code: 'CR24', name: 'yes, yes, yes, yes', coords: [33, 11], reqs: [[34,12]], borderColor: 'orange', desc: '25x firebrick (+25x per level after), +10% maroon on reset per second multiplied by sqrt of level', effects: [{ type: 'reset_gain_mult', targetCurrency: 'firebrick', formula: (lvl) => 25+25*Math.max(lvl-1,0) },{ type: 'base_gain', currency: 'maroon', formula: (lvl) => getResetGain('maroon')*0.1*Math.pow(lvl, 0.5)}], costCurrency: 'burgundy', costFormula: (lvl) => (0.2+0.2*lvl)*Math.pow(1.5,Math.pow(lvl,0.5)), maxLevel: 100 },
     { id: 'CR25', type: 'upgrade', code: 'CR25', name: 'something new', coords: [33, 12], reqs: [[33,11]], borderColor: 'green', desc: 'Unlock green.', effects: [], costCurrency: 'burgundy', costFormula: (lvl) => 3, maxLevel: 1 },
     { id: 'CG01', type: 'upgrade', code: 'CG01', name: 'green', coords: [38, 8], reqs: [[33,12]], borderColor: 'green', desc: 'generate green and anti-green. if at any point anti-green is above green all green production halts.', effects: [{ type: 'base_gain', currency: 'green', formula: (lvl) => 1 },{ type: 'currency_mult', currency: 'green', formula: (lvl) => 1e-308+(getCurr('green')>=getCurr('antigreen')) },{ type: 'base_gain', currency: 'antigreen', formula: (lvl) => 0.025*Math.pow(getCurr('green'),0.95)+(0.25*Math.pow(1.125,(3+Math.log10(getCurr('green')+10)-Math.log10(getCurr('antigreen')+10)))-0.25)*getCurr('antigreen') }], costCurrency: 'green', costFormula: (lvl) => 0, maxLevel: 1 },
-    { id: 'CG02', type: 'reset',   code: 'CG02', name: 'resetter', coords: [39, 8], reqs: [[33,12]], desc: 'Reset all non-this row green upgrades, green and antigreen.', targetCurrency: 'green', resetCurrencies: ['green','antigreen'], resettedCoords: ['CG'], calculateGain: (lvl, getCurr, getLvl) => { return 1 } },
+    { id: 'CG02', type: 'reset',   code: 'CG02', name: 'resetter', coords: [39, 8], reqs: [[33,12]], desc: 'Reset all non-perm green upgrades, green and antigreen.', targetCurrency: 'green', resetCurrencies: ['green','antigreen'], resettedCoords: ['CG'], calculateGain: (lvl, getCurr, getLvl) => { return 1 } },
     { id: 'CP01', type: 'upgrade', code: 'CP01', name: 'perm 1', coords: [40, 8], reqs: [[33,12]], borderColor: 'green', desc: '+25% green per level.', effects: [{ type: 'currency_mult', currency: 'green', formula: (lvl) => 1+0.25*lvl }], costCurrency: 'green', costFormula: (lvl) => 5*Math.pow(1.5,Math.pow(lvl,0.8)), maxLevel: 25 },
     { id: 'CP02', type: 'upgrade', code: 'CP02', name: 'perm 2', coords: [41, 8], reqs: [[40,8]], borderColor: 'green', desc: 'x1.5 green per level.', effects: [{ type: 'currency_mult', currency: 'green', formula: (lvl) => Math.pow(1.5,lvl) }], costCurrency: 'green', costFormula: (lvl) => 80000*Math.pow(2.5*Math.pow(1.25,lvl),lvl), maxLevel: 12 },
     { id: 'CP03', type: 'upgrade', code: 'CP03', name: 'perm 3', coords: [42, 8], reqs: [[41,8]], borderColor: 'green', desc: 'x1.8 green per level.', effects: [{ type: 'currency_mult', currency: 'green', formula: (lvl) => Math.pow(1.8,lvl) }], costCurrency: 'green', costFormula: (lvl) => 2e14*Math.pow(2.5*Math.pow(1.25,lvl),1.5*lvl), maxLevel: 3 },
@@ -1463,6 +1467,24 @@ if (typeof gameState.currencies.P !== 'number' || isNaN(gameState.currencies.P))
     { id: 'CG11', type: 'upgrade', code: 'CG11', name: 'grass!', coords: [42, 11], reqs: [[41,11]], borderColor: 'green', desc: 'green boost green even more (bigger base, lower exponent). buying make cg12 10x more expensive', effects: [{ type: 'currency_mult', currency: 'green', formula: (lvl) => 1+Math.pow(getCurr('green')/1e12,0.075) }], costCurrency: 'green', costFormula: (lvl, getLevel) => 1e20*Math.pow(10, getLevel('CG12')), maxLevel: 1 },
     { id: 'CG12', type: 'upgrade', code: 'CG12', name: 'grass!!', coords: [40, 11], reqs: [[41,11]], borderColor: 'green', desc: 'green boost green even more (bigger base, lower exponent)^2. buying make cg11 10x more expensive', effects: [{ type: 'currency_mult', currency: 'green', formula: (lvl) => 1+Math.pow(getCurr('green')/1e6,0.045) }], costCurrency: 'green', costFormula: (lvl, getLevel) => 1e20*Math.pow(10, getLevel('CG11')), maxLevel: 1 },
     { id: 'CP06', type: 'upgrade', code: 'CP06', name: 'perm 6 [current endgame]', coords: [42, 12], reqs: [[42,11]], borderColor: 'green', desc: '+250Qn green per level uneffected by green gen (effected by antigreen condition).', effects: [{ type: 'base_gain_raw', currency: 'green', formula: (lvl) => 25e19*(getCurr('antigreen')>0)*(getCurr('antigreen')<=getCurr('green')) }], costCurrency: 'green', costFormula: (lvl) => 2e22, maxLevel: 1 },
+    { id: 'CG13', type: 'upgrade', code: 'CG13', name: 'finally!!', coords: [39, 11], reqs: [[40,11]], borderColor: 'green', desc: 'antigreen will decrease when its above green!', effects: [{ type: 'currency_mult', currency: 'antigreen', formula: (lvl) => 1-(getCurr('antigreen')>getCurr('green')) },{ type: 'base_gain_raw', currency: 'antigreen', formula: (lvl) => -0.999*getCurr('antigreen')*(getCurr('antigreen')>getCurr('green')) }], costCurrency: 'green', costFormula: (lvl, getLevel) => 2e22, maxLevel: 1 },
+    { id: 'CG14', type: 'upgrade', code: 'CG14', name: 'inverse the game', coords: [38, 11], reqs: [[39,11]], borderColor: 'green', desc: '2x green/5x antigreen per level.', effects: [{ type: 'currency_mult', currency: 'green', formula: (lvl) => Math.pow(2,lvl) },{ type: 'currency_mult', currency: 'antigreen', formula: (lvl) => Math.pow(5,lvl) }], costCurrency: 'green', costFormula: (lvl) => 1e23*Math.pow(5*Math.pow(2,lvl),lvl), maxLevel: 3 },
+    { id: 'CG15', type: 'upgrade', code: 'CG15', name: 'grass', coords: [41, 12], reqs: [[41,11]], borderColor: 'green', desc: 'green boost green [disclaimer: inflation].', effects: [{ type: 'currency_mult', currency: 'green', formula: (lvl) => 1+5*Math.pow(getCurr('green')/1e24,0.36) }], costCurrency: 'green', costFormula: (lvl) => 1e24, maxLevel: 1 },
+    { id: 'CG16', type: 'upgrade', code: 'CG16', name: 'happiness', coords: [40, 12], reqs: [[41,12]], borderColor: 'green', desc: 'x10 green per level.', effects: [{ type: 'currency_mult', currency: 'green', formula: (lvl) => Math.pow(10,lvl) }], costCurrency: 'green', costFormula: (lvl) => 1e26*Math.pow(5e8*Math.pow(12,lvl),lvl), maxLevel: 2 },
+    { id: 'CG17', type: 'upgrade', code: 'CG17', name: 'touch grass', coords: [39, 12], reqs: [[40,12]], borderColor: 'green', desc: 'one more push... grass boost grass.', effects: [{ type: 'currency_mult', currency: 'green', formula: (lvl,getLevel, getCurr) => 1+96*Math.pow(getCurr('green')/1e37,0.1) }], costCurrency: 'green', costFormula: (lvl) => 2e41, maxLevel: 1 },
+    { id: 'CG18', type: 'upgrade', code: 'CG18', name: 'something new :D', coords: [38, 12], reqs: [[39,12]], borderColor: 'green', desc: 'Unlock blue.', effects: [], costCurrency: 'green', costFormula: (lvl) => 1e62, maxLevel: 1 },
+    { id: 'CBL01', type: 'upgrade', code: 'CBL01', name: 'blue', coords: [38, 7], reqs: [[38,12]], borderColor: 'green', desc: 'unlock a blue generator! [capped at 100 power]', effects: [{ type: 'base_gain', currency: 'blue', formula: (lvl, getLevel, getCurr) => (1+getLevel('CBL04'))*(1+getLevel('CBL09'))*(getCurr('power')>0) },{ type: 'base_gain', currency: 'power', formula: (lvl) => -Math.min((getCurr('power')>0)*(1+getLevel('CBL09'))*(1+getLevel('CBL04')), 10*getCurr('power')) }], costCurrency: 'blue', costFormula: (lvl) => 0, maxLevel: 1 },
+    { id: 'CBL02', type: 'reset',   code: 'CBL02', name: 'get blue!', coords: [38, 6], reqs: [[38,7]], desc: 'get blue', targetCurrency: 'power', resetCurrencies: [], resettedCoords: [], calculateGain: (lvl, getCurr, getLvl) => { return Math.min(1*(1+0.2*getLevel('CBL05'))*(1+0.2*getLevel('CBL08'))*(1+(getCurr('power')/(100+100*getLevel('CBL06')+1000*getLevel('CBL11')))*getLevel('CBL10'))*(1+(1-(getCurr('power')/(100+100*getLevel('CBL06')+1000*getLevel('CBL11'))))*getLevel('CBL12')), (100+100*getLevel('CBL06')+1000*getLevel('CBL11'))-getCurr('power')) } },
+    { id: 'CBL03', type: 'upgrade', code: 'CBL03', name: '+blue', coords: [39, 7], reqs: [[38,7]], borderColor: 'orange', desc: '+1x blue/lvl', effects: [{ type: 'currency_mult', currency: 'blue', formula: (lvl) => 1+lvl }], costCurrency: 'blue', costFormula: (lvl) => 5*Math.pow(1.3,lvl), maxLevel: 9 },
+    { id: 'CBL04', type: 'upgrade', code: 'CBL04', name: '+rate', coords: [39, 6], reqs: [[39,7]], borderColor: 'orange', desc: '+1x blue conv rate/lvl', effects: [], costCurrency: 'blue', costFormula: (lvl) => (50)*Math.pow(1.2,lvl), maxLevel: 9 },
+    { id: 'CBL05', type: 'upgrade', code: 'CBL05', name: '+bulk', coords: [40, 6], reqs: [[39,6]], borderColor: 'orange', desc: '+0.2x blue gain rate/lvl', effects: [], costCurrency: 'blue', costFormula: (lvl) => (250)*Math.pow(1.2,Math.pow(lvl,0.8)), maxLevel: 45 },
+    { id: 'CBL06', type: 'upgrade', code: 'CBL06', name: '+cap', coords: [39, 5], reqs: [[39,6]], borderColor: 'green', desc: 'the power cap +100/lvl', effects: [], costCurrency: 'blue', costFormula: (lvl) => 1000*Math.pow(1.5,lvl), maxLevel: 9 },
+    { id: 'CBL07', type: 'upgrade', code: 'CBL07', name: '++blue', coords: [40, 7], reqs: [[39,7]], borderColor: 'orange', desc: '+1x blue/lvl again', effects: [{ type: 'currency_mult', currency: 'blue', formula: (lvl) => 1+lvl }], costCurrency: 'blue', costFormula: (lvl) => 1200*Math.pow(1.3,lvl), maxLevel: 9 },
+    { id: 'CBL08', type: 'upgrade', code: 'CBL08', name: '++bulk', coords: [40, 5], reqs: [[40,6]], borderColor: 'orange', desc: '+0.2x blue gain rate/lvl again', effects: [], costCurrency: 'blue', costFormula: (lvl) => (2500)*Math.pow(1.5,Math.pow(lvl,0.8)), maxLevel: 45 },
+    { id: 'CBL09', type: 'upgrade', code: 'CBL09', name: '++rate', coords: [38, 5], reqs: [[39,5]], borderColor: 'orange', desc: '+1x blue conv rate/lvl again', effects: [], costCurrency: 'blue', costFormula: (lvl) => (12000)*Math.pow(1.2,lvl), maxLevel: 9 },
+    { id: 'CBL10', type: 'upgrade', code: 'CBL10', name: '+dynamic higher give more', coords: [41, 5], reqs: [[40,5]], borderColor: 'orange', desc: '+blue gain based on filled percentage (higher better), up to x2 at full', effects: [], costCurrency: 'blue', costFormula: (lvl) => 50000, maxLevel: 1 },
+    { id: 'CBL11', type: 'upgrade', code: 'CBL11', name: '++cap', coords: [39, 4], reqs: [[39,5]], borderColor: 'green', desc: 'the power cap +1000/lvl', effects: [], costCurrency: 'blue', costFormula: (lvl) => 10000*Math.pow(1.5,lvl), maxLevel: 9 },
+    { id: 'CBL12', type: 'upgrade', code: 'CBL12', name: '+dynamic lower give more', coords: [40, 4], reqs: [[40,5]], borderColor: 'orange', desc: '+blue gain based on filled percentage (lower better), up to x2 at full (if you have both of these the 50% spot is the best)', effects: [], costCurrency: 'blue', costFormula: (lvl) => 50000, maxLevel: 1 },
     
 
 
@@ -2405,7 +2427,7 @@ function draw() {
                 }
             }
             // Safety: ensure mult is never 0 or negative (prevents any buggy formula from killing gain)
-            if (mult <= 0) mult = 1;
+            //if (mult <= 0) mult = 1;
             // BOTH base and baseRaw should be multiplied by currency_mult effects!
             const result = base * mult + baseRaw;
             cache.gainRate.set(currency, result);
@@ -4949,9 +4971,19 @@ window.updateNewsMessageCount = updateNewsMessageCount;
                 setInterval(saveGame, 10000);
                 rafId = requestAnimationFrame(gameLoop);
             } catch(e) {
-                console.error('❌ Fatal init error — auto-save disabled to protect your save:', e);
-                // Deliberately do NOT start the save interval or the game loop.
-                try { showToast('⚠️ Init failed — auto-save disabled'); } catch(_) {}
+                console.error('❌ Fatal init error — saving current state before disabling...', e);
+                // Save whatever we loaded so far — better than losing progress
+                try {
+                    // Make a best-effort save of whatever gameState we have (even if partially loaded)
+                    if (gameState && typeof gameState === 'object' && gameState.currencies) {
+                        // Force a save right now so manual refresh doesn't lose the loaded data
+                        gameState.camera = { panX, panY, scale };
+                        gameState.offlineTimestamp = Date.now();
+                        const raw = JSON.stringify({ __version: SAVE_VERSION, ...gameState });
+                        localStorage.setItem(SAVE_KEY, raw);
+                    }
+                } catch(_) {}
+                try { showToast('⚠️ Init error — data saved, refresh may help'); } catch(_) {}
             }
         };
         // Ensure news toggle works even if bindNewsControls didn't run
