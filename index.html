@@ -814,13 +814,17 @@ const OFFLINE_EXCLUDED_CURRENCIES = new Set([
         yellow: { id: 'yellow', name: 'Yellow', color: 'text-yellow-400', fillBg: 'rgba(255,235,59,0.2)' },
         blue: { id: 'blue', name: 'Blue', color: 'text-blue-200', fillBg: 'rgba(59,130,246,0.2)' },
         power: { id: 'power', name: 'Power', color: 'text-blue-500', fillBg: 'rgba(47,105,196,0.2)' },
+        power2: { id: 'power2', name: 'power2', color: 'text-blue-600', fillBg: 'rgba(35,80,146,0.2)' },
         orange: { id: 'orange', name: 'Orange', color: 'text-orange-400', fillBg: 'rgba(255,165,0,0.2)' },
         green: { id: 'green', name: 'Green', color: 'text-green-400', fillBg: 'rgba(24,138,65,0.2)' },
         antigreen: { id: 'antigreen', name: 'Antigreen', color: 'text-green-600', fillBg: 'rgba(34,197,94,0.2)' },
         purple: { id: 'purple', name: 'Purple', color: 'text-purple-400', fillBg: 'rgba(168,85,247,0.2)' },
         white: { id: 'white', name: 'White', color: 'text-zinc-100', fillBg: 'rgba(255,255,255,0.2)' }};
         // ==================== GAME STATE ====================
-        let gameState = { currencies: { P: 0, PR: 0, QT: 0, T: 0, D1: 0, D2: 0, D3: 0, D4: 0, D5: 0, D6: 0, D7: 0, D8: 0 }, discoveredCurrencies: ['P'], currencyOrder: ['P'], hiddenCurrencies: [], userHiddenCurrencies: [], levels: {}, unlockedDecorations: [], camera: { panX: 0, panY: 0, scale: 1 }, soundMuted: false, showEffects: true, buyMode: 1, skipResetConfirm: {}, paused: false, currencyFontSize: 11, offlineTimestamp: Date.now(), hotkeyBindings: null, notation: 'standard' };
+        // CRITICAL: _fresh flag prevents saveGame from overwriting a real save before loadGame completes.
+        // ANY code that touches gameState before window.onload must NOT call saveGame.
+        // This _fresh flag is removed by loadGame ONLY after successful load.
+        let gameState = { _fresh: true, currencies: { P: 0, PR: 0, QT: 0, T: 0, D1: 0, D2: 0, D3: 0, D4: 0, D5: 0, D6: 0, D7: 0, D8: 0 }, discoveredCurrencies: ['P'], currencyOrder: ['P'], hiddenCurrencies: [], userHiddenCurrencies: [], levels: {}, unlockedDecorations: [], camera: { panX: 0, panY: 0, scale: 1 }, soundMuted: false, showEffects: true, buyMode: 1, skipResetConfirm: {}, paused: false, currencyFontSize: 11, offlineTimestamp: Date.now(), hotkeyBindings: null, notation: 'standard' };
 // Always ensure P is a valid number (defence against undefined save corruption)
 if (typeof gameState.currencies.P !== 'number' || isNaN(gameState.currencies.P)) gameState.currencies.P = 0;
         let displayLevels = {},
@@ -1473,8 +1477,8 @@ if (typeof gameState.currencies.P !== 'number' || isNaN(gameState.currencies.P))
     { id: 'CG16', type: 'upgrade', code: 'CG16', name: 'happiness', coords: [40, 12], reqs: [[41,12]], borderColor: 'green', desc: 'x10 green per level.', effects: [{ type: 'currency_mult', currency: 'green', formula: (lvl) => Math.pow(10,lvl) }], costCurrency: 'green', costFormula: (lvl) => 1e26*Math.pow(5e8*Math.pow(12,lvl),lvl), maxLevel: 2 },
     { id: 'CG17', type: 'upgrade', code: 'CG17', name: 'touch grass', coords: [39, 12], reqs: [[40,12]], borderColor: 'green', desc: 'one more push... grass boost grass.', effects: [{ type: 'currency_mult', currency: 'green', formula: (lvl,getLevel, getCurr) => 1+96*Math.pow(getCurr('green')/1e37,0.1) }], costCurrency: 'green', costFormula: (lvl) => 2e41, maxLevel: 1 },
     { id: 'CG18', type: 'upgrade', code: 'CG18', name: 'something new :D', coords: [38, 12], reqs: [[39,12]], borderColor: 'green', desc: 'Unlock blue.', effects: [], costCurrency: 'green', costFormula: (lvl) => 1e62, maxLevel: 1 },
-    { id: 'CBL01', type: 'upgrade', code: 'CBL01', name: 'blue', coords: [38, 7], reqs: [[38,12]], borderColor: 'green', desc: 'unlock a blue generator! [capped at 100 power]', effects: [{ type: 'base_gain', currency: 'blue', formula: (lvl, getLevel, getCurr) => (1+getLevel('CBL04'))*(1+getLevel('CBL09'))*(getCurr('power')>0) },{ type: 'base_gain', currency: 'power', formula: (lvl) => -Math.min((getCurr('power')>0)*(1+getLevel('CBL09'))*(1+getLevel('CBL04')), 10*getCurr('power')) }], costCurrency: 'blue', costFormula: (lvl) => 0, maxLevel: 1 },
-    { id: 'CBL02', type: 'reset',   code: 'CBL02', name: 'get blue!', coords: [38, 6], reqs: [[38,7]], desc: 'get blue', targetCurrency: 'power', resetCurrencies: [], resettedCoords: [], calculateGain: (lvl, getCurr, getLvl) => { return Math.min(1*(1+0.2*getLevel('CBL05'))*(1+0.2*getLevel('CBL08'))*(1+(getCurr('power')/(100+100*getLevel('CBL06')+1000*getLevel('CBL11')))*getLevel('CBL10'))*(1+(1-(getCurr('power')/(100+100*getLevel('CBL06')+1000*getLevel('CBL11'))))*getLevel('CBL12')), (100+100*getLevel('CBL06')+1000*getLevel('CBL11'))-getCurr('power')) } },
+    { id: 'CBL01', type: 'upgrade', code: 'CBL01', name: 'blue', coords: [38, 7], reqs: [[38,12]], borderColor: 'green', desc: 'unlock a blue generator! [capped at 100 power]', effects: [{ type: 'base_gain', currency: 'blue', formula: (lvl, getLevel, getCurr) => (1+getLevel('CBL04'))*(1+getLevel('CBL09'))*(getCurr('power')>0) },{ type: 'base_gain', currency: 'power', formula: (lvl) => -Math.min((getCurr('power')>0)*(1+getLevel('CBL09'))/(1+0.2*getLevel('CBL15'))*(1+getLevel('CBL04')), 10*getCurr('power')) }], costCurrency: 'blue', costFormula: (lvl) => 0, maxLevel: 1 },
+    { id: 'CBL02', type: 'reset',   code: 'CBL02', name: 'get power!', coords: [38, 6], reqs: [[38,7]], desc: 'get blue', targetCurrency: 'power', resetCurrencies: [], resettedCoords: [], calculateGain: (lvl, getCurr, getLvl) => { return Math.min(1*(1+0.2*getLevel('CBL05'))*(1+0.2*getLevel('CBL08'))*(1+(getCurr('power')/(100+100*getLevel('CBL06')+1000*getLevel('CBL11')))*getLevel('CBL10'))*(1+(1-(getCurr('power')/(100+100*getLevel('CBL06')+1000*getLevel('CBL11'))))*getLevel('CBL12')), (100+100*getLevel('CBL06')+1000*getLevel('CBL11'))-getCurr('power')) } },
     { id: 'CBL03', type: 'upgrade', code: 'CBL03', name: '+blue', coords: [39, 7], reqs: [[38,7]], borderColor: 'orange', desc: '+1x blue/lvl', effects: [{ type: 'currency_mult', currency: 'blue', formula: (lvl) => 1+lvl }], costCurrency: 'blue', costFormula: (lvl) => 5*Math.pow(1.3,lvl), maxLevel: 9 },
     { id: 'CBL04', type: 'upgrade', code: 'CBL04', name: '+rate', coords: [39, 6], reqs: [[39,7]], borderColor: 'orange', desc: '+1x blue conv rate/lvl', effects: [], costCurrency: 'blue', costFormula: (lvl) => (50)*Math.pow(1.2,lvl), maxLevel: 9 },
     { id: 'CBL05', type: 'upgrade', code: 'CBL05', name: '+bulk', coords: [40, 6], reqs: [[39,6]], borderColor: 'orange', desc: '+0.2x blue gain rate/lvl', effects: [], costCurrency: 'blue', costFormula: (lvl) => (250)*Math.pow(1.2,Math.pow(lvl,0.8)), maxLevel: 45 },
@@ -1484,7 +1488,10 @@ if (typeof gameState.currencies.P !== 'number' || isNaN(gameState.currencies.P))
     { id: 'CBL09', type: 'upgrade', code: 'CBL09', name: '++rate', coords: [38, 5], reqs: [[39,5]], borderColor: 'orange', desc: '+1x blue conv rate/lvl again', effects: [], costCurrency: 'blue', costFormula: (lvl) => (12000)*Math.pow(1.2,lvl), maxLevel: 9 },
     { id: 'CBL10', type: 'upgrade', code: 'CBL10', name: '+dynamic higher give more', coords: [41, 5], reqs: [[40,5]], borderColor: 'orange', desc: '+blue gain based on filled percentage (higher better), up to x2 at full', effects: [], costCurrency: 'blue', costFormula: (lvl) => 50000, maxLevel: 1 },
     { id: 'CBL11', type: 'upgrade', code: 'CBL11', name: '++cap', coords: [39, 4], reqs: [[39,5]], borderColor: 'green', desc: 'the power cap +1000/lvl', effects: [], costCurrency: 'blue', costFormula: (lvl) => 10000*Math.pow(1.5,lvl), maxLevel: 9 },
-    { id: 'CBL12', type: 'upgrade', code: 'CBL12', name: '+dynamic lower give more', coords: [40, 4], reqs: [[40,5]], borderColor: 'orange', desc: '+blue gain based on filled percentage (lower better), up to x2 at full (if you have both of these the 50% spot is the best)', effects: [], costCurrency: 'blue', costFormula: (lvl) => 50000, maxLevel: 1 },
+    { id: 'CBL12', type: 'upgrade', code: 'CBL12', name: '+dynamic lower give more', coords: [40, 4], reqs: [[40,5]], borderColor: 'orange', desc: '+blue gain based on filled percentage (lower better), up to x2 at full (if you have both of these the 50% spot is the best mult combined)', effects: [], costCurrency: 'blue', costFormula: (lvl) => 50000, maxLevel: 1 },
+    { id: 'CBL13', type: 'upgrade', code: 'CBL13', name: '+fill boost', coords: [38, 4], reqs: [[39,4]], borderColor: 'green', desc: 'boost blue based on power fill %', effects: [{type: 'currency_mult', currency: 'blue', formula: (lvl) => 1+(getCurr('power')/(100+100*getLevel('CBL06')+1000*getLevel('CBL11')))}], costCurrency: 'blue', costFormula: (lvl) => 80000, maxLevel: 1 },
+    { id: 'CBL14', type: 'upgrade', code: 'CBL14', name: '+++blue', coords: [41, 7], reqs: [[40,7]], borderColor: 'orange', desc: '+1x blue/lvl agan', effects: [{ type: 'currency_mult', currency: 'blue', formula: (lvl) => 1+lvl }], costCurrency: 'blue', costFormula: (lvl) => 1e5*Math.pow(1.3,lvl), maxLevel: 9 },
+    { id: 'CBL15', type: 'upgrade', code: 'CBL15', name: '-decay', coords: [41, 6], reqs: [[40,6]], borderColor: 'orange', desc: '/1 power loss rate, +0.2 to divisor/lvl (does NOT effect blue generation)', effects: [], costCurrency: 'blue', costFormula: (lvl) => (500000)*Math.pow(1.2,Math.pow(lvl,0.8)), maxLevel: 45 },
     
 
 
@@ -3130,7 +3137,8 @@ document.getElementById('btn-pause').onclick = () => {
             'hidden');
         document.getElementById('wipe-modal-confirm').onclick = () => {
             localStorage.removeItem(SAVE_KEY);
-            gameState = { currencies: { P: 0, PR: 0, QT: 0, T: 0, D1: 0, D2: 0, D3: 0, D4: 0, D5: 0, D6: 0, D7: 0, D8: 0 }, discoveredCurrencies: ['P'], currencyOrder: ['P'],
+            localStorage.removeItem(SAVE_BACKUP_KEY);
+            gameState = { _fresh: true, currencies: { P: 0, PR: 0, QT: 0, T: 0, D1: 0, D2: 0, D3: 0, D4: 0, D5: 0, D6: 0, D7: 0, D8: 0 }, discoveredCurrencies: ['P'], currencyOrder: ['P'],
                 hiddenCurrencies: [], levels: {}, unlockedDecorations: [], camera: { panX: 0, panY: 0,
                     scale: 1 }, soundMuted: false, showEffects: true, buyMode: 1, skipResetConfirm: {},
                 paused: false, offlineTimestamp: Date.now(), notation: 'standard' };
@@ -3925,7 +3933,7 @@ document.getElementById('btn-font-up').onclick = (e) => {
                     "Tip: buy bulk can be changed in settings.",
                     "Tip: scroll speed can be changed in settings.",
                     "Tip: when the currency bar is too long press the scroll button to enable scrolling.",
-                    "Tip: the upgrade backgrounds correspond to cost currney",
+                    "Tip: the upgrade backgrounds correspond to cost curreney",
                     "Tip: Export save every now and then",
                     "Tip: Have fun.",
                     "Tip: Bonus layers don't boost gameplay!",
@@ -3950,6 +3958,8 @@ document.getElementById('btn-font-up').onclick = (e) => {
                     "how many updates?",
                     "one game many upgrades.",
                     "also play cookie tree!",
+                    "also play everything upgrade tree!",
+                    "also play upgradex!",
                     "this isn't auto water",
                     "also play generator tree!",
                     "does this news ticker contain tickspeed upgrades?",
@@ -4409,6 +4419,18 @@ window.updateNewsMessageCount = updateNewsMessageCount;
         let hasExistingSave = false;
 
         function saveGame() {
+            // CRITICAL GUARD: if _fresh flag is still set, loadGame did not complete successfully.
+            // Refuse to overwrite any existing save on disk.
+            if (gameState._fresh) {
+                // Check if a real save exists on disk — if so, NEVER write the blank state.
+                if (localStorage.getItem(SAVE_KEY)) {
+                    console.warn('⛔ saveGame blocked — _fresh state present, save exists on disk. Not overwriting.');
+                    return;
+                }
+                // No save on disk AND _fresh: this is a legitimate first-ever visit — allow it.
+                // Remove _fresh so subsequent saves work normally.
+                delete gameState._fresh;
+            }
             // NEVER overwrite a good save with invalid data.
             // Validate gameState is sane before writing.
             if (!gameState || typeof gameState !== 'object') {
@@ -4423,6 +4445,11 @@ window.updateNewsMessageCount = updateNewsMessageCount;
                 console.warn('saveGame skipped — P is NaN or not a number');
                 return;
             }
+            // GUARD: Detect a wiped/fresh state (only P at 0, no levels, nothing else with >0)
+            // and refuse to overwrite a real save with it.
+            const hasRealProgress = gameState.currencies.P > 0 ||
+                Object.keys(gameState.currencies).length > 1 ||
+                Object.keys(gameState.levels).length > 0;
             // Ensure news object is complete but never corrupt the save if it's missing
             if (!gameState.news || typeof gameState.news !== 'object') {
                 // Silently set defaults so setNewsEnabled etc. don't crash
@@ -4432,6 +4459,11 @@ window.updateNewsMessageCount = updateNewsMessageCount;
                 // SAFETY: if loading failed but a save exists on disk, do NOT overwrite it.
                 if (!loadSucceeded && hasExistingSave) {
                     console.warn('⛔ saveGame skipped — game state was not loaded successfully.');
+                    return;
+                }
+                // DO NOT overwrite a real save with a blank fresh state.
+                if (!hasRealProgress && hasExistingSave) {
+                    console.warn('⚠️ saveGame skipped — refusing to overwrite save with blank state (likely page reload during init)');
                     return;
                 }
                 gameState.camera = { panX, panY, scale };
@@ -4481,11 +4513,16 @@ window.updateNewsMessageCount = updateNewsMessageCount;
                 // Rotate: the current main save becomes the backup BEFORE we overwrite it.
                 const previousRaw = localStorage.getItem(SAVE_KEY);
                 if (previousRaw && previousRaw !== raw) {
-                    // Only promote a save that parsed as valid JSON and had a P currency.
+                    // Only promote a save that had real progress (not a wiped state)
                     try {
                         const prevParsed = JSON.parse(previousRaw);
-                        if (prevParsed && prevParsed.currencies && typeof prevParsed.currencies.P === 'number') {
-                            localStorage.setItem(SAVE_BACKUP_KEY, previousRaw);
+                        if (prevParsed && prevParsed.currencies) {
+                            const prevP = typeof prevParsed.currencies.P === 'number' ? prevParsed.currencies.P : 0;
+                            const prevOtherCurrencies = Object.keys(prevParsed.currencies).length > 1;
+                            const prevLevels = prevParsed.levels && Object.keys(prevParsed.levels).length > 0;
+                            if (prevP > 0 || prevOtherCurrencies || prevLevels) {
+                                localStorage.setItem(SAVE_BACKUP_KEY, previousRaw);
+                            }
                         }
                     } catch (_) { /* don't promote corrupt backups */ }
                 }
@@ -4519,14 +4556,37 @@ window.updateNewsMessageCount = updateNewsMessageCount;
             let parsed = null;
             if (raw) parsed = tryLoadGameFrom(raw);
             
-            // If main save is invalid, try the backup
-            if (!parsed) {
+            // Detect a wiped main save: P=0, no other currencies, no levels
+            // This happens when a buggy save overwrote the real data.
+            let mainIsWiped = false;
+            if (parsed && parsed.currencies) {
+                const p = typeof parsed.currencies.P === 'number' ? parsed.currencies.P : 0;
+                const otherCurrencies = Object.keys(parsed.currencies).length > 1;
+                const hasLevels = parsed.levels && Object.keys(parsed.levels).length > 0;
+                mainIsWiped = p === 0 && !otherCurrencies && !hasLevels;
+            }
+            // Also invalid if P is NaN
+            if (parsed && parsed.currencies && typeof parsed.currencies.P === 'number' && isNaN(parsed.currencies.P)) {
+                mainIsWiped = true;
+            }
+            
+            // If main save is invalid or wiped, try the backup
+            if (!parsed || mainIsWiped) {
                 const backupRaw = localStorage.getItem(SAVE_BACKUP_KEY);
                 if (backupRaw && backupRaw !== raw) {
-                    console.warn('Main save corrupt — trying backup...');
-                    parsed = tryLoadGameFrom(backupRaw);
-                    if (parsed) {
-                        showToast('⚠️ Main save was corrupt, loaded backup instead');
+                    console.warn(mainIsWiped ? 'Main save wiped — trying backup...' : 'Main save corrupt — trying backup...');
+                    const backupParsed = tryLoadGameFrom(backupRaw);
+                    if (backupParsed) {
+                        // Also verify backup is not wiped
+                        const bp = backupParsed.currencies && typeof backupParsed.currencies.P === 'number' ? backupParsed.currencies.P : 0;
+                        const bOther = backupParsed.currencies && Object.keys(backupParsed.currencies).length > 1;
+                        const bLevels = backupParsed.levels && Object.keys(backupParsed.levels).length > 0;
+                        if (bp > 0 || bOther || bLevels) {
+                            parsed = backupParsed;
+                            // Also RESTORE the backup as the main save so next load uses it
+                            localStorage.setItem(SAVE_KEY, backupRaw);
+                            showToast('⚠️ Save restored from backup (refresh should be clean now)');
+                        }
                     }
                 }
             }
@@ -4566,6 +4626,8 @@ window.updateNewsMessageCount = updateNewsMessageCount;
             if (gameState.currencyFontSize === undefined) gameState.currencyFontSize = 11;
             if (!gameState.currencyOrder) gameState.currencyOrder = ['P'];
             if (!gameState.discoveredCurrencies) gameState.discoveredCurrencies = ['P'];
+            // CRITICAL: remove _fresh flag — loadGame succeeded, saveGame can now write
+            if (gameState._fresh) delete gameState._fresh;
             // Ensure the core pointers/arrays exist
             if (!Array.isArray(gameState.hiddenCurrencies)) gameState.hiddenCurrencies = [];
             if (!Array.isArray(gameState.userHiddenCurrencies)) gameState.userHiddenCurrencies = [];
@@ -4603,7 +4665,7 @@ window.updateNewsMessageCount = updateNewsMessageCount;
             lucide.createIcons();
             clearCaches(true);
             loadSucceeded = true;
-            } catch(e) { console.warn('loadGame error:', e); loadSucceeded = false; }
+            } catch(e) { console.warn('loadGame error:', e); loadSucceeded = false; gameState._fresh = true; }
         }
 
         function processOfflineProgress() {
@@ -4968,7 +5030,10 @@ window.updateNewsMessageCount = updateNewsMessageCount;
                 // Restore bar scroll state & lock state AFTER the bar is first rendered
                 restoreCurrencyBarScrollState();
                 setupBarScrollSave();
-                setInterval(saveGame, 10000);
+                // First save interval: wait 5s after load to avoid race with fresh-state guards
+                setTimeout(() => {
+                    setInterval(saveGame, 10000);
+                }, 5000);
                 rafId = requestAnimationFrame(gameLoop);
             } catch(e) {
                 console.error('❌ Fatal init error — saving current state before disabling...', e);
