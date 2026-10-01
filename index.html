@@ -129,6 +129,9 @@
             align-items: center;
             pointer-events: none;
         }
+        #settings-scroll {
+            resize: vertical !important;
+        }
         .news-item {
             position: absolute;
             white-space: nowrap;
@@ -316,22 +319,23 @@
                                 <span class="font-bold text-zinc-400">SCROLL SPEED</span>
                                 <span id="news-speed-label" class="text-[10px] text-zinc-400">1.0x</span>
                             </div>
-                            <input type="range" id="news-speed" min="0.2" max="3.0" step="0.1" value="1.0" class="news-slider">
+                            <input type="range" id="news-speed" min="0.2" max="3.0" step="0.1" value="1.0" class="news-slider" oninput="if(gameState&&gameState.news){gameState.news.scrollSpeed=parseFloat(this.value);document.getElementById('news-speed-label').textContent=parseFloat(this.value).toFixed(1)+'x';}">
                         </div>
                         <div class="flex flex-col gap-0.5 w-full px-2.5 py-1.5 bg-zinc-950 border border-zinc-800 text-zinc-300 text-[11px]">
                             <div class="flex items-center justify-between">
                                 <span class="font-bold text-zinc-400">DUPLICATE PREVENTION</span>
                                 <span id="news-dup-label" class="text-[10px] text-zinc-400">20</span>
                             </div>
-                            <input type="range" id="news-dup" min="0" max="100" step="1" value="20" class="news-slider">
+                            <input type="range" id="news-dup" min="0" max="100" step="1" value="20" class="news-slider" oninput="if(gameState&&gameState.news){gameState.news.duplicatePrevention=parseInt(this.value);document.getElementById('news-dup-label').textContent=this.value;if(typeof updateNewsMessageCount==='function')updateNewsMessageCount();}">
                         </div>
                         <div class="flex flex-col gap-0.5 w-full px-2.5 py-1.5 bg-zinc-950 border border-zinc-800 text-zinc-300 text-[11px]">
                             <div class="flex items-center justify-between">
                                 <span class="font-bold text-zinc-400">NEW WEIGHT</span>
                                 <span id="news-weight-label" class="text-[10px] text-zinc-400">2.0x</span>
                             </div>
-                            <input type="range" id="news-weight" min="1" max="3" step="0.1" value="2" class="news-slider">
+                            <input type="range" id="news-weight" min="1" max="3" step="0.1" value="2" class="news-slider" oninput="if(gameState&&gameState.news){gameState.news.newWeight=parseFloat(this.value);document.getElementById('news-weight-label').textContent=parseFloat(this.value).toFixed(1)+'x';if(typeof updateNewsMessageCount==='function')updateNewsMessageCount();}">
                         </div>
+                        <div id="news-msg-count" class="text-[9px] text-zinc-500 italic px-1 mb-0.5">—</div>
                         <div id="news-groups-list" class="flex flex-col gap-0.5 max-h-40 overflow-y-auto"></div>
                     </div>
                     <!-- SECTION: Save & Data -->
@@ -801,7 +805,7 @@ const OFFLINE_EXCLUDED_CURRENCIES = new Set([
         crimson: { id: 'crimson', name: 'Crimson', color: 'text-red-600', fillBg: 'rgba(220, 20, 60, 0.2)' },
         firebrick: { id: 'firebrick', name: 'Firebrick', color: 'text-red-700', fillBg: 'rgba(178, 34, 34, 0.2)' },
         maroon: { id: 'maroon', name: 'Maroon', color: 'text-red-800', fillBg: 'rgba(128, 0, 0, 0.2)' },
-        burgundy: { id: 'burgundy', name: 'Dark Burgundy', color: 'text-red-950', fillBg: 'rgba(74, 4, 4, 0.2)' },
+        burgundy: { id: 'burgundy', name: 'Burgundy', color: 'text-red-950', fillBg: 'rgba(74, 4, 4, 0.2)' },
         yellow: { id: 'yellow', name: 'Yellow', color: 'text-yellow-400', fillBg: 'rgba(255,235,59,0.2)' },
         blue: { id: 'blue', name: 'Blue', color: 'text-blue-400', fillBg: 'rgba(59,130,246,0.2)' },
         orange: { id: 'orange', name: 'Orange', color: 'text-orange-400', fillBg: 'rgba(255,165,0,0.2)' },
@@ -1425,8 +1429,18 @@ if (typeof gameState.currencies.P !== 'number' || isNaN(gameState.currencies.P))
     { id: 'CR11', type: 'reset',   code: 'CR11', name: 'Crimson -> firebrick', coords: [36, 8], reqs: [[36,9]], desc: 'Reset all red/crimson for firebrick. [req:100]', targetCurrency: 'firebrick', resetCurrencies: ['red','crimson'], resettedCoords: [], calculateGain: (lvl, getCurr, getLvl) => { const r = getCurr('crimson'); if (r < 100) return 0; return Math.pow(r / 100, 0.28); } },
     { id: 'CR12', type: 'upgrade', code: 'CR12', name: 'something nicer', coords: [37, 8], reqs: [[36,9]], borderColor: 'orange', desc: 'Boost crimson based on firebrick.', effects: [{ type: 'reset_gain_mult', targetCurrency: 'crimson', formula: (lvl) => Math.min(1+Math.pow(getCurr('firebrick'),0.3),100*Math.pow(getCurr('firebrick')/50000+1,0.15)) }], costCurrency: 'firebrick', costFormula: (lvl) => 0.25, maxLevel: 1 },
     { id: 'CR13', type: 'upgrade', code: 'CR13', name: 'something different', coords: [37, 9], reqs: [[37,8]], borderColor: 'orange', desc: 'Boost red based on firebrick.', effects: [{ type: 'currency_mult', currency: 'red', formula: (lvl) => Math.pow(Math.min(1+Math.pow(getCurr('firebrick'),0.3),100*Math.pow(getCurr('firebrick')/50000+1,0.15)),1.25) }], costCurrency: 'firebrick', costFormula: (lvl) => 8, maxLevel: 1 },
-    { id: 'CR14', type: 'upgrade', code: 'CR14', name: 'yes, yes', coords: [37, 10], reqs: [[37,9]], borderColor: 'orange', desc: '+5% crimson on reset per second multiplied by sqrt of level', effects: [{ type: 'base_gain_raw', currency: 'crimson', formula: (lvl) => getResetGain('crimson')*0.05*Math.pow(lvl, 0.5)}], costCurrency: 'firebrick', costFormula: (lvl) => 12*Math.pow(1.5,Math.pow(lvl,0.5)), maxLevel: 100 },
-    { id: 'CR15', type: 'upgrade', code: 'CR15', name: 'done!', coords: [36, 10], reqs: [[37,10]], borderColor: 'green', desc: 'unlock green.', effects: [], costCurrency: 'firebrick', costFormula: (lvl) => 50, maxLevel: 1 },
+    { id: 'CR14', type: 'upgrade', code: 'CR14', name: 'yes, yes', coords: [37, 10], reqs: [[37,9]], borderColor: 'orange', desc: '+5% crimson on reset per second multiplied by sqrt of level', effects: [{ type: 'base_gain', currency: 'crimson', formula: (lvl) => getResetGain('crimson')*0.05*Math.pow(lvl, 0.5)}], costCurrency: 'firebrick', costFormula: (lvl) => 12*Math.pow(1.5,Math.pow(lvl,0.5)), maxLevel: 100 },
+    { id: 'CR15', type: 'upgrade', code: 'CR15', name: 'good!', coords: [36, 10], reqs: [[37,10]], borderColor: 'green', desc: 'triple crimson generation and unlock something.', effects: [{ type: 'currency_mult', currency: 'crimson', formula: (lvl) => 3 }], costCurrency: 'firebrick', costFormula: (lvl) => 50, maxLevel: 1 },
+    { id: 'CR16', type: 'reset',   code: 'CR16', name: 'firebrick -> maroon', coords: [36, 11], reqs: [[36,10]], desc: 'Reset all red/crimson/firebrick for maroon. [req:100]', targetCurrency: 'maroon', resetCurrencies: ['red','crimson','firebrick'], resettedCoords: [], calculateGain: (lvl, getCurr, getLvl) => { const r = getCurr('firebrick'); if (r < 100) return 0; return Math.pow(r / 100, 0.28); } },
+    { id: 'CR17', type: 'upgrade', code: 'CR17', name: 'something really nice', coords: [37, 11], reqs: [[36,10]], borderColor: 'orange', desc: 'Boost red based on maroon a lot, contains minor softcap', effects: [{ type: 'currency_mult', currency: 'red', formula: (lvl) => 5+5*Math.min(Math.pow(5*getCurr('maroon'),1.2),250*Math.pow(getCurr('maroon'),0.75)) }], costCurrency: 'maroon', costFormula: (lvl) => 0.25, maxLevel: 1 },
+    { id: 'CR18', type: 'upgrade', code: 'CR18', name: 'something really good', coords: [37, 12], reqs: [[37,11]], borderColor: 'orange', desc: 'Boost crimson based on maroon, contains minor softcap', effects: [{ type: 'reset_gain_mult', targetCurrency: 'crimson', formula: (lvl) => 5+2*Math.min(Math.pow(5*getCurr('maroon'),0.88),250*Math.pow(getCurr('maroon'),0.55)) }], costCurrency: 'maroon', costFormula: (lvl) => 0.5, maxLevel: 1 },
+    { id: 'CR19', type: 'upgrade', code: 'CR19', name: 'something really hapi', coords: [36, 12], reqs: [[37,12]], borderColor: 'orange', desc: 'Boost firebrick based on maroon a little, contains minor softcap', effects: [{ type: 'reset_gain_mult', targetCurrency: 'firebrick', formula: (lvl) => 2+1*Math.min(Math.pow(getCurr('maroon'),0.72),80*Math.pow(getCurr('maroon'),0.48)) }], costCurrency: 'maroon', costFormula: (lvl) => 3, maxLevel: 1 },
+    { id: 'CR20', type: 'upgrade', code: 'CR20', name: 'reset is boost', coords: [35, 12], reqs: [[36,12]], borderColor: 'orange', desc: 'Boost crimson based on maroons reset gain', effects: [{ type: 'reset_gain_mult', targetCurrency: 'crimson', formula: (lvl) => Math.max(1,getResetGain('maroon')) }], costCurrency: 'maroon', costFormula: (lvl) => 2, maxLevel: 1 },
+    { id: 'CR21', type: 'upgrade', code: 'CR21', name: 'yes, yes, yes', coords: [35, 11], reqs: [[35,12]], borderColor: 'orange', desc: '+10% firebrick on reset per second multiplied by sqrt of level', effects: [{ type: 'base_gain', currency: 'firebrick', formula: (lvl) => getResetGain('firebrick')*0.1*Math.pow(lvl, 0.5)}], costCurrency: 'maroon', costFormula: (lvl) => (0.1+0.1*lvl)*Math.pow(1.5,Math.pow(lvl,0.5)), maxLevel: 100 },
+    { id: 'CR22', type: 'upgrade', code: 'CR22', name: 'more static', coords: [34, 12], reqs: [[35,12]], borderColor: 'orange', desc: 'Triple red per level and unlock something first level', effects: [{ type: 'currency_mult', currency: 'red', formula: (lvl) => Math.pow(3,lvl) }], costCurrency: 'maroon', costFormula: (lvl) => (0.05+0.025*lvl)*Math.pow(1.25,lvl), maxLevel: 30 },
+    { id: 'CR23', type: 'reset',   code: 'CR23', name: 'maroon -> burgundy', coords: [34, 11], reqs: [[34,12]], desc: 'Reset all red/crimson/ firebrick/maroon for burgundy. [req:100]', targetCurrency: 'burgundy', resetCurrencies: ['red','crimson','firebrick','maroon'], resettedCoords: [], calculateGain: (lvl, getCurr, getLvl) => { const r = getCurr('maroon'); if (r < 100) return 0; return Math.pow(r / 100, 0.28); } },
+    { id: 'CR24', type: 'upgrade', code: 'CR24', name: 'yes, yes, yes, yes', coords: [33, 11], reqs: [[34,12]], borderColor: 'orange', desc: '25x firebrick (+25x per level after), +10% maroon on reset per second multiplied by sqrt of level', effects: [{ type: 'reset_gain_mult', targetCurrency: 'firebrick', formula: (lvl) => 25+25*Math.max(lvl-1,0) },{ type: 'base_gain', currency: 'maroon', formula: (lvl) => getResetGain('maroon')*0.1*Math.pow(lvl, 0.5)}], costCurrency: 'burgundy', costFormula: (lvl) => (0.2+0.2*lvl)*Math.pow(1.5,Math.pow(lvl,0.5)), maxLevel: 100 },
+    { id: 'CR25', type: 'upgrade', code: 'CR25', name: 'something new', coords: [33, 12], reqs: [[33,11]], borderColor: 'green', desc: 'Unlock green.', effects: [], costCurrency: 'burgundy', costFormula: (lvl) => 3, maxLevel: 1 },
     
 
 
@@ -3751,6 +3765,8 @@ document.getElementById('btn-font-up').onclick = (e) => {
             renderCurrencyToggles();
             updateHotkeyButtonLabels();
             try { renderNewsGroups(); } catch(e) { console.warn('renderNewsGroups error:', e); }
+            // Also update the news message count immediately
+            try { if (typeof updateNewsMessageCount === 'function') updateNewsMessageCount(); } catch(e) {}
             // Update nav active state
             document.querySelectorAll('.settings-nav-btn').forEach(b => b.classList.remove('text-cyan-300', 'text-amber-300', 'text-red-300', 'text-purple-300', 'text-emerald-300', 'text-yellow-300'));
         }
@@ -3874,6 +3890,46 @@ document.getElementById('btn-font-up').onclick = (e) => {
                     "Tip: Autobuyers when they buy upgrades don't cost your currencies!",
                     "Tip: there are many upgrades, try to get them (hehe useless tip).",
                     "Tip: There are offline progress, but it gets softcapped after a certain amount."
+                ]
+            },
+            general2: {
+                name: 'General',
+                color: '#a1a1aa',
+                weight: 1,
+                defaultEnabled: true,
+                unlockCheck: () => true,
+                messages: [
+                    "xedargpu",
+                    "thats a lot of upgrades",
+                    "clicking filled sqaure simulatior",
+                    "8/10 incremental players recommend?",
+                    "how many updates?",
+                    "one game many upgrades.",
+                    "also play cookie tree!",
+                    "this isn't auto water",
+                    "also play generator tree!",
+                    "does this news ticker contain tickspeed upgrades?",
+                    "buying 1e36 levels at once.",
+                    "the 9th upgrade does exist",
+                    "the upgrades are landing",
+                    "speedrun incremental II",
+                    "im a news message.",
+                    "**what a bold message**",
+                    "[rainbow]woooooo im so addicted to this game!!![/rainbow].",
+                    "[rainbow]ive consumed twice my daily dose of upgrades[/rainbow] ",
+                    "[green]green text[/green] ",
+                    "if you can see this you can"
+                ]
+            },
+            general3: {
+                name: 'Community',
+                color: '#a1a1aa',
+                weight: 1,
+                defaultEnabled: true,
+                unlockCheck: () => true,
+                messages: [
+                    "[blue]guess who made cookie plate - cookie[/blue] ",
+                    "[blue]try player.devSpeed - cookie[/blue] "
                 ]
             },
             progression: {
@@ -4008,8 +4064,14 @@ document.getElementById('btn-font-up').onclick = (e) => {
             const unseenBoost = Math.max(1, gameState.news.newWeight || 1);
             const unseenSet = gameState.news.seenMessages || {};
 
-            const candidates = pool.filter(p => !recent.includes(p.id));
-            if (candidates.length === 0) return pool[Math.floor(Math.random() * pool.length)];
+            let candidates = pool.filter(p => !recent.includes(p.id));
+            if (candidates.length === 0) {
+                // ALL messages are in cooldown — clear the entire history so they can be used again
+                gameState.news.history = [];
+                candidates = pool.slice();
+                // Also reset seenMessages if they were all seen
+                gameState.news.seenMessages = {};
+            }
 
             const weights = candidates.map(p => {
                 const isNew = !unseenSet[p.id];
@@ -4027,11 +4089,13 @@ document.getElementById('btn-font-up').onclick = (e) => {
         function createNewsItem(item) {
             const el = document.createElement('div');
             el.className = 'news-item';
+            el.style.transform = 'translateX(0)';
             el.innerHTML = `<span>${parseNewsMarkup(item.message)}</span>`;
             newsTrack.appendChild(el);
             const width = el.offsetWidth || 200;
-            // Start just off the right edge
-            const startX = newsTicker.offsetWidth + (Math.random() * 40);
+            // Start just at the right edge (fully visible, no random offset)
+            const startX = newsTicker.offsetWidth;
+            el.style.transform = `translateX(${startX}px)`;
             return { el, x: startX, width, group: item.group, message: item.message, id: item.id || (item.group + '|idx|' + item.message.length), active: true };
         }
 
@@ -4043,15 +4107,15 @@ document.getElementById('btn-font-up').onclick = (e) => {
             if (!gameState.news.enabled) return;
             const item = pickNewsMessage();
             if (!item) return;
-            // Avoid spawning right on top of the most recent item
-            if (!manual && newsItems.length > 0) {
-                const last = newsItems[newsItems.length - 1];
-                if (last.x > newsTicker.offsetWidth - last.width - 40) return;
-            }
             if (!gameState.news.seenMessages[item.id]) gameState.news.seenMessages[item.id] = 0;
             gameState.news.seenMessages[item.id]++;
             gameState.news.history.push(item.id);
             if (gameState.news.history.length > 120) gameState.news.history.shift();
+            // Clear any stale items from the DOM before adding new one
+            for (let i = newsItems.length - 1; i >= 0; i--) {
+                try { newsItems[i].el.remove(); } catch(e) {}
+            }
+            newsItems = [];
             const ni = createNewsItem(item);
             newsItems.push(ni);
         }
@@ -4071,36 +4135,35 @@ function updateNewsTicker(dtMs) {
             }
             if (newsTicker.classList.contains('hidden')) newsTicker.classList.remove('hidden');
 
-            // Read speed directly from slider every tick so it's immediate
-            const speedSlider = document.getElementById('news-speed');
-            if (speedSlider) {
-                const v = parseFloat(speedSlider.value);
-                gameState.news.scrollSpeed = v;
-                document.getElementById('news-speed-label').textContent = v.toFixed(1) + 'x';
-            }
+            // Read speed multiplier from gameState
+            let speedMult = gameState.news.scrollSpeed || 1;
 
             const dt = dtMs / 1000;
-            const baseSpeed = 80; // pixels per second at 1.0x
-            const speed = baseSpeed * (gameState.news.scrollSpeed || 1);
             const vw = newsTicker.offsetWidth || 400;
-
-            // Auto-add new messages
-            if ((gameState.news.autoAdd !== false) && !newsPaused) {
-                nextNewsTimer -= dt * 1000;
-                if (nextNewsTimer <= 0) {
-                    addNewsItem(false);
-                    nextNewsTimer = 4000 + Math.random() * 6000;
-                }
-            }
 
             // Move items
             for (let i = newsItems.length - 1; i >= 0; i--) {
                 const item = newsItems[i];
+                if (!item.active) continue;
+                // Dynamic speed: baseSpeed * speedMult * max(0.3, 1 + 0.2*((msgLen+9)^0.5 - 2))
+                const msgLen = item.message ? item.message.length : 20;
+                const lenFactor = 1 + 0.2 * (Math.sqrt(msgLen + 9) - 2);
+                const baseSpeed = 80;
+                const speed = baseSpeed * speedMult * Math.max(0.3, lenFactor);
                 item.x -= speed * dt;
                 item.el.style.transform = `translateX(${item.x}px)`;
-                if (item.x + item.width < -20) {
-                    item.el.remove();
+                // Remove items that are fully off-screen left (cleanup)
+                if (item.x + item.width < -50) {
+                    try { item.el.remove(); } catch(e) {}
                     newsItems.splice(i, 1);
+                }
+            }
+
+            // Auto-add: spawn next message only when ALL previous messages have fully exited (off-screen left)
+            if ((gameState.news.autoAdd !== false) && !newsPaused) {
+                const shouldSpawn = newsItems.length === 0;
+                if (shouldSpawn) {
+                    addNewsItem(false);
                 }
             }
         }
@@ -4120,7 +4183,12 @@ function updateNewsTicker(dtMs) {
                 btn.classList.add('text-emerald-400');
                 if (ticker) {
                     ticker.classList.remove('hidden');
-                    ticker.style.display = 'flex'; // restore flex display
+                    ticker.style.display = 'flex';
+                }
+                // Seed the first news item if none exist — use a guard to prevent double spawn
+                if (newsItems.length === 0 && !window._newsSeeded) {
+                    window._newsSeeded = true;
+                    setTimeout(() => addNewsItem(true), 100);
                 }
             } else {
                 label.textContent = 'NEWS: OFF';
@@ -4128,12 +4196,13 @@ function updateNewsTicker(dtMs) {
                 btn.classList.add('text-zinc-500');
                 if (ticker) {
                     ticker.classList.add('hidden');
-                    ticker.style.display = 'none'; // force hidden even if CSS class gets overridden
+                    ticker.style.display = 'none';
                 }
                 // Clear news items so they don't accumulate off-screen
-                newsItems.forEach(item => { try { item.el.remove(); } catch(e) {} });
+                for (let i = newsItems.length - 1; i >= 0; i--) {
+                    try { newsItems[i].el.remove(); } catch(e) {}
+                }
                 newsItems = [];
-                nextNewsTimer = 0;
             }
         }
 
@@ -4143,9 +4212,35 @@ function updateNewsTicker(dtMs) {
             playSound('buy');
         }
 
+        function updateNewsMessageCount() {
+    var el = document.getElementById('news-msg-count');
+    if (!el) { return; }
+    try {
+        var pool = getAvailableNewsPool();
+        var total = pool.length;
+        if (total === 0) { el.textContent = '—'; return; }
+        var history = gameState.news.history || [];
+        var dupCount = Math.min(pool.length - 1, Math.max(0, gameState.news.duplicatePrevention || 0));
+        var historySub = dupCount > 0 ? history.slice(-dupCount) : [];
+        var inCooldown = 0;
+        var unseen = 0;
+        for (var qi = 0; qi < pool.length; qi++) {
+            var p = pool[qi];
+            if (historySub.indexOf(p.id) >= 0) { inCooldown++; }
+            if (!gameState.news.seenMessages[p.id]) { unseen++; }
+        }
+        el.innerHTML = total + ' messages available <span class="text-zinc-600">(' + unseen + ' new, ' + inCooldown + ' in cooldown)</span>';
+    } catch(e) {
+        el.textContent = '—';
+    }
+}
+
+window.updateNewsMessageCount = updateNewsMessageCount;
+
         function renderNewsGroups() {
             const list = document.getElementById('news-groups-list');
             if (!list) return;
+            updateNewsMessageCount();
             // Safety: ensure news state is initialized
             if (!gameState || typeof gameState !== 'object') return;
             if (!gameState.news || typeof gameState.news !== 'object') {
@@ -4230,6 +4325,7 @@ function updateNewsTicker(dtMs) {
                 const v = parseInt(dupSlider.value);
                 gameState.news.duplicatePrevention = v;
                 dupLabel.textContent = v;
+                updateNewsMessageCount();
             });
 
             const weightSlider = document.getElementById('news-weight');
@@ -4240,7 +4336,21 @@ function updateNewsTicker(dtMs) {
                 const v = parseFloat(weightSlider.value);
                 gameState.news.newWeight = v;
                 weightLabel.textContent = v.toFixed(1) + 'x';
+                updateNewsMessageCount();
             });
+
+            // Also ensure the speed slider label updates in real time during drag
+            if (speedSlider) {
+                const speedLabel = document.getElementById('news-speed-label');
+                if (!speedSlider._newsListener) {
+                    speedSlider._newsListener = true;
+                    speedSlider.addEventListener('input', () => {
+                        const v = parseFloat(speedSlider.value);
+                        gameState.news.scrollSpeed = v;
+                        if (speedLabel) speedLabel.textContent = v.toFixed(1) + 'x';
+                    });
+                }
+            }
         }
 
         // Pause news when settings menu is open so it doesn't distract while configuring
@@ -4786,6 +4896,18 @@ function updateNewsTicker(dtMs) {
                 initDepthBackground();
                 restoreScrollState();
                 try { processOfflineProgress(); } catch(e) { console.warn('offline progress failed:', e); }
+                // Seed the first news item on initial load if news is enabled — only once
+                if (gameState.news && gameState.news.enabled && !window._newsSeeded) {
+                    window._newsSeeded = true;
+                    setTimeout(() => { 
+                        // Ensure no stale items exist
+                        for (let i = newsItems.length - 1; i >= 0; i--) {
+                            try { newsItems[i].el.remove(); } catch(e) {}
+                        }
+                        newsItems = [];
+                        addNewsItem(true); 
+                    }, 150);
+                }
                 // Ensure notation is applied at startup
             if (gameState.notation && NOTATION_MODES.some(m => m.key === gameState.notation)) {
                 applyNotation(gameState.notation);
