@@ -418,6 +418,18 @@
 // Some currencies depend on formulas (diminishing returns, random chance, tick-based effects)
 // that would produce unrealistic amounts if processed offline. Add their keys here.
 const OFFLINE_EXCLUDED_CURRENCIES = new Set([
+    'e1',
+  'e2',
+  'e3',
+  'e4',
+  'e5',
+  'e6',
+  'e7',
+  'e8',
+  'e9',
+  'e10',
+  'e11',
+  'e12',
     'customers',
     'essence',// uses Math.random() for tick chance
     'copper',      // uses Math.random() <= 0.01*level per tick
@@ -555,6 +567,8 @@ const OFFLINE_EXCLUDED_CURRENCIES = new Set([
             { type: 'rect', coords: [37.5, 2.5], width: 800, height: 800, fillColor: '#90d5ff', fillOpacity: 0.5, strokeColor: '#90d5ff', strokeOpacity: 0.9, strokeWidth: 2, requirements: ['CG18'] },
             { type: 'text', coords: [-2.5, -17.5], text: 'Frog baseplate', alignment: 'Bottom-left', color: '#5E7318', fontSize: 28, opacity: 0.9, requirements: ['+BU7'] },
             { type: 'rect', coords: [-2.5, -17.5], width: 800, height: 800, fillColor: '#5E7318', fillOpacity: 0.3, strokeColor: '#5E7318', strokeOpacity: 0.9, strokeWidth: 2, requirements: ['+BU7'] },
+            { type: 'text', coords: [-2.5, -22.5], text: 'Random baseplate', alignment: 'Bottom-left', color: '#ffffc5', fontSize: 28, opacity: 0.9, requirements: ['+BU8'] },
+            { type: 'rect', coords: [-2.5, -22.5], width: 800, height: 800, fillColor: '#ffffc5', fillOpacity: 0.3, strokeColor: '#ffffc5', strokeOpacity: 0.9, strokeWidth: 2, requirements: ['+BU8'] },
             //{ type: 'text', coords: [37.5, 2.5], text: 'Yellow', alignment: 'Bottom-left', color: 'Yellow', fontSize: 28, opacity: 0.9, requirements: ['....'] },
             
         ];
@@ -823,7 +837,19 @@ const OFFLINE_EXCLUDED_CURRENCIES = new Set([
         purple: { id: 'purple', name: 'Purple', color: 'text-purple-400', fillBg: 'rgba(168,85,247,0.2)' },
         white: { id: 'white', name: 'White', color: 'text-zinc-100', fillBg: 'rgba(255,255,255,0.2)' },
         frogs: { id: 'frogs', name: 'Frogs', color: 'text-[#5e7318]', fillBg: 'rgba(94, 115, 24, 0.2)' },
-        euros: { id: 'euros', name: 'Euros', color: 'text-[#7fa9ff]', fillBg: 'rgba(0, 51, 153, 0.2)' }};
+        e1: { id: 'e1', name: 'e1', color: 'text-[#ff7f7f]', fillBg: 'rgba(255, 127, 127, 0.2)' },
+          e2: { id: 'e2', name: 'e2', color: 'text-[#ffb37f]', fillBg: 'rgba(255, 179, 127, 0.2)' },
+          e3: { id: 'e3', name: 'e3', color: 'text-[#ffe27f]', fillBg: 'rgba(255, 226, 127, 0.2)' },
+          e4: { id: 'e4', name: 'e4', color: 'text-[#dfff7f]', fillBg: 'rgba(223, 255, 127, 0.2)' },
+          e5: { id: 'e5', name: 'e5', color: 'text-[#9fff7f]', fillBg: 'rgba(159, 255, 127, 0.2)' },
+          e6: { id: 'e6', name: 'e6', color: 'text-[#7fffbf]', fillBg: 'rgba(127, 255, 191, 0.2)' },
+          e7: { id: 'e7', name: 'e7', color: 'text-[#7fffff]', fillBg: 'rgba(127, 255, 255, 0.2)' },
+          e8: { id: 'e8', name: 'e8', color: 'text-[#7fbfff]', fillBg: 'rgba(127, 191, 255, 0.2)' },
+          e9: { id: 'e9', name: 'e9', color: 'text-[#7f7fff]', fillBg: 'rgba(127, 127, 255, 0.2)' },
+          e10: { id: 'e10', name: 'e10', color: 'text-[#bf7fff]', fillBg: 'rgba(191, 127, 255, 0.2)' },
+          e11: { id: 'e11', name: 'e11', color: 'text-[#ff7fff]', fillBg: 'rgba(255, 127, 255, 0.2)' },
+          e12: { id: 'e12', name: 'e12', color: 'text-[#ff7fbf]', fillBg: 'rgba(255, 127, 191, 0.2)' },
+          euros: { id: 'euros', name: 'Euros', color: 'text-[#7fa9ff]', fillBg: 'rgba(0, 51, 153, 0.2)' }};
         // ==================== GAME STATE ====================
         // CRITICAL: _fresh flag prevents saveGame from overwriting a real save before loadGame completes.
         // ANY code that touches gameState before window.onload must NOT call saveGame.
@@ -1704,6 +1730,7 @@ if (typeof gameState.currencies.P !== 'number' || isNaN(gameState.currencies.P))
     { id: '+BU5', type: 'upgrade', code: '+B15', name: 'Plate V', coords: [2, -6], reqs: [[1, -3]], borderColor: 'green', desc: 'Unlock a plate on lower down of this one.', effects: [{ type: 'base_gain', currency: 'tokens', formula: (lvl) => 0.01 * lvl }], costCurrency: 'α', costFormula: (lvl) => 125, maxLevel: 1 },
     { id: '+BU6', type: 'upgrade', code: '+B16', name: 'Plate VI', coords: [2, -7], reqs: [[2, -6]], borderColor: 'green', desc: 'Unlock chips. grind!', effects: [{ type: 'base_gain', currency: 'chips', formula: (lvl) => 0.01 * lvl }], costCurrency: 'α', costFormula: (lvl) => 625, maxLevel: 1 },
     { id: '+BU7', type: 'upgrade', code: '+B17', name: 'Plate VII', coords: [1, -7], reqs: [[2, -6]], borderColor: 'green', desc: 'Unlock frogs. grind maybe', effects: [{ type: 'base_gain', currency: 'frogs', formula: (lvl) => 0.01 * lvl }], costCurrency: 'α', costFormula: (lvl) => 1e150, maxLevel: 1 },
+    { id: '+BU8', type: 'upgrade', code: '+B18', name: 'Plate VIII', coords: [0, -7], reqs: [[2, -6]], borderColor: 'green', desc: 'Unlock random. grind!', effects: [{ type: 'base_gain', currency: 'frogs', formula: (lvl) => 0.01 * lvl }], costCurrency: 'α', costFormula: (lvl) => 15000, maxLevel: 1 },
     
     { id: 'BC01', type: 'upgrade', code: 'BC01', name: 'Chips', coords: [3, -13], reqs: [[2, -7]], borderColor: 'green', desc: '+0.01 clips/s/lvl.', effects: [{ type: 'base_gain', currency: 'chips', formula: (lvl) => 0.01 * lvl }], costCurrency: 'chips', costFormula: (lvl) => 0.05*Math.pow(1.25,lvl), maxLevel: 499 },
     { id: 'BC02', type: 'upgrade', code: 'BC02', name: 'Grind', coords: [4, -13], reqs: [[3, -13]], borderColor: 'orange', desc: 'x1.25 clips/s/lvl.', effects: [{ type: 'currency_mult', currency: 'chips', formula: (lvl) => Math.pow(1.25, lvl) }], costCurrency: 'chips', costFormula: (lvl) => 1*Math.pow(1.3,lvl), maxLevel: 500 },
@@ -1714,6 +1741,8 @@ if (typeof gameState.currencies.P !== 'number' || isNaN(gameState.currencies.P))
     { id: 'BF04', type: 'upgrade', code: 'BF04', name: 'nex parabale or something', coords: [0, -13], reqs: [[1, -13]], borderColor: 'green', desc: 'x4.27 frogs, x10/lvl after.', effects: [{ type: 'currency_mult', currency: 'frogs', formula: (lvl) => 4.27*Math.pow(10,Math.max(lvl-1, 0)) }], costCurrency: 'frogs', costFormula: (lvl) => 42700*Math.pow(100,lvl), maxLevel: 25 },
     { id: 'BF05', type: 'upgrade', code: 'BF05', name: 'buy equipments?', coords: [0, -14], reqs: [[1, -13]], borderColor: 'green', desc: '+5%,^3 frog/s/lvl.', effects: [{ type: 'currency_mult', currency: 'frogs', formula: (lvl) => Math.pow(1+0.05*lvl,3) }], costCurrency: 'euros', costFormula: (lvl) => 10*Math.round((Math.pow((1 + Math.sqrt(5)) / 2, lvl+1) - Math.pow((1 - Math.sqrt(5)) / 2, lvl+1)) / Math.sqrt(5)), maxLevel: 25 },
     { id: 'BF06', type: 'upgrade', code: 'BF06', name: 'negaitve exponential frogdittion', coords: [2, -14], reqs: [[2, -13]], borderColor: 'green', desc: '+x1,^0.5 frog/s/lvl.', effects: [{ type: 'currency_mult', currency: 'frogs', formula: (lvl) => Math.pow(1+lvl,0.5) }], costCurrency: 'frogs', costFormula: (lvl) => 250000*Math.pow(1.25,Math.pow(lvl,0.7)), maxLevel: 24991 },
+    
+    { id: 'BR01', type: 'upgrade', code: 'BR01', name: 'random!', coords: [2, -18], reqs: [[0, -7]], borderColor: 'green', desc: 'start getting rng!', effects: [{ type: 'base_gain', currency: 'e1', formula: (lvl) => 10 * (Math.random() < 0.1) }, { type: 'base_gain', currency: 'e2', formula: (lvl) => 10 * (Math.random() < 0.01) }, { type: 'base_gain', currency: 'e3', formula: (lvl) => 10 * (Math.random() < 0.001) }, { type: 'base_gain', currency: 'e4', formula: (lvl) => 10 * (Math.random() < 0.0001) }, { type: 'base_gain', currency: 'e5', formula: (lvl) => 10 * (Math.random() < 0.00001) }, { type: 'base_gain', currency: 'e6', formula: (lvl) => 10 * (Math.random() < 0.000001) }, { type: 'base_gain', currency: 'e7', formula: (lvl) => 10 * (Math.random() < 0.0000001) }, { type: 'base_gain', currency: 'e8', formula: (lvl) => 10 * (Math.random() < 0.00000001) }, { type: 'base_gain', currency: 'e9', formula: (lvl) => 10 * (Math.random() < 0.000000001) }, { type: 'base_gain', currency: 'e10', formula: (lvl) => 10 * (Math.random() < 0.0000000001) }, { type: 'base_gain', currency: 'e11', formula: (lvl) => 10 * (Math.random() < 0.00000000001) }, { type: 'base_gain', currency: 'e12', formula: (lvl) => 10 * (Math.random() < 0.000000000001) }], costCurrency: 'e1', costFormula: (lvl) => 0, maxLevel: 1 },
     
     
     //tokens
