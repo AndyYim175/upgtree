@@ -551,8 +551,10 @@ const OFFLINE_EXCLUDED_CURRENCIES = new Set([
             { type: 'rect', coords: [32.5, 7.5], width: 800, height: 800, fillColor: '#ff7f7f', fillOpacity: 0.5, strokeColor: '#8B0000', strokeOpacity: 0.9, strokeWidth: 2, requirements: ['CB14'] },
             { type: 'text', coords: [37.5, 7.5], text: 'Green', alignment: 'Bottom-left', color: '#88e788', fontSize: 28, opacity: 0.9, requirements: ['CR25'] },
             { type: 'rect', coords: [37.5, 7.5], width: 800, height: 800, fillColor: '#88e788', fillOpacity: 0.5, strokeColor: '#88e788', strokeOpacity: 0.9, strokeWidth: 2, requirements: ['CR25'] },
-            { type: 'text', coords: [37.5, 2.5], text: 'Blue', alignment: 'Bottom-left', color: 'LightBlue', fontSize: 28, opacity: 0.9, requirements: ['CG18'] },
+            { type: 'text', coords: [37.5, 2.5], text: 'Blue', alignment: 'Bottom-left', color: '#00008B', fontSize: 28, opacity: 0.9, requirements: ['CG18'] },
             { type: 'rect', coords: [37.5, 2.5], width: 800, height: 800, fillColor: '#90d5ff', fillOpacity: 0.5, strokeColor: '#90d5ff', strokeOpacity: 0.9, strokeWidth: 2, requirements: ['CG18'] },
+            { type: 'text', coords: [-2.5, -17.5], text: 'Frog baseplate', alignment: 'Bottom-left', color: '#5E7318', fontSize: 28, opacity: 0.9, requirements: ['+BU7'] },
+            { type: 'rect', coords: [-2.5, -17.5], width: 800, height: 800, fillColor: '#5E7318', fillOpacity: 0.3, strokeColor: '#5E7318', strokeOpacity: 0.9, strokeWidth: 2, requirements: ['+BU7'] },
             //{ type: 'text', coords: [37.5, 2.5], text: 'Yellow', alignment: 'Bottom-left', color: 'Yellow', fontSize: 28, opacity: 0.9, requirements: ['....'] },
             
         ];
@@ -819,7 +821,9 @@ const OFFLINE_EXCLUDED_CURRENCIES = new Set([
         green: { id: 'green', name: 'Green', color: 'text-green-400', fillBg: 'rgba(24,138,65,0.2)' },
         antigreen: { id: 'antigreen', name: 'Antigreen', color: 'text-green-600', fillBg: 'rgba(34,197,94,0.2)' },
         purple: { id: 'purple', name: 'Purple', color: 'text-purple-400', fillBg: 'rgba(168,85,247,0.2)' },
-        white: { id: 'white', name: 'White', color: 'text-zinc-100', fillBg: 'rgba(255,255,255,0.2)' }};
+        white: { id: 'white', name: 'White', color: 'text-zinc-100', fillBg: 'rgba(255,255,255,0.2)' },
+        frogs: { id: 'frogs', name: 'Frogs', color: 'text-[#5e7318]', fillBg: 'rgba(94, 115, 24, 0.2)' },
+        euros: { id: 'euros', name: 'Euros', color: 'text-[#7fa9ff]', fillBg: 'rgba(0, 51, 153, 0.2)' }};
         // ==================== GAME STATE ====================
         // CRITICAL: _fresh flag prevents saveGame from overwriting a real save before loadGame completes.
         // ANY code that touches gameState before window.onload must NOT call saveGame.
@@ -1489,9 +1493,12 @@ if (typeof gameState.currencies.P !== 'number' || isNaN(gameState.currencies.P))
     { id: 'CBL10', type: 'upgrade', code: 'CBL10', name: '+dynamic higher give more', coords: [41, 5], reqs: [[40,5]], borderColor: 'orange', desc: '+blue gain based on filled percentage (higher better), up to x2 at full', effects: [], costCurrency: 'blue', costFormula: (lvl) => 50000, maxLevel: 1 },
     { id: 'CBL11', type: 'upgrade', code: 'CBL11', name: '++cap', coords: [39, 4], reqs: [[39,5]], borderColor: 'green', desc: 'the power cap +1000/lvl', effects: [], costCurrency: 'blue', costFormula: (lvl) => 10000*Math.pow(1.5,lvl), maxLevel: 9 },
     { id: 'CBL12', type: 'upgrade', code: 'CBL12', name: '+dynamic lower give more', coords: [40, 4], reqs: [[40,5]], borderColor: 'orange', desc: '+blue gain based on filled percentage (lower better), up to x2 at full (if you have both of these the 50% spot is the best mult combined)', effects: [], costCurrency: 'blue', costFormula: (lvl) => 50000, maxLevel: 1 },
-    { id: 'CBL13', type: 'upgrade', code: 'CBL13', name: '+fill boost', coords: [38, 4], reqs: [[39,4]], borderColor: 'green', desc: 'boost blue based on power fill %', effects: [{type: 'currency_mult', currency: 'blue', formula: (lvl) => 1+(getCurr('power')/(100+100*getLevel('CBL06')+1000*getLevel('CBL11')))}], costCurrency: 'blue', costFormula: (lvl) => 80000, maxLevel: 1 },
+    { id: 'CBL13', type: 'upgrade', code: 'CBL13', name: '+++fill boost', coords: [38, 4], reqs: [[39,4]], borderColor: 'green', desc: 'boost blue based on power fill %', effects: [{type: 'currency_mult', currency: 'blue', formula: (lvl) => 1+(getCurr('power')/(100+100*getLevel('CBL06')+1000*getLevel('CBL11')))}], costCurrency: 'blue', costFormula: (lvl) => 80000, maxLevel: 1 },
     { id: 'CBL14', type: 'upgrade', code: 'CBL14', name: '+++blue', coords: [41, 7], reqs: [[40,7]], borderColor: 'orange', desc: '+1x blue/lvl agan', effects: [{ type: 'currency_mult', currency: 'blue', formula: (lvl) => 1+lvl }], costCurrency: 'blue', costFormula: (lvl) => 1e5*Math.pow(1.3,lvl), maxLevel: 9 },
     { id: 'CBL15', type: 'upgrade', code: 'CBL15', name: '-decay', coords: [41, 6], reqs: [[40,6]], borderColor: 'orange', desc: '/1 power loss rate, +0.2 to divisor/lvl (does NOT effect blue generation)', effects: [], costCurrency: 'blue', costFormula: (lvl) => (500000)*Math.pow(1.2,Math.pow(lvl,0.8)), maxLevel: 45 },
+    { id: 'CBL16', type: 'upgrade', code: 'CBL16', name: '++++fill boost', coords: [38, 3], reqs: [[38,4]], borderColor: 'green', desc: 'boost blue based on power fill %, max amt + 0.2x per level after', effects: [{type: 'currency_mult', currency: 'blue', formula: (lvl) => 1+(1+0.2*Math.max(lvl-1,0))*(getCurr('power')/(100+100*getLevel('CBL06')+1000*getLevel('CBL11')))}], costCurrency: 'blue', costFormula: (lvl) => 1000000*Math.pow(1.2, Math.pow(lvl,0.8)), maxLevel: 91 },
+    { id: 'CBL17', type: 'upgrade', code: 'CBL17', name: '++++blue', coords: [42, 7], reqs: [[41,7]], borderColor: 'orange', desc: '+1x^2/9 blue/lvl again', effects: [{ type: 'currency_mult', currency: 'blue', formula: (lvl) => 1+Math.pow(lvl, 2)/9 }], costCurrency: 'blue', costFormula: (lvl) => 8e6*Math.pow(1.3,lvl), maxLevel: 9 },
+    { id: 'CBL18', type: 'upgrade', code: 'CBL18', name: '+++++blue', coords: [42, 6], reqs: [[42,7]], borderColor: 'orange', desc: '+1x^3/81 blue/lvl again', effects: [{ type: 'currency_mult', currency: 'blue', formula: (lvl) => 1+Math.pow(lvl, 3)/81 }], costCurrency: 'blue', costFormula: (lvl) => 8e6*Math.pow(1.3,lvl), maxLevel: 9 },
     
 
 
@@ -1696,9 +1703,18 @@ if (typeof gameState.currencies.P !== 'number' || isNaN(gameState.currencies.P))
     { id: '+BU4', type: 'upgrade', code: '+B14', name: 'Plate IV', coords: [-2, -6], reqs: [[1, -3]], borderColor: 'green', desc: 'Unlock cookie plate.', effects: [], costCurrency: 'α', costFormula: (lvl) => 1e125, maxLevel: 1 },
     { id: '+BU5', type: 'upgrade', code: '+B15', name: 'Plate V', coords: [2, -6], reqs: [[1, -3]], borderColor: 'green', desc: 'Unlock a plate on lower down of this one.', effects: [{ type: 'base_gain', currency: 'tokens', formula: (lvl) => 0.01 * lvl }], costCurrency: 'α', costFormula: (lvl) => 125, maxLevel: 1 },
     { id: '+BU6', type: 'upgrade', code: '+B16', name: 'Plate VI', coords: [2, -7], reqs: [[2, -6]], borderColor: 'green', desc: 'Unlock chips. grind!', effects: [{ type: 'base_gain', currency: 'chips', formula: (lvl) => 0.01 * lvl }], costCurrency: 'α', costFormula: (lvl) => 625, maxLevel: 1 },
+    { id: '+BU7', type: 'upgrade', code: '+B17', name: 'Plate VII', coords: [1, -7], reqs: [[2, -6]], borderColor: 'green', desc: 'Unlock frogs. grind maybe', effects: [{ type: 'base_gain', currency: 'frogs', formula: (lvl) => 0.01 * lvl }], costCurrency: 'α', costFormula: (lvl) => 1e150, maxLevel: 1 },
     
     { id: 'BC01', type: 'upgrade', code: 'BC01', name: 'Chips', coords: [3, -13], reqs: [[2, -7]], borderColor: 'green', desc: '+0.01 clips/s/lvl.', effects: [{ type: 'base_gain', currency: 'chips', formula: (lvl) => 0.01 * lvl }], costCurrency: 'chips', costFormula: (lvl) => 0.05*Math.pow(1.25,lvl), maxLevel: 499 },
     { id: 'BC02', type: 'upgrade', code: 'BC02', name: 'Grind', coords: [4, -13], reqs: [[3, -13]], borderColor: 'orange', desc: 'x1.25 clips/s/lvl.', effects: [{ type: 'currency_mult', currency: 'chips', formula: (lvl) => Math.pow(1.25, lvl) }], costCurrency: 'chips', costFormula: (lvl) => 1*Math.pow(1.3,lvl), maxLevel: 500 },
+    
+    { id: 'BF01', type: 'upgrade', code: 'BF01', name: 'exponential frogdittion', coords: [2, -13], reqs: [[1, -7]], borderColor: 'green', desc: '+x1,^2 frog/s/lvl.', effects: [{ type: 'currency_mult', currency: 'frogs', formula: (lvl) => Math.pow(1+lvl,2) }], costCurrency: 'frogs', costFormula: (lvl) => 0.05*Math.pow(1.8,Math.pow(lvl,0.2))*Math.pow(1.4,Math.pow(lvl,0.8)), maxLevel: 499 },
+    { id: 'BF02', type: 'upgrade', code: 'BF02', name: 'febonacci multiplication', coords: [1, -13], reqs: [[2, -13]], borderColor: 'green', desc: 'febonaccily more frogs.', effects: [{ type: 'currency_mult', currency: 'frogs', formula: (lvl) => 1+0.01*Math.round((Math.pow((1 + Math.sqrt(5)) / 2, lvl+1) - Math.pow((1 - Math.sqrt(5)) / 2, lvl+1)) / Math.sqrt(5)) }], costCurrency: 'frogs', costFormula: (lvl) => 32+Math.pow(1.25+0.08*lvl, lvl), maxLevel: 499 },
+    { id: 'BF03', type: 'reset',   code: 'BF03', name: 'sell frogs!', coords: [1, -14], reqs: [[1,-13]], desc: 'get euros', targetCurrency: 'euros', resetCurrencies: ['frogs'], resettedCoords: [], calculateGain: (lvl, getCurr, getLvl) => { return 0.001*getCurr('frogs') } },
+    { id: 'BF04', type: 'upgrade', code: 'BF04', name: 'nex parabale or something', coords: [0, -13], reqs: [[1, -13]], borderColor: 'green', desc: 'x4.27 frogs, x10/lvl after.', effects: [{ type: 'currency_mult', currency: 'frogs', formula: (lvl) => 4.27*Math.pow(10,Math.max(lvl-1, 0)) }], costCurrency: 'frogs', costFormula: (lvl) => 42700*Math.pow(100,lvl), maxLevel: 25 },
+    { id: 'BF05', type: 'upgrade', code: 'BF05', name: 'buy equipments?', coords: [0, -14], reqs: [[1, -13]], borderColor: 'green', desc: '+5%,^3 frog/s/lvl.', effects: [{ type: 'currency_mult', currency: 'frogs', formula: (lvl) => Math.pow(1+0.05*lvl,3) }], costCurrency: 'euros', costFormula: (lvl) => 10*Math.round((Math.pow((1 + Math.sqrt(5)) / 2, lvl+1) - Math.pow((1 - Math.sqrt(5)) / 2, lvl+1)) / Math.sqrt(5)), maxLevel: 25 },
+    { id: 'BF06', type: 'upgrade', code: 'BF06', name: 'negaitve exponential frogdittion', coords: [2, -14], reqs: [[2, -13]], borderColor: 'green', desc: '+x1,^0.5 frog/s/lvl.', effects: [{ type: 'currency_mult', currency: 'frogs', formula: (lvl) => Math.pow(1+lvl,0.5) }], costCurrency: 'frogs', costFormula: (lvl) => 250000*Math.pow(1.25,Math.pow(lvl,0.7)), maxLevel: 24991 },
+    
     
     //tokens
     { id: 'BT01', type: 'upgrade', code: 'BT01', name: 'Token', coords: [3, -8], reqs: [[2, -6]], borderColor: 'green', desc: '+0.01 token/s/lvl.', effects: [{ type: 'base_gain', currency: 'tokens', formula: (lvl) => 0.01 * lvl }], costCurrency: 'tokens', costFormula: (lvl) => 0.001*Math.floor(10*Math.pow(lvl+1,2)*Math.pow(1.025,lvl))*Math.pow(0.1,getLevel('BT06')), maxLevel: 499 },
