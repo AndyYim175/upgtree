@@ -569,6 +569,8 @@ const OFFLINE_EXCLUDED_CURRENCIES = new Set([
             { type: 'rect', coords: [-2.5, -17.5], width: 800, height: 800, fillColor: '#5E7318', fillOpacity: 0.3, strokeColor: '#5E7318', strokeOpacity: 0.9, strokeWidth: 2, requirements: ['+BU7'] },
             { type: 'text', coords: [-2.5, -22.5], text: 'Random baseplate', alignment: 'Bottom-left', color: '#ffffc5', fontSize: 28, opacity: 0.9, requirements: ['+BU8'] },
             { type: 'rect', coords: [-2.5, -22.5], width: 800, height: 800, fillColor: '#ffffc5', fillOpacity: 0.3, strokeColor: '#ffffc5', strokeOpacity: 0.9, strokeWidth: 2, requirements: ['+BU8'] },
+            { type: 'text', coords: [2.5, -22.5], text: 'Data baseplate I', alignment: 'Bottom-left', color: '#ff7f7f', fontSize: 28, opacity: 0.9, requirements: ['+BU9'] },
+            { type: 'rect', coords: [2.5, -22.5], width: 800, height: 800, fillColor: '#ff7f7f', fillOpacity: 0.3, strokeColor: '#ff7f7f', strokeOpacity: 0.9, strokeWidth: 2, requirements: ['+BU9'] },
             //{ type: 'text', coords: [37.5, 2.5], text: 'Yellow', alignment: 'Bottom-left', color: 'Yellow', fontSize: 28, opacity: 0.9, requirements: ['....'] },
             
         ];
@@ -849,8 +851,16 @@ const OFFLINE_EXCLUDED_CURRENCIES = new Set([
           e10: { id: 'e10', name: 'e10', color: 'text-[#bf7fff]', fillBg: 'rgba(191, 127, 255, 0.2)' },
           e11: { id: 'e11', name: 'e11', color: 'text-[#ff7fff]', fillBg: 'rgba(255, 127, 255, 0.2)' },
           e12: { id: 'e12', name: 'e12', color: 'text-[#ff7fbf]', fillBg: 'rgba(255, 127, 191, 0.2)' },
-          euros: { id: 'euros', name: 'Euros', color: 'text-[#7fa9ff]', fillBg: 'rgba(0, 51, 153, 0.2)' }};
-        // ==================== GAME STATE ====================
+          euros: { id: 'euros', name: 'Euros', color: 'text-[#7fa9ff]', fillBg: 'rgba(0, 51, 153, 0.2)' },
+        bits: { id: 'bits', name: 'bits', color: 'text-[#dfff7f]', fillBg: 'rgba(223, 255, 127, 0.2)' },
+        bools: { id: 'bools', name: 'bools', color: 'text-[#ff7f7f]', fillBg: 'rgba(255, 127, 127, 0.2)' },
+chars: { id: 'chars', name: 'chars', color: 'text-[#ffe27f]', fillBg: 'rgba(255, 226, 127, 0.2)' },
+shorts: { id: 'shorts', name: 'shorts', color: 'text-[#9fff7f]', fillBg: 'rgba(159, 255, 127, 0.2)' },
+ints: { id: 'ints', name: 'ints', color: 'text-[#7fffff]', fillBg: 'rgba(127, 255, 255, 0.2)' },
+longs: { id: 'longs', name: 'longs', color: 'text-[#7f7fff]', fillBg: 'rgba(127, 127, 255, 0.2)' },
+long_longs: { id: 'long_longs', name: 'long longs', color: 'text-[#ff7fff]', fillBg: 'rgba(255, 127, 255, 0.2)' }};
+
+// ==================== GAME STATE ====================
         // CRITICAL: _fresh flag prevents saveGame from overwriting a real save before loadGame completes.
         // ANY code that touches gameState before window.onload must NOT call saveGame.
         // This _fresh flag is removed by loadGame ONLY after successful load.
@@ -1456,11 +1466,11 @@ if (typeof gameState.currencies.P !== 'number' || isNaN(gameState.currencies.P))
     { id: 'CB11', type: 'upgrade', code: 'CB11', name: 'log means safely stackable!', coords: [33, 5], reqs: [[33,4]], borderColor: 'green', desc: 'run it again.', effects: [{ type: 'currency_mult', currency: 'black', formula: (lvl) => Math.pow(Math.log10(lvl+10),3) }], costCurrency: 'black', costFormula: (lvl) => 2e5*Math.pow(1.06,Math.pow(lvl,0.7)), maxLevel: 1000 },
     { id: 'CB12', type: 'upgrade', code: 'CB12', name: 'stack me', coords: [34, 5], reqs: [[35,5]], borderColor: 'orange', desc: 'multiply black based on self again. the formula is log!', effects: [{ type: 'currency_mult', currency: 'black', formula: (lvl) => 1+0.5*Math.pow(0.2*Math.log((getCurr('black')/1000)+1)+1,1.5) }], costCurrency: 'black', costFormula: (lvl) => 2e6, maxLevel: 1 },
     { id: 'CB13', type: 'upgrade', code: 'CB13', name: 'is it all dark?', coords: [34, 6], reqs: [[34,5]], borderColor: 'green', desc: 'maybe not. unlock new things. [wip]', effects: [], costCurrency: 'black', costFormula: (lvl) => 2e7, maxLevel: 1 },
-    { id: 'CB14', type: 'upgrade', code: 'CB14', name: 'path I', coords: [34, 7], reqs: [[34,6]], borderColor: 'green', desc: 'unlock red [wip]', effects: [], costCurrency: 'black', costFormula: (lvl) => 1e8, maxLevel: 1 },
+    { id: 'CB14', type: 'upgrade', code: 'CB14', name: 'start of ACTUAL colours', coords: [34, 7], reqs: [[34,6]], borderColor: 'green', desc: 'unlock red [wip]', effects: [], costCurrency: 'black', costFormula: (lvl) => 1e8, maxLevel: 1 },
     { id: 'CR01', type: 'upgrade', code: 'CR01', name: 'red', coords: [33, 8], reqs: [[34,7]], borderColor: 'green', desc: 'generate red.', effects: [{ type: 'base_gain', currency: 'red', formula: (lvl) => 1 }], costCurrency: 'red', costFormula: (lvl) => 0, maxLevel: 1 },
     { id: 'CR02', type: 'upgrade', code: 'CR02', name: 'more', coords: [33, 9], reqs: [[33,8]], borderColor: 'green', desc: '+25% red/lvl.', effects: [{ type: 'currency_mult', currency: 'red', formula: (lvl) => 1+0.25*lvl }], costCurrency: 'red', costFormula: (lvl) => 5*(1+0.4*lvl)*Math.pow(1.1,Math.pow(lvl,0.8)), maxLevel: 80 },
     { id: 'CR03', type: 'upgrade', code: 'CR03', name: 'even more', coords: [34, 9], reqs: [[33,9]], borderColor: 'green', desc: '+8% red/lvl ^3.', effects: [{ type: 'currency_mult', currency: 'red', formula: (lvl) => Math.pow(1+0.08*lvl, 3) }], costCurrency: 'red', costFormula: (lvl) => 25*(1+0.5*lvl)*Math.pow(1.25,Math.pow(lvl,0.9)), maxLevel: 100 },
-    { id: 'CR04', type: 'upgrade', code: 'CR04', name: 'something new', coords: [34, 8], reqs: [[34,9]], borderColor: 'green', desc: 'Unlock something.', effects: [], costCurrency: 'red', costFormula: (lvl) => 125, maxLevel: 1 },
+    { id: 'CR04', type: 'upgrade', code: 'CR04', name: 'this isnt red (it is?)', coords: [34, 8], reqs: [[34,9]], borderColor: 'green', desc: 'Unlock something.', effects: [], costCurrency: 'red', costFormula: (lvl) => 125, maxLevel: 1 },
     { id: 'CR05', type: 'reset',   code: 'CR05', name: 'Red -> crimson', coords: [35, 8], reqs: [[34,8]], desc: 'Reset all red for crimson. [req:100]', targetCurrency: 'crimson', resetCurrencies: ['red'], resettedCoords: [], calculateGain: (lvl, getCurr, getLvl) => { const r = getCurr('red'); if (r < 100) return 0; return Math.pow(r / 100, 0.28); } },
     { id: 'CR06', type: 'upgrade', code: 'CR06', name: 'something nice', coords: [35, 9], reqs: [[34,8]], borderColor: 'orange', desc: 'Boost red based on crimson.', effects: [{ type: 'currency_mult', currency: 'red', formula: (lvl) => Math.min(1+Math.pow(getCurr('crimson'),0.3),100*Math.pow(getCurr('crimson')/50000+1,0.15)) }], costCurrency: 'crimson', costFormula: (lvl) => 0.25, maxLevel: 1 },
     { id: 'CR07', type: 'upgrade', code: 'CR07', name: 'the greatest upgrade in history', coords: [35, 10], reqs: [[35,9]], borderColor: 'orange', desc: 'haha cr07 okok. more red based on 1 -> 3 -> 6 -> 10 *0.01', effects: [{ type: 'currency_mult', currency: 'red', formula: (lvl) => 1+0.01*(lvl*(lvl+1)/2) }], costCurrency: 'crimson', costFormula: (lvl) => 1+0.1*(lvl+1)*(lvl+2)/2, maxLevel: 25 },
@@ -1507,7 +1517,7 @@ if (typeof gameState.currencies.P !== 'number' || isNaN(gameState.currencies.P))
     { id: 'CG16', type: 'upgrade', code: 'CG16', name: 'happiness', coords: [40, 12], reqs: [[41,12]], borderColor: 'green', desc: 'x10 green per level.', effects: [{ type: 'currency_mult', currency: 'green', formula: (lvl) => Math.pow(10,lvl) }], costCurrency: 'green', costFormula: (lvl) => 1e26*Math.pow(5e8*Math.pow(12,lvl),lvl), maxLevel: 2 },
     { id: 'CG17', type: 'upgrade', code: 'CG17', name: 'touch grass', coords: [39, 12], reqs: [[40,12]], borderColor: 'green', desc: 'one more push... grass boost grass.', effects: [{ type: 'currency_mult', currency: 'green', formula: (lvl,getLevel, getCurr) => 1+96*Math.pow(getCurr('green')/1e37,0.1) }], costCurrency: 'green', costFormula: (lvl) => 2e41, maxLevel: 1 },
     { id: 'CG18', type: 'upgrade', code: 'CG18', name: 'something new :D', coords: [38, 12], reqs: [[39,12]], borderColor: 'green', desc: 'Unlock blue.', effects: [], costCurrency: 'green', costFormula: (lvl) => 1e62, maxLevel: 1 },
-    { id: 'CBL01', type: 'upgrade', code: 'CBL01', name: 'blue', coords: [38, 7], reqs: [[38,12]], borderColor: 'green', desc: 'unlock a blue generator! [capped at 100 power]', effects: [{ type: 'base_gain', currency: 'blue', formula: (lvl, getLevel, getCurr) => (1+getLevel('CBL04'))*(1+getLevel('CBL09'))*(getCurr('power')>0) },{ type: 'base_gain', currency: 'power', formula: (lvl) => -Math.min((getCurr('power')>0)*(1+getLevel('CBL09'))/(1+0.2*getLevel('CBL15'))*(1+getLevel('CBL04')), 10*getCurr('power')) }], costCurrency: 'blue', costFormula: (lvl) => 0, maxLevel: 1 },
+    { id: 'CBL01', type: 'upgrade', code: 'CBL01', name: 'manual generator', coords: [38, 7], reqs: [[38,12]], borderColor: 'green', desc: 'unlock a blue generator! [capped at 100 power]', effects: [{ type: 'base_gain', currency: 'blue', formula: (lvl, getLevel, getCurr) => (1+getLevel('CBL04'))*(1+getLevel('CBL09'))*(getCurr('power')>0) },{ type: 'base_gain', currency: 'power', formula: (lvl) => -Math.min((getCurr('power')>0)*(1+getLevel('CBL09'))/(1+0.2*getLevel('CBL15'))*(1+getLevel('CBL04')), 10*getCurr('power')) }], costCurrency: 'blue', costFormula: (lvl) => 0, maxLevel: 1 },
     { id: 'CBL02', type: 'reset',   code: 'CBL02', name: 'get power!', coords: [38, 6], reqs: [[38,7]], desc: 'get blue', targetCurrency: 'power', resetCurrencies: [], resettedCoords: [], calculateGain: (lvl, getCurr, getLvl) => { return Math.min(1*(1+0.2*getLevel('CBL05'))*(1+0.2*getLevel('CBL08'))*(1+(getCurr('power')/(100+100*getLevel('CBL06')+1000*getLevel('CBL11')))*getLevel('CBL10'))*(1+(1-(getCurr('power')/(100+100*getLevel('CBL06')+1000*getLevel('CBL11'))))*getLevel('CBL12')), (100+100*getLevel('CBL06')+1000*getLevel('CBL11'))-getCurr('power')) } },
     { id: 'CBL03', type: 'upgrade', code: 'CBL03', name: '+blue', coords: [39, 7], reqs: [[38,7]], borderColor: 'orange', desc: '+1x blue/lvl', effects: [{ type: 'currency_mult', currency: 'blue', formula: (lvl) => 1+lvl }], costCurrency: 'blue', costFormula: (lvl) => 5*Math.pow(1.3,lvl), maxLevel: 9 },
     { id: 'CBL04', type: 'upgrade', code: 'CBL04', name: '+rate', coords: [39, 6], reqs: [[39,7]], borderColor: 'orange', desc: '+1x blue conv rate/lvl', effects: [], costCurrency: 'blue', costFormula: (lvl) => (50)*Math.pow(1.2,lvl), maxLevel: 9 },
@@ -1731,6 +1741,7 @@ if (typeof gameState.currencies.P !== 'number' || isNaN(gameState.currencies.P))
     { id: '+BU6', type: 'upgrade', code: '+B16', name: 'Plate VI', coords: [2, -7], reqs: [[2, -6]], borderColor: 'green', desc: 'Unlock chips. grind!', effects: [{ type: 'base_gain', currency: 'chips', formula: (lvl) => 0.01 * lvl }], costCurrency: 'α', costFormula: (lvl) => 625, maxLevel: 1 },
     { id: '+BU7', type: 'upgrade', code: '+B17', name: 'Plate VII', coords: [1, -7], reqs: [[2, -6]], borderColor: 'green', desc: 'Unlock frogs. grind maybe', effects: [{ type: 'base_gain', currency: 'frogs', formula: (lvl) => 0.01 * lvl }], costCurrency: 'α', costFormula: (lvl) => 1e150, maxLevel: 1 },
     { id: '+BU8', type: 'upgrade', code: '+B18', name: 'Plate VIII', coords: [0, -7], reqs: [[2, -6]], borderColor: 'green', desc: 'Unlock random. grind!', effects: [{ type: 'base_gain', currency: 'frogs', formula: (lvl) => 0.01 * lvl }], costCurrency: 'α', costFormula: (lvl) => 15000, maxLevel: 1 },
+    { id: '+BU9', type: 'upgrade', code: '+B19', name: 'Plate IX', coords: [-1, -7], reqs: [[2, -6]], borderColor: 'green', desc: 'Unlock bits, a mega baseplate', effects: [{ type: 'base_gain', currency: 'bits', formula: (lvl) => 1 * lvl }], costCurrency: 'α', costFormula: (lvl) => 25000, maxLevel: 1 },
     
     { id: 'BC01', type: 'upgrade', code: 'BC01', name: 'Chips', coords: [3, -13], reqs: [[2, -7]], borderColor: 'green', desc: '+0.01 clips/s/lvl.', effects: [{ type: 'base_gain', currency: 'chips', formula: (lvl) => 0.01 * lvl }], costCurrency: 'chips', costFormula: (lvl) => 0.05*Math.pow(1.25,lvl), maxLevel: 499 },
     { id: 'BC02', type: 'upgrade', code: 'BC02', name: 'Grind', coords: [4, -13], reqs: [[3, -13]], borderColor: 'orange', desc: 'x1.25 clips/s/lvl.', effects: [{ type: 'currency_mult', currency: 'chips', formula: (lvl) => Math.pow(1.25, lvl) }], costCurrency: 'chips', costFormula: (lvl) => 1*Math.pow(1.3,lvl), maxLevel: 500 },
@@ -1743,6 +1754,12 @@ if (typeof gameState.currencies.P !== 'number' || isNaN(gameState.currencies.P))
     { id: 'BF06', type: 'upgrade', code: 'BF06', name: 'negaitve exponential frogdittion', coords: [2, -14], reqs: [[2, -13]], borderColor: 'green', desc: '+x1,^0.5 frog/s/lvl.', effects: [{ type: 'currency_mult', currency: 'frogs', formula: (lvl) => Math.pow(1+lvl,0.5) }], costCurrency: 'frogs', costFormula: (lvl) => 250000*Math.pow(1.25,Math.pow(lvl,0.7)), maxLevel: 24991 },
     
     { id: 'BR01', type: 'upgrade', code: 'BR01', name: 'random!', coords: [2, -18], reqs: [[0, -7]], borderColor: 'green', desc: 'start getting rng!', effects: [{ type: 'base_gain', currency: 'e1', formula: (lvl) => 10 * (Math.random() < 0.1) }, { type: 'base_gain', currency: 'e2', formula: (lvl) => 10 * (Math.random() < 0.01) }, { type: 'base_gain', currency: 'e3', formula: (lvl) => 10 * (Math.random() < 0.001) }, { type: 'base_gain', currency: 'e4', formula: (lvl) => 10 * (Math.random() < 0.0001) }, { type: 'base_gain', currency: 'e5', formula: (lvl) => 10 * (Math.random() < 0.00001) }, { type: 'base_gain', currency: 'e6', formula: (lvl) => 10 * (Math.random() < 0.000001) }, { type: 'base_gain', currency: 'e7', formula: (lvl) => 10 * (Math.random() < 0.0000001) }, { type: 'base_gain', currency: 'e8', formula: (lvl) => 10 * (Math.random() < 0.00000001) }, { type: 'base_gain', currency: 'e9', formula: (lvl) => 10 * (Math.random() < 0.000000001) }, { type: 'base_gain', currency: 'e10', formula: (lvl) => 10 * (Math.random() < 0.0000000001) }, { type: 'base_gain', currency: 'e11', formula: (lvl) => 10 * (Math.random() < 0.00000000001) }, { type: 'base_gain', currency: 'e12', formula: (lvl) => 10 * (Math.random() < 0.000000000001) }], costCurrency: 'e1', costFormula: (lvl) => 0, maxLevel: 1 },
+    
+    { id: 'BD01', type: 'upgrade', code: 'BD01', name: 'inflation? already?', coords: [3, -18], reqs: [[1, -7]], borderColor: 'orange', desc: '+this baseplate is a little replication of my game in my (real-life) calculator! get bits equal to sqrt of (it+1).', effects: [{ type: 'base_gain', currency: 'bits', formula: (lvl, getLevel, getCurr) => Math.pow(getCurr('bits')+1,0.5)*(1+getCurr('bools'))*(1+getCurr('chars')) }], costCurrency: 'bits', costFormula: (lvl) => 0, maxLevel: 1 },
+    { id: 'BD02', type: 'reset',   code: 'BD02', name: 'bools', coords: [4, -18], reqs: [[3,-18]], desc: 'get bools, reset bits, boost bits', targetCurrency: 'bools', resetCurrencies: ['bits'], resettedCoords: [], calculateGain: (lvl, getCurr, getLvl) => { return Math.pow(1+0.5*Math.log10(getCurr('bits')/1e4+10),1.5)*Math.pow(getCurr('bits'),0.38)/15 } },
+    { id: 'BD03', type: 'upgrade', code: 'BD03', name: 'a third one', coords: [3, -19], reqs: [[3, -18]], borderColor: 'orange', desc: 'reset layer+', effects: [], costCurrency: 'bits', costFormula: (lvl) => 5e6, maxLevel: 1 },
+    { id: 'BD04', type: 'reset',   code: 'BD04', name: 'chars', coords: [5, -18], reqs: [[3,-19]], desc: 'get chars, reset bits/bools, boost bits [best with 100M bits]', targetCurrency: 'chars', resetCurrencies: ['bits','bools'], resettedCoords: [], calculateGain: (lvl, getCurr, getLvl) => { return (1-(1/Math.pow(Math.log10(10+getCurr('bits')/1e8),2)))*Math.pow(1+0.25*Math.log10(getCurr('bits')/1e11+10),1.5)*Math.pow(getCurr('bits'),0.08)*2 } },
+    { id: 'BD05', type: 'upgrade', code: 'BD05', name: 'exclusive', coords: [4, -19], reqs: [[3, -19]], borderColor: 'orange', desc: '+0.01% bools on bool reset/s per level. obvoisly cant be done on my calculator, its web exclusive!', effects: [{ type: 'base_gain', currency: 'bools', formula: (lvl, getLevel, getCurr) => 0.0001*getResetGain('bools')}], costCurrency: 'bits', costFormula: (lvl) => 1e9*Math.pow(lvl,1+0.5*Math.floor(Math.log10(Math.max(lvl,1)))), maxLevel: 10000 },
     
     
     //tokens
@@ -3045,10 +3062,15 @@ function renderCurrencyBar() {
             }
             list.innerHTML = html || '<div class="text-[9px] text-zinc-600 italic px-1">No currencies</div>';
             lucide.createIcons();
-            
-            // Add reorder listeners
+            // Bind listeners directly — recreates on every renderCurrencyToggles call
+            list.querySelectorAll('.currency-toggle-btn').forEach(btn => {
+                btn.onclick = (e) => {
+                    e.stopPropagation();
+                    toggleCurrencyVisibility(btn.dataset.currency);
+                };
+            });
             list.querySelectorAll('.reorder-btn').forEach(btn => {
-                btn.addEventListener('click', (e) => {
+                btn.onclick = (e) => {
                     e.stopPropagation();
                     const key = btn.dataset.currency;
                     const dir = parseInt(btn.dataset.dir);
@@ -3056,7 +3078,6 @@ function renderCurrencyBar() {
                     if (idx === -1) return;
                     const newIdx = idx + dir;
                     if (newIdx < 0 || newIdx >= gameState.currencyOrder.length) return;
-                    // Swap
                     const order = gameState.currencyOrder;
                     [order[idx], order[newIdx]] = [order[newIdx], order[idx]];
                     _lastRenderedBarOrder = '';
@@ -3064,7 +3085,7 @@ function renderCurrencyBar() {
                     renderCurrencyToggles();
                     playSound('buy');
                     _lastBarValues = {};
-                });
+                };
             });
         }
 
@@ -3072,25 +3093,25 @@ function renderCurrencyBar() {
             if (!gameState.hiddenCurrencies) gameState.hiddenCurrencies = [];
             if (!gameState.userHiddenCurrencies) gameState.userHiddenCurrencies = [];
             const idx = gameState.hiddenCurrencies.indexOf(key);
+            const def = CURRENCIES[key];
+            const name = def ? def.name : key;
             if (idx >= 0) {
                 // Un-hide: remove from both lists
                 gameState.hiddenCurrencies.splice(idx, 1);
                 const uid = gameState.userHiddenCurrencies.indexOf(key);
                 if (uid >= 0) gameState.userHiddenCurrencies.splice(uid, 1);
+                showToast(`👁️ ${name} is now visible`);
             } else { 
                 gameState.hiddenCurrencies.push(key);
                 if (!gameState.userHiddenCurrencies.includes(key)) gameState.userHiddenCurrencies.push(key);
+                showToast(`🙈 ${name} hidden`);
             }
             renderCurrencyBar();
             renderCurrencyToggles();
             playSound('buy');
         }
 
-        document.getElementById('currency-toggles-list').addEventListener('click', e => {
-            const btn = e.target.closest('.currency-toggle-btn');
-            if (btn) { e.stopPropagation();
-                toggleCurrencyVisibility(btn.dataset.currency); }
-        });
+        // Currency toggle & reorder listeners are now bound inline in renderCurrencyToggles
         // ==================== MODALS ====================
         let activeResetNode = null;
 
