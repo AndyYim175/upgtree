@@ -196,6 +196,24 @@
             z-index: 10;
             pointer-events: auto;
         }
+        /* Challenge overlay styling — plain text, no box/background */
+        #challenge-overlay {
+            line-height: 1.4;
+            text-shadow: 0 0 4px rgba(0,0,0,0.5);
+        }
+        .challenge-goal-line {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+        .challenge-goal-line .goal-label {
+            color: #a1a1aa;
+            min-width: 14px;
+        }
+        .challenge-goal-completed {
+            text-decoration: line-through;
+            opacity: 0.5;
+        }
         /* Currency bar items: visible but don't block canvas interactions */
         #currency-bar > * {
             pointer-events: none !important;
@@ -207,6 +225,12 @@
     <!-- News ticker -->
     <div id="news-ticker">
         <div id="news-track" class="relative w-full h-full"></div>
+    </div>
+    <!-- Challenge overlay (top-right, below news ticker) — plain text, no background/pointer-events -->
+    <div id="challenge-overlay" class="hidden fixed top-[22px] right-2 z-30 flex flex-col gap-0.5 text-[10px] font-mono pointer-events-none select-none" style="max-width: 280px;">
+        <div id="challenge-title" class="text-emerald-400 font-bold text-[11px]"></div>
+        <div id="challenge-goals" class="flex flex-col gap-0"></div>
+        <div id="challenge-effects" class="flex flex-col gap-0 mt-1 text-zinc-400 pt-1"></div>
     </div>
     <main id="viewport" class="relative flex-1 w-full h-full overflow-hidden cursor-grab active:cursor-grabbing grid-bg" style="margin-top: 20px;">
         <canvas id="canvas-layer"></canvas>
@@ -571,7 +595,10 @@ const OFFLINE_EXCLUDED_CURRENCIES = new Set([
             { type: 'rect', coords: [-2.5, -22.5], width: 800, height: 800, fillColor: '#ffffc5', fillOpacity: 0.3, strokeColor: '#ffffc5', strokeOpacity: 0.9, strokeWidth: 2, requirements: ['+BU8'] },
             { type: 'text', coords: [2.5, -22.5], text: 'Data baseplate I', alignment: 'Bottom-left', color: '#ff7f7f', fontSize: 28, opacity: 0.9, requirements: ['+BU9'] },
             { type: 'rect', coords: [2.5, -22.5], width: 800, height: 800, fillColor: '#ff7f7f', fillOpacity: 0.3, strokeColor: '#ff7f7f', strokeOpacity: 0.9, strokeWidth: 2, requirements: ['+BU9'] },
-            //{ type: 'text', coords: [37.5, 2.5], text: 'Yellow', alignment: 'Bottom-left', color: 'Yellow', fontSize: 28, opacity: 0.9, requirements: ['....'] },
+            { type: 'text', coords: [42.5, 2.5], text: 'Grey baseplate', alignment: 'Bottom-left', color: '#808080', fontSize: 28, opacity: 0.9, requirements: ['CBL25'] },
+            { type: 'rect', coords: [42.5, 2.5], width: 800, height: 800, fillColor: '#D3D3D3', fillOpacity: 0.5, strokeColor: '#D3D3D3', strokeOpacity: 0.9, strokeWidth: 2, requirements: ['CBL25'] },
+            { type: 'text', coords: [42.5, 7.5], text: 'Cyan baseplate', alignment: 'Bottom-left', color: '#ACFFFC', fontSize: 28, opacity: 0.9, requirements: ['CBL25'] },
+            { type: 'rect', coords: [42.5, 7.5], width: 800, height: 800, fillColor: '#ACFFFC', fillOpacity: 0.5, strokeColor: '#ACFFFC', strokeOpacity: 0.9, strokeWidth: 2, requirements: ['CBL25'] },
             
         ];
         // ==================== AUDIO ENGINE ====================
@@ -767,7 +794,274 @@ const OFFLINE_EXCLUDED_CURRENCIES = new Set([
             return parseFloat(Number(num).toPrecision(3)).toString();
         }
 
-        // ==================== GAME CONSTANTS ====================
+        // ==================== CHALLENGE SYSTEM ====================
+// State stored in gameState:
+//   gameState.challengeCompletions = { challengeId: number }
+//   gameState.activeChallenge = challengeId | null
+
+// Index challenge reward effects so they apply to gain rates
+function indexChallengeRewardEffects() {
+    const challNodes = TREE_NODES.filter(n => n.type === 'challenge');
+    for (const node of challNodes) {
+        const completions = getChallengeCompletions(node.id);
+        if (completions <= 0) continue;
+        // Process persistent effects from node.effects
+        if (node.effects) {
+            for (const eff of node.effects) {
+                const target = eff.currency || eff.targetCurrency;
+                if (!target) continue;
+                if (['base_gain', 'base_gain_raw', 'currency_mult', 'reset_gain_mult', 'reset_gain_add'].includes(eff.type)) {
+                    if (!CURRENCY_EFFECT_INDEX[target]) CURRENCY_EFFECT_INDEX[target] = [];
+                    const exists = CURRENCY_EFFECT_INDEX[target].some(e => e.nodeId === node.id && e.type === eff.type && e.target === target);
+                    if (!exists) {
+                        CURRENCY_EFFECT_INDEX[target].push({
+                            nodeId: node.id,
+                            type: eff.type,
+                            target: target,
+                            formula: (lvl, gl, gc) => {
+                                const completionLvl = getChallengeCompletions(node.id);
+                                return eff.formula ? eff.formula(completionLvl, gl, gc) : 1;
+                            }
+                        });
+                    }
+                }
+            }
+        }
+        // Process reward effects from node.rewards — these grant permanent multiplier/rate bonuses per completion
+        if (node.rewards) {
+            for (const rew of node.rewards) {
+                const target = rew.currency || rew.targetCurrency;
+                if (!target) continue;
+                if (['currency_mult', 'reset_gain_mult', 'reset_gain_add', 'base_gain', 'base_gain_raw'].includes(rew.type)) {
+                    if (!CURRENCY_EFFECT_INDEX[target]) CURRENCY_EFFECT_INDEX[target] = [];
+                    const exists = CURRENCY_EFFECT_INDEX[target].some(e => e.nodeId === node.id + '_reward' && e.type === rew.type && e.target === target);
+                    if (!exists) {
+                        CURRENCY_EFFECT_INDEX[target].push({
+                            nodeId: node.id + '_reward',
+                            type: rew.type,
+                            target: target,
+                            formula: (lvl, gl, gc) => {
+                                const completionLvl = getChallengeCompletions(node.id);
+                                return rew.formula ? rew.formula(completionLvl, gl, gc) : 1;
+                            }
+                        });
+                    }
+                }
+            }
+        }
+    }
+}
+
+function initChallengeState() {
+    if (!gameState.challengeCompletions || typeof gameState.challengeCompletions !== 'object') gameState.challengeCompletions = {};
+    if (gameState.activeChallenge === undefined) gameState.activeChallenge = null;
+    // challengeSnapshot is no longer used (challenges act like resets now)
+    delete gameState.challengeSnapshot;
+}
+
+function getChallengeCompletions(challengeId) {
+    return (gameState.challengeCompletions && gameState.challengeCompletions[challengeId]) || 0;
+}
+
+function getChallengeDebuffLevel(challengeId) {
+    return getChallengeCompletions(challengeId) + 1;   // +1 = "extra level"
+}
+
+function isChallengeCompleted(challengeId) {
+    return getChallengeCompletions(challengeId) > 0;
+}
+
+// Enter a challenge — works like a reset: currencies are consumed permanently
+function enterChallenge(nodeId) {
+    const node = NODE_MAP.get(nodeId);
+    if (!node || node.type !== 'challenge') return false;
+    if (gameState.activeChallenge) {
+        showToast('⚠️ Already in a challenge!');
+        playSound('fail');
+        return false;
+    }
+    const maxLvl = node.maxLevel || 1;
+    const completions = getChallengeCompletions(nodeId);
+    if (completions >= maxLvl) {
+        showToast('⚠️ Challenge already at max completions!');
+        playSound('fail');
+        return false;
+    }
+    if (!isNodeUnlocked(node)) {
+        showToast('⚠️ Challenge not unlocked!');
+        playSound('fail');
+        return false;
+    }
+    gameState.activeChallenge = nodeId;
+applyChallengeReset(node);
+    //showToast('Entered "' + node.name + '" challenge!');
+    playSound('reset');
+    updateChallengeOverlay();
+    clearCaches(true);
+    requestCanvasRedraw(true);
+    saveGame();
+    return true;
+}
+// Applies the same reset that a challenge uses on entry AND exit.
+// Currencies = goal currencies + node.resetCurrencies.
+// Node levels = node.resettedCoords (optional — same shape as a reset node).
+function applyChallengeReset(node) {
+    // 1. Zero the challenge's currencies
+    const currenciesToZero = new Set();
+    if (node.goals)            for (const g of node.goals)          currenciesToZero.add(g.currency);
+    if (node.resetCurrencies)  for (const c of node.resetCurrencies) currenciesToZero.add(c);
+    for (const c of currenciesToZero) gameState.currencies[c] = 0;
+
+    // 2. Zero the challenge's node levels, if it defines any
+    if (node.resettedCoords && node.resettedCoords.length) {
+        resetNodeLevels({ resettedCoords: node.resettedCoords, resetCurrencies: [] });
+    }
+}
+
+// Leave a challenge: just grant completion reward, no restore (currencies stay consumed like a reset)
+function leaveChallenge(completed) {
+    if (!gameState.activeChallenge) return false;
+    const nodeId = gameState.activeChallenge;
+    const node = NODE_MAP.get(nodeId);
+    if (!node) {
+        gameState.activeChallenge = null;
+        updateChallengeOverlay();
+        clearCaches(true);
+        return false;
+    }
+    // No restore — currencies stay at what they are (permanently consumed like a reset)
+    if (completed && node.rewards) {
+        gameState.challengeCompletions[nodeId] = (gameState.challengeCompletions[nodeId] || 0) + 1;
+        // Re-index challenge reward effects since completion count changed
+        indexChallengeRewardEffects();
+        showToast('"' + node.name + '" completed! (' + getChallengeCompletions(nodeId) + '/' + node.maxLevel + ')');
+        playSound('reset');
+    } else {
+        showToast('Left "' + node.name + '" challenge');
+        playSound('buy');
+    }
+    applyChallengeReset(node);          // ← new: wipe the same currencies/nodes on exit
+    gameState.activeChallenge = null;
+    updateChallengeOverlay();
+    clearCaches(true);
+    requestCanvasRedraw(true);
+    saveGame();
+    return true;
+}
+
+// Check if active challenge goals are met — auto-complete
+function checkChallengeCompletion() {
+    if (!gameState.activeChallenge) return false;
+    const node = NODE_MAP.get(gameState.activeChallenge);
+    if (!node || !node.goals) return false;
+    const completions = getChallengeCompletions(node.id);
+    for (const goal of node.goals) {
+        const curr = getCurr(goal.currency);
+        const target = typeof goal.target === 'function' ? goal.target(completions) : goal.target;
+        if (curr < target) return false;
+    }
+    leaveChallenge(true);
+    return true;
+}
+
+// Apply challenge debuff effects to a currency's gain rate
+// Apply challenge debuff effects to a currency's gain rate
+function applyChallengeEffectsToRate(currency, baseRate) {
+    if (!gameState.activeChallenge) return baseRate;
+    const node = NODE_MAP.get(gameState.activeChallenge);
+    if (!node || !node.challengeEffects) return baseRate;
+    let mult = 1;
+    let add = 0;
+    for (const eff of node.challengeEffects) {
+        if (!eff.formula || eff.currency !== currency) continue;
+        const lvl = getChallengeCompletions(node.id);
+        const val = eff.formula(lvl, getLevel, getCurr);
+        if (typeof val !== 'number' || isNaN(val)) continue;
+        if (eff.type === 'currency_mult' || eff.type === 'dynamic_mult') mult *= val;
+        else if (eff.type === 'base_gain' || eff.type === 'base_gain_raw') add += val;
+    }
+    return baseRate * mult + add;
+}
+
+// Update the challenge overlay UI
+function updateChallengeOverlay() {
+    const overlay = document.getElementById('challenge-overlay');
+    const titleEl = document.getElementById('challenge-title');
+    const goalsEl = document.getElementById('challenge-goals');
+    const effectsEl = document.getElementById('challenge-effects');
+    if (!overlay || !titleEl || !goalsEl || !effectsEl) return;
+    if (!gameState.activeChallenge) {
+        overlay.classList.add('hidden');
+        return;
+    }
+    const node = NODE_MAP.get(gameState.activeChallenge);
+    if (!node) { overlay.classList.add('hidden'); return; }
+    overlay.classList.remove('hidden');
+    titleEl.textContent = node.name;
+    let goalsHtml = '';
+    if (node.goals) {
+        const completions = getChallengeCompletions(node.id);
+        for (const goal of node.goals) {
+            const curr = getCurr(goal.currency);
+            const target = typeof goal.target === 'function' ? goal.target(completions) : goal.target;
+            const def = CURRENCIES[goal.currency];
+            const colorClass = def ? def.color : 'text-zinc-300';
+            const completed = curr >= target;
+            const lineClass = completed ? 'challenge-goal-line challenge-goal-completed' : 'challenge-goal-line';
+            goalsHtml += `<div class="${lineClass}"><span class="${colorClass} font-bold">${formatNum(curr)}</span><span class="text-zinc-600">/</span><span class="${colorClass} font-bold">${formatNum(target)}</span><span class="text-zinc-500 ml-0.5">${def ? def.name : goal.currency}</span></div>`;
+        }
+    }
+    goalsEl.innerHTML = goalsHtml;
+    let effectsHtml = '';
+    // Show challenge effects (debuffs) in orange
+    if (node.challengeEffects) {
+        for (const eff of node.challengeEffects) {
+            if (eff.desc) {
+                const lvl = getChallengeCompletions(node.id);
+                let val = '?';
+                try { val = formatNum(eff.formula(lvl, getLevel, getCurr)); } catch(e) {}
+                effectsHtml += `<div class="text-orange-400">${eff.desc} (x${val})</div>`;
+            }
+        }
+    }
+    // Show rewards in emerald
+    if (node.rewards) {
+        const completions = getChallengeCompletions(node.id);
+        const maxLvl = node.maxLevel || 1;
+        if (completions < maxLvl) {
+            for (const rew of node.rewards) {
+                const useLvl = completions;
+                if (rew.type === 'currency_mult' && (rew.currency || rew.targetCurrency)) {
+                    let val = '?';
+                    try { val = formatNum(rew.formula(useLvl, getLevel, getCurr)); } catch(e) {}
+                    effectsHtml += `<div class="text-emerald-400">Rew: x${val} ${rew.currency||rew.targetCurrency}</div>`;
+                } else if (rew.type === 'reset_gain_mult' && rew.targetCurrency) {
+                    let val = '?';
+                    try { val = formatNum(rew.formula(useLvl, getLevel, getCurr)); } catch(e) {}
+                    effectsHtml += `<div class="text-emerald-400">Rew: x${val} ${rew.targetCurrency} on reset</div>`;
+                }
+            }
+        }
+    }
+    // Show persistent effects from completed levels
+    if (node.effects && getChallengeCompletions(node.id) > 0) {
+        for (const eff of node.effects) {
+            const completions = getChallengeCompletions(node.id);
+            if (eff.type === 'currency_mult' && eff.currency) {
+                let val = '?';
+                try { val = formatNum(eff.formula(completions, getLevel, getCurr)); } catch(e) {}
+                effectsHtml += `<div class="text-cyan-400">x${val} ${eff.currency}</div>`;
+            } else if (eff.type === 'reset_gain_mult' && eff.targetCurrency) {
+                let val = '?';
+                try { val = formatNum(eff.formula(completions, getLevel, getCurr)); } catch(e) {}
+                effectsHtml += `<div class="text-cyan-400">x${val} ${eff.targetCurrency} r/g</div>`;
+            }
+        }
+    }
+    effectsEl.innerHTML = effectsHtml;
+}
+
+// ==================== GAME CONSTANTS ====================
         const NODE_SIZE = 120,
             NODE_GAP = 160;
         const CURRENCIES = { 
@@ -833,6 +1127,9 @@ const OFFLINE_EXCLUDED_CURRENCIES = new Set([
         blue: { id: 'blue', name: 'Blue', color: 'text-blue-200', fillBg: 'rgba(59,130,246,0.2)' },
         power: { id: 'power', name: 'Power', color: 'text-blue-500', fillBg: 'rgba(47,105,196,0.2)' },
         power2: { id: 'power2', name: 'power2', color: 'text-blue-600', fillBg: 'rgba(35,80,146,0.2)' },
+        gray: { id: 'gray', name: 'Gray', color: 'text-[#808080]', fillBg: 'rgba(128,128,128,0.2)' },
+        cyan: { id: 'cyan', name: 'Cyan', color: 'text-[#ACFFFC]', fillBg: 'rgba(172, 255, 252,0.2)' },
+        anticyan: { id: 'anticyan', name: 'Anticyan', color: 'text-[#d6fffe]', fillBg: 'rgba(214, 256, 254,0.2)' },
         orange: { id: 'orange', name: 'Orange', color: 'text-orange-400', fillBg: 'rgba(255,165,0,0.2)' },
         green: { id: 'green', name: 'Green', color: 'text-green-400', fillBg: 'rgba(24,138,65,0.2)' },
         antigreen: { id: 'antigreen', name: 'Antigreen', color: 'text-green-600', fillBg: 'rgba(34,197,94,0.2)' },
@@ -864,7 +1161,7 @@ long_longs: { id: 'long_longs', name: 'long longs', color: 'text-[#ff7fff]', fil
         // CRITICAL: _fresh flag prevents saveGame from overwriting a real save before loadGame completes.
         // ANY code that touches gameState before window.onload must NOT call saveGame.
         // This _fresh flag is removed by loadGame ONLY after successful load.
-        let gameState = { _fresh: true, currencies: { P: 0, PR: 0, QT: 0, T: 0, D1: 0, D2: 0, D3: 0, D4: 0, D5: 0, D6: 0, D7: 0, D8: 0 }, discoveredCurrencies: ['P'], currencyOrder: ['P'], hiddenCurrencies: [], userHiddenCurrencies: [], levels: {}, unlockedDecorations: [], camera: { panX: 0, panY: 0, scale: 1 }, soundMuted: false, showEffects: true, buyMode: 1, skipResetConfirm: {}, paused: false, currencyFontSize: 11, offlineTimestamp: Date.now(), hotkeyBindings: null, notation: 'standard' };
+        let gameState = { _fresh: true, currencies: { P: 0, PR: 0, QT: 0, T: 0, D1: 0, D2: 0, D3: 0, D4: 0, D5: 0, D6: 0, D7: 0, D8: 0 }, discoveredCurrencies: ['P'], currencyOrder: ['P'], hiddenCurrencies: [], userHiddenCurrencies: [], levels: {}, unlockedDecorations: [], camera: { panX: 0, panY: 0, scale: 1 }, soundMuted: false, showEffects: true, buyMode: 1, skipResetConfirm: {}, paused: false, currencyFontSize: 11, offlineTimestamp: Date.now(), hotkeyBindings: null, notation: 'standard', challengeCompletions: {}, activeChallenge: null };
 // Always ensure P is a valid number (defence against undefined save corruption)
 if (typeof gameState.currencies.P !== 'number' || isNaN(gameState.currencies.P)) gameState.currencies.P = 0;
         let displayLevels = {},
@@ -925,7 +1222,12 @@ if (typeof gameState.currencies.P !== 'number' || isNaN(gameState.currencies.P))
         let prevCurrencySnapshot = {};
         let prevRateSnapshot = {};
 
-        function getLevel(nodeId) { return gameState.levels[nodeId] || 0; }
+        function getLevel(nodeId) { 
+    // Check if it's a challenge node — return completions instead
+    const node = NODE_MAP.get(nodeId);
+    if (node && node.type === 'challenge') return getChallengeCompletions(nodeId);
+    return gameState.levels[nodeId] || 0; 
+}
 
         function getCurr(key) { return gameState.currencies[key] || 0; }
         
@@ -946,7 +1248,83 @@ if (typeof gameState.currencies.P !== 'number' || isNaN(gameState.currencies.P))
             _displayCostCache = {};
             _currencyRateCache = {};
         }
-        // ==================== NODE TREE DEFINITION ====================
+        // ==================== CHALLENGE NODES ====================
+// Challenge nodes use type: 'challenge'
+// Properties:
+//   id, coords, reqs, name, code, desc (description)
+//   goals: [{currency, target}] — all must be met
+//   challengeEffects: [{type: 'currency_mult', currency, formula, desc}] — active during challenge
+//   rewards: [{type, currency/targetCurrency, formula}] — granted on completion (or handled via completion count)
+//   maxLevel: max completions
+//   effects: standard effects applied when completed at least once (like a purchased upgrade)
+
+const CHALLENGE_NODES = [
+    { id: 'CCC01', type: 'challenge', code: 'CCC01', name: 'Cyan Challenge I', coords: [45, 8], reqs: [[44,8]],
+      resetCurrencies: ['cyan'],
+      desc: 'No nerfs! Reward: x1.1 cyan per level',
+      goals: [
+          
+          { currency: 'cyan', target: (lvl) => 100*(1+lvl)*Math.pow(1.25*Math.pow(1.05,Math.max(lvl-10,0)), Math.max(lvl-10,0)) },
+      ],
+      challengeEffects: [
+          //{ type: 'currency_mult', currency: 'cyan', formula: (lvl) => 1, desc: 'No debuffs' },
+      ],
+      rewards: [
+          { type: 'currency_mult', currency: 'cyan', formula: (lvl) => Math.pow(1.1, lvl), desc: 'x1.1 cyan per completion' }
+      ],
+      effects: [
+          
+        ],
+      maxLevel: 100
+    },
+     {id: 'CCC02', type: 'challenge', code: 'CCC02', name: 'Cyan Challenge II', coords: [46, 8], reqs: [[45,8]],
+      resetCurrencies: ['cyan'],
+      desc: '/lvl^lvl cyan. Reward: x2 cyan per level',
+      goals: [
+          
+          { currency: 'cyan', target: (lvl) => 300 },
+      ],
+      challengeEffects: [
+          { type: 'currency_mult', currency: 'cyan', formula: (lvl) => 1/Math.pow(lvl+1,lvl+1), desc: '/lvl^lvl' },
+      ],
+      rewards: [
+          { type: 'currency_mult', currency: 'cyan', formula: (lvl) => Math.pow(2, lvl), desc: 'x2 cyan per completion' },
+          
+          ],
+      effects: [
+          
+      ],
+      maxLevel: 5
+    },
+    {id: 'CCC03', type: 'challenge', code: 'CCC03', name: 'Cyan Challenge III', coords: [46, 9], reqs: [[46,8]],
+      resetCurrencies: ['cyan', 'anticyan'],
+      desc: 'generates anticyan which deboosts cyan. x10 req. and more anticyan gen based on challenge lvl. Reward: x2 cyan per level',
+
+ 
+      goals: [
+          
+          { currency: 'cyan', target: (lvl) => 1e6*Math.pow(10,lvl) },
+      ],
+      challengeEffects: [
+          { type: 'currency_mult', currency: 'cyan', formula: (lvl) => 1/(1+getCurr('anticyan')), desc: 'cyan deboost' },
+          { type: 'base_gain', currency: 'anticyan', formula: (lvl) => 1*Math.pow(getCurr('anticyan')+1,0.2*lvl), desc: 'anticyan generation' },
+      ],
+      rewards: [
+          { type: 'currency_mult', currency: 'cyan', formula: (lvl) => Math.pow(2, lvl), desc: 'x2 cyan per completion' },
+          
+          ],
+      effects: [
+          
+      ],
+      maxLevel: 5
+    },
+    
+];
+
+// Merge challenge nodes into TREE_NODES
+// (They get added to TREE_NODES below — we do it after the main tree is built so we can .push them)
+
+// ==================== NODE TREE DEFINITION ====================
         const TREE_NODES = [
         //point
     { id: 'INFO_CORE', type: 'info', code: 'Start', name: 'The start. You can pan the screen! There is buy max in the settings.', coords: [0, 0], reqs: [], desc: 'Begin. [if nothing appears please refresh the page]', getInfoText: () => `Rate: +${formatNum(calculateGainRate('P'))}/s` },
@@ -1493,7 +1871,7 @@ if (typeof gameState.currencies.P !== 'number' || isNaN(gameState.currencies.P))
     { id: 'CR24', type: 'upgrade', code: 'CR24', name: 'yes, yes, yes, yes', coords: [33, 11], reqs: [[34,12]], borderColor: 'orange', desc: '25x firebrick (+25x per level after), +10% maroon on reset per second multiplied by sqrt of level', effects: [{ type: 'reset_gain_mult', targetCurrency: 'firebrick', formula: (lvl) => 25+25*Math.max(lvl-1,0) },{ type: 'base_gain', currency: 'maroon', formula: (lvl) => getResetGain('maroon')*0.1*Math.pow(lvl, 0.5)}], costCurrency: 'burgundy', costFormula: (lvl) => (0.2+0.2*lvl)*Math.pow(1.5,Math.pow(lvl,0.5)), maxLevel: 100 },
     { id: 'CR25', type: 'upgrade', code: 'CR25', name: 'something new', coords: [33, 12], reqs: [[33,11]], borderColor: 'green', desc: 'Unlock green.', effects: [], costCurrency: 'burgundy', costFormula: (lvl) => 3, maxLevel: 1 },
     { id: 'CG01', type: 'upgrade', code: 'CG01', name: 'green', coords: [38, 8], reqs: [[33,12]], borderColor: 'green', desc: 'generate green and anti-green. if at any point anti-green is above green all green production halts.', effects: [{ type: 'base_gain', currency: 'green', formula: (lvl) => 1 },{ type: 'currency_mult', currency: 'green', formula: (lvl) => 1e-308+(getCurr('green')>=getCurr('antigreen')) },{ type: 'base_gain', currency: 'antigreen', formula: (lvl) => 0.025*Math.pow(getCurr('green'),0.95)+(0.25*Math.pow(1.125,(3+Math.log10(getCurr('green')+10)-Math.log10(getCurr('antigreen')+10)))-0.25)*getCurr('antigreen') }], costCurrency: 'green', costFormula: (lvl) => 0, maxLevel: 1 },
-    { id: 'CGR', type: 'reset',   code: 'CGR', name: 'resetter', coords: [39, 8], reqs: [[33,12]], desc: 'Reset all non-perm green upgrades, green and antigreen.', targetCurrency: 'green', resetCurrencies: ['green','antigreen'], resettedCoords: ['CG'], calculateGain: (lvl, getCurr, getLvl) => { return 1 } },
+    { id: 'CGRR', type: 'reset',   code: 'CGR', name: 'resetter', coords: [39, 8], reqs: [[33,12]], desc: 'Reset all non-perm green upgrades, green and antigreen.', targetCurrency: 'green', resetCurrencies: ['green','antigreen'], resettedCoords: ['CG'], calculateGain: (lvl, getCurr, getLvl) => { return 1 } },
     { id: 'CP01', type: 'upgrade', code: 'CP01', name: 'perm 1', coords: [40, 8], reqs: [[33,12]], borderColor: 'green', desc: '+25% green per level.', effects: [{ type: 'currency_mult', currency: 'green', formula: (lvl) => 1+0.25*lvl }], costCurrency: 'green', costFormula: (lvl) => 5*Math.pow(1.5,Math.pow(lvl,0.8)), maxLevel: 25 },
     { id: 'CP02', type: 'upgrade', code: 'CP02', name: 'perm 2', coords: [41, 8], reqs: [[40,8]], borderColor: 'green', desc: 'x1.5 green per level.', effects: [{ type: 'currency_mult', currency: 'green', formula: (lvl) => Math.pow(1.5,lvl) }], costCurrency: 'green', costFormula: (lvl) => 80000*Math.pow(2.5*Math.pow(1.25,lvl),lvl), maxLevel: 12 },
     { id: 'CP03', type: 'upgrade', code: 'CP03', name: 'perm 3', coords: [42, 8], reqs: [[41,8]], borderColor: 'green', desc: 'x1.8 green per level.', effects: [{ type: 'currency_mult', currency: 'green', formula: (lvl) => Math.pow(1.8,lvl) }], costCurrency: 'green', costFormula: (lvl) => 2e14*Math.pow(2.5*Math.pow(1.25,lvl),1.5*lvl), maxLevel: 3 },
@@ -1535,7 +1913,20 @@ if (typeof gameState.currencies.P !== 'number' || isNaN(gameState.currencies.P))
     { id: 'CBL16', type: 'upgrade', code: 'CBL16', name: '++++fill boost', coords: [38, 3], reqs: [[38,4]], borderColor: 'green', desc: 'boost blue based on power fill %, max amt + 0.2x per level after', effects: [{type: 'currency_mult', currency: 'blue', formula: (lvl) => 1+(1+0.2*Math.max(lvl-1,0))*(getCurr('power')/(100+100*getLevel('CBL06')+1000*getLevel('CBL11')))}], costCurrency: 'blue', costFormula: (lvl) => 1000000*Math.pow(1.2, Math.pow(lvl,0.8)), maxLevel: 91 },
     { id: 'CBL17', type: 'upgrade', code: 'CBL17', name: '++++blue', coords: [42, 7], reqs: [[41,7]], borderColor: 'orange', desc: '+1x^2/9 blue/lvl again', effects: [{ type: 'currency_mult', currency: 'blue', formula: (lvl) => 1+Math.pow(lvl, 2)/9 }], costCurrency: 'blue', costFormula: (lvl) => 8e6*Math.pow(1.3,lvl), maxLevel: 9 },
     { id: 'CBL18', type: 'upgrade', code: 'CBL18', name: '+++++blue', coords: [42, 6], reqs: [[42,7]], borderColor: 'orange', desc: '+1x^3/81 blue/lvl again', effects: [{ type: 'currency_mult', currency: 'blue', formula: (lvl) => 1+Math.pow(lvl, 3)/81 }], costCurrency: 'blue', costFormula: (lvl) => 8e6*Math.pow(1.3,lvl), maxLevel: 9 },
-    
+    { id: 'CBL19', type: 'upgrade', code: 'CBL19', name: '^2', coords: [42, 5], reqs: [[42,6]], borderColor: 'green', desc: 'unlock another blue generator!', effects: [{ type: 'base_gain', currency: 'power', formula: (lvl, getLevel, getCurr) => getCurr('power2') },{ type: 'base_gain_raw', currency: 'power2', formula: (lvl) => -Math.min(getCurr('power2'),(1-Math.pow(0.98,Math.pow(Math.log10(getCurr('power2')+10),2)))*getCurr('power2'))/Math.pow(1.125, getLevel('CBL23')) }], costCurrency: 'blue', costFormula: (lvl) => 2e9, maxLevel: 1 },
+    { id: 'CBL20', type: 'reset',   code: 'CBL20', name: 'get power^2!', coords: [42, 4], reqs: [[42,5]], desc: 'get power^2, that generates power!', targetCurrency: 'power2', resetCurrencies: [], resettedCoords: [], calculateGain: (lvl, getCurr, getLvl) => { return (1+0.5*getLevel('CBL21'))*(1+0.5*getLevel('CBL22'))}},
+    { id: 'CBL21', type: 'upgrade', code: 'CBL21', name: '+bulk', coords: [41, 4], reqs: [[32,5]], borderColor: 'orange', desc: '+0.5x power^2 gain rate/lvl', effects: [], costCurrency: 'blue', costFormula: (lvl) => (1e9)*Math.pow(1.5,Math.pow(lvl,0.8)), maxLevel: 18 },
+    { id: 'CBL22', type: 'upgrade', code: 'CBL22', name: '++bulk', coords: [41, 3], reqs: [[41,4]], borderColor: 'orange', desc: '+0.5x power^2 gain rate/lvl again', effects: [], costCurrency: 'blue', costFormula: (lvl) => (1.25e10)*Math.pow(1.5,Math.pow(lvl,0.8)), maxLevel: 18 },
+    { id: 'CBL23', type: 'upgrade', code: 'CBL23', name: '-decay', coords: [40, 3], reqs: [[41,3]], borderColor: 'orange', desc: '/1.125 power^2 loss rate/lvl (does NOT effect power^2 generation)', effects: [], costCurrency: 'blue', costFormula: (lvl) => (5e10)*Math.pow(1.25,Math.pow(lvl,0.8)), maxLevel: 20 },
+    { id: 'CBL24', type: 'upgrade', code: 'CBL24', name: 'auto', coords: [39, 3], reqs: [[40,3]], borderColor: 'green', desc: '+powr^2/s equlent to 1 click/s/lvl', effects: [{ type: 'base_gain', currency: 'power2', formula: (lvl, getLevel, getCurr) => getResetGain('power2')*lvl }], costCurrency: 'blue', costFormula: (lvl) => 5e11*Math.pow(2,Math.pow(lvl, 0.28)), maxLevel: 100 },
+    { id: 'CBL25', type: 'upgrade', code: 'CBL25', name: 'something new :D', coords: [42, 3], reqs: [[41,3]], borderColor: 'green', desc: 'Unlock grey.', effects: [], costCurrency: 'blue', costFormula: (lvl) => 2e15, maxLevel: 1 },
+    { id: 'CGR01', type: 'upgrade', code: 'CGR01', name: 'gray', coords: [43, 3], reqs: [[42,3]], borderColor: 'green', desc: 'generate gray.', effects: [{ type: 'base_gain', currency: 'gray', formula: (lvl) => 1 }], costCurrency: 'gray', costFormula: (lvl) => 0, maxLevel: 1 },
+    { id: 'CGR02', type: 'upgrade', code: 'CGR02', name: 'cyan', coords: [44, 3], reqs: [[43,3]], borderColor: 'green', desc: 'unlcok cyan.', effects: [], costCurrency: 'gray', costFormula: (lvl) => 5, maxLevel: 1 },
+    { id: 'CC01', type: 'upgrade', code: 'CC01', name: 'cyan', coords: [43, 8], reqs: [[42,3]], borderColor: 'green', desc: 'generate cyan.', effects: [{ type: 'base_gain', currency: 'cyan', formula: (lvl) => 1 }], costCurrency: 'cyan', costFormula: (lvl) => 0, maxLevel: 1 },
+    { id: 'CC02', type: 'upgrade', code: 'CC02', name: 'mult', coords: [43, 9], reqs: [[43,8]], borderColor: 'green', desc: 'x1.125 cyan/lvl.', effects: [{ type: 'currency_mult', currency: 'cyan', formula: (lvl) => Math.pow(1.125,lvl) }], costCurrency: 'cyan', costFormula: (lvl) => 3*Math.pow(1.2*Math.pow(1.0025,lvl),lvl), maxLevel: 250 },
+    { id: 'CC03', type: 'upgrade', code: 'CC03', name: 'something new', coords: [44, 8], reqs: [[43,8]], borderColor: 'green', desc: 'unlock a feature you haven\'t seen in main progression til this point. hvae fun with it!', effects: [], costCurrency: 'cyan', costFormula: (lvl) => 20, maxLevel: 1 },
+    { id: 'CC04', type: 'upgrade', code: 'CC04', name: 'mult2', coords: [44, 9], reqs: [[43,9]], borderColor: 'green', desc: '+0.2x cyan per CCC01 completion.', effects: [{ type: 'currency_mult', currency: 'cyan', formula: (lvl) => 1+0.2*getLevel('CCC01') }], costCurrency: 'cyan', costFormula: (lvl) => 10000, maxLevel: 1 },
+    { id: 'CC05', type: 'upgrade', code: 'CC05', name: 'need help?', coords: [45, 9], reqs: [[44,9]], borderColor: 'green', desc: 'cyan boost cyan.', effects: [{ type: 'currency_mult', currency: 'cyan', formula: (lvl) => Math.pow(getCurr('cyan')/1e6+1,0.2) }], costCurrency: 'cyan', costFormula: (lvl) => 2.25e7, maxLevel: 1 },
 
 
     
@@ -1755,11 +2146,11 @@ if (typeof gameState.currencies.P !== 'number' || isNaN(gameState.currencies.P))
     
     { id: 'BR01', type: 'upgrade', code: 'BR01', name: 'random!', coords: [2, -18], reqs: [[0, -7]], borderColor: 'green', desc: 'start getting rng!', effects: [{ type: 'base_gain', currency: 'e1', formula: (lvl) => 10 * (Math.random() < 0.1) }, { type: 'base_gain', currency: 'e2', formula: (lvl) => 10 * (Math.random() < 0.01) }, { type: 'base_gain', currency: 'e3', formula: (lvl) => 10 * (Math.random() < 0.001) }, { type: 'base_gain', currency: 'e4', formula: (lvl) => 10 * (Math.random() < 0.0001) }, { type: 'base_gain', currency: 'e5', formula: (lvl) => 10 * (Math.random() < 0.00001) }, { type: 'base_gain', currency: 'e6', formula: (lvl) => 10 * (Math.random() < 0.000001) }, { type: 'base_gain', currency: 'e7', formula: (lvl) => 10 * (Math.random() < 0.0000001) }, { type: 'base_gain', currency: 'e8', formula: (lvl) => 10 * (Math.random() < 0.00000001) }, { type: 'base_gain', currency: 'e9', formula: (lvl) => 10 * (Math.random() < 0.000000001) }, { type: 'base_gain', currency: 'e10', formula: (lvl) => 10 * (Math.random() < 0.0000000001) }, { type: 'base_gain', currency: 'e11', formula: (lvl) => 10 * (Math.random() < 0.00000000001) }, { type: 'base_gain', currency: 'e12', formula: (lvl) => 10 * (Math.random() < 0.000000000001) }], costCurrency: 'e1', costFormula: (lvl) => 0, maxLevel: 1 },
     
-    { id: 'BD01', type: 'upgrade', code: 'BD01', name: 'inflation? already?', coords: [3, -18], reqs: [[-1, -7]], borderColor: 'orange', desc: '+this baseplate is a little replication of my game in my (real-life) calculator! get bits equal to sqrt of (it+1).', effects: [{ type: 'base_gain', currency: 'bits', formula: (lvl, getLevel, getCurr) => Math.pow(getCurr('bits')+1,0.5)*(1+getCurr('bools'))*(1+getCurr('chars')) }], costCurrency: 'bits', costFormula: (lvl) => 0, maxLevel: 1 },
+    { id: 'BD01', type: 'upgrade', code: 'BD01', name: 'inflation? already?', coords: [3, -18], reqs: [[1, -7]], borderColor: 'orange', desc: '+this baseplate is a little replication of my game in my (real-life) calculator! get bits equal to sqrt of (it+1).', effects: [{ type: 'base_gain', currency: 'bits', formula: (lvl, getLevel, getCurr) => Math.pow(getCurr('bits')+1,0.5)*(1+getCurr('bools'))*(1+getCurr('chars')) }], costCurrency: 'bits', costFormula: (lvl) => 0, maxLevel: 1 },
     { id: 'BD02', type: 'reset',   code: 'BD02', name: 'bools', coords: [4, -18], reqs: [[3,-18]], desc: 'get bools, reset bits, boost bits', targetCurrency: 'bools', resetCurrencies: ['bits'], resettedCoords: [], calculateGain: (lvl, getCurr, getLvl) => { return Math.pow(1+0.5*Math.log10(getCurr('bits')/1e4+10),1.5)*Math.pow(getCurr('bits'),0.38)/15 } },
     { id: 'BD03', type: 'upgrade', code: 'BD03', name: 'a third one', coords: [3, -19], reqs: [[3, -18]], borderColor: 'orange', desc: 'reset layer+', effects: [], costCurrency: 'bits', costFormula: (lvl) => 5e6, maxLevel: 1 },
     { id: 'BD04', type: 'reset',   code: 'BD04', name: 'chars', coords: [5, -18], reqs: [[3,-19]], desc: 'get chars, reset bits/bools, boost bits [best with 100M bits]', targetCurrency: 'chars', resetCurrencies: ['bits','bools'], resettedCoords: [], calculateGain: (lvl, getCurr, getLvl) => { return (1-(1/Math.pow(Math.log10(10+getCurr('bits')/1e8),2)))*Math.pow(1+0.25*Math.log10(getCurr('bits')/1e11+10),1.5)*Math.pow(getCurr('bits'),0.08)*2 } },
-    { id: 'BD05', type: 'upgrade', code: 'BD05', name: 'exclusive', coords: [4, -19], reqs: [[3, -19]], borderColor: 'orange', desc: '+0.01% bools on bool reset/s per level. obvoisly cant be done on my calculator, its web exclusive!', effects: [{ type: 'base_gain', currency: 'bools', formula: (lvl, getLevel, getCurr) => lvl*0.0001*getResetGain('bools')}], costCurrency: 'bits', costFormula: (lvl) => 1e9*Math.pow(lvl,1+0.5*Math.floor(Math.log10(Math.max(lvl,1)))), maxLevel: 10000 },
+    { id: 'BD05', type: 'upgrade', code: 'BD05', name: 'exclusive', coords: [4, -19], reqs: [[3, -19]], borderColor: 'orange', desc: '+0.01% bools on bool reset/s per level. obvoisly cant be done on my calculator, its web exclusive!', effects: [{ type: 'base_gain', currency: 'bools', formula: (lvl, getLevel, getCurr) => 0.0001*getResetGain('bools')}], costCurrency: 'bits', costFormula: (lvl) => 1e9*Math.pow(lvl,1+0.5*Math.floor(Math.log10(Math.max(lvl,1)))), maxLevel: 10000 },
     
     
     //tokens
@@ -1863,12 +2254,18 @@ if (typeof gameState.currencies.P !== 'number' || isNaN(gameState.currencies.P))
     { id: 'IF04', type: 'upgrade', code: 'IF04', name: 'Auto II', coords: [4, -7], reqs: [[3, -7]], borderColor: 'red', desc: 'Automate I02 and +20% fragments additive per level.', effects: [{ type: 'automation', target: 'I02' }, { type: 'reset_gain_mult', targetCurrency: '♦', formula: (lvl) => 1 + 0.2 * lvl }], costCurrency: '♦', costFormula: (lvl) => Math.floor(1e7 * Math.pow(1.25, lvl)), maxLevel: 1000 }
     
             ];
+        // Push challenge nodes into TREE_NODES
+        if (typeof CHALLENGE_NODES !== 'undefined' && CHALLENGE_NODES.length > 0) {
+            CHALLENGE_NODES.forEach(n => TREE_NODES.push(n));
+        }
         // ==================== HELPER FUNCTIONS ====================
         let _maxLevelCache = {};
         let _maxLevelFrame = {};
         let _maxLevelModEffects = null;
         function getMaxLevel(node) {
-            if (!node || node.type !== 'upgrade') return 0;
+            if (!node) return 0;
+            if (node.type === 'challenge') return node.maxLevel || 1;
+            if (node.type !== 'upgrade') return 0;
             if (_maxLevelFrame[node.id] === cacheDirtyFrame && _maxLevelCache[node.id] !== undefined) return _maxLevelCache[node.id];
             if (!cacheDirty && cache.maxLevel.has(node.id)) return cache.maxLevel.get(node.id);
             let maxCap = node.maxLevel || 1;
@@ -1890,7 +2287,15 @@ if (typeof gameState.currencies.P !== 'number' || isNaN(gameState.currencies.P))
         function isNodeUnlocked(node) {
             if (!node) return false;
             if (!node.reqs || node.reqs.length === 0) return true;
-            return node.reqs.every(([x, y]) => { const reqNode = COORD_MAP.get(`${x},${y}`); return reqNode && getLevel(reqNode.id) >= 1; });
+            return node.reqs.every(([x, y]) => { 
+                const reqNode = COORD_MAP.get(`${x},${y}`); 
+                if (!reqNode) return false;
+                // Challenge nodes: require at least 1 completion instead of getLevel >= 1
+                if (reqNode.type === 'challenge') {
+                    return getChallengeCompletions(reqNode.id) >= 1;
+                }
+                return getLevel(reqNode.id) >= 1; 
+            });
         }
 
         let _formatCache = {};
@@ -2008,7 +2413,64 @@ function wrapText(text, maxWidth, fontSize) {
     return wrapTextCached(text, maxWidth, fontSize);
 }
 
+        function getChallengeEffectSummary(node) {
+    if (!node || node.type !== 'challenge') return '';
+    if (node.showEffect === false || !gameState.showEffects) return '';
+    const parts = [];
+    const completions = getChallengeCompletions(node.id);
+    const maxLvl = node.maxLevel || 1;
+    
+    // Show current active challenge effects (debuffs) if we're inside this challenge
+    if (gameState.activeChallenge === node.id && node.challengeEffects) {
+        for (const eff of node.challengeEffects) {
+            if ((eff.type === 'currency_mult' || eff.type === 'base_gain' || eff.type === 'base_gain_raw') && eff.currency) {
+    let val = '?';
+    try { val = formatNum(eff.formula(completions, getLevel, getCurr)); } catch(e) {}
+    parts.push((eff.type === 'currency_mult' ? 'x' : '+') + val + ' ' + eff.currency);
+}
+        }
+    }
+    
+    // Show rewards (what you'll get on current completion)
+    if (node.rewards && completions <= maxLvl) {
+        for (const rew of node.rewards) {
+            const useLvl = completions;
+            if (rew.type === 'currency_mult' && (rew.currency || rew.targetCurrency)) {
+                let val = '?';
+                try { val = formatNum(rew.formula(useLvl, getLevel, getCurr)); } catch(e) {}
+                parts.push('Rew: x' + val + ' ' + (rew.currency||rew.targetCurrency));
+            } else if (rew.type === 'reset_gain_mult' && rew.targetCurrency) {
+                let val = '?';
+                try { val = formatNum(rew.formula(useLvl, getLevel, getCurr)); } catch(e) {}
+                parts.push('Rew: x' + val + ' ' + rew.targetCurrency + ' r/g');
+            }
+        }
+    }
+    
+    // Show persistent effects from completed levels (like purchased upgrade)
+    if (node.effects && completions > 0) {
+        for (const eff of node.effects) {
+            if (eff.type === 'currency_mult' && eff.currency) {
+                let val = '?';
+                try { val = formatNum(eff.formula(completions, getLevel, getCurr)); } catch(e) {}
+                parts.push('x' + val + ' ' + eff.currency);
+            } else if (eff.type === 'reset_gain_mult' && eff.targetCurrency) {
+                let val = '?';
+                try { val = formatNum(eff.formula(completions, getLevel, getCurr)); } catch(e) {}
+                parts.push('x' + val + ' ' + eff.targetCurrency + ' r/g');
+            }
+        }
+    }
+    
+    return parts.join(', ');
+}
+
         function getNodeEffectSummary(node, curLevel) {
+            // Challenge nodes use their own summary
+            if (node.type === 'challenge') {
+                if (!gameState.showEffects) return '';
+                return getChallengeEffectSummary(node);
+            }
             if (node.showEffect === false || node.hideEffect === true || !gameState.showEffects) return '';
             if (node.effectText !== undefined) return typeof node.effectText === 'function' ? node.effectText(curLevel,
                 getLevel, getCurr) : node.effectText;
@@ -2033,12 +2495,18 @@ function wrapText(text, maxWidth, fontSize) {
 
         function getNodeFillBg(node) {
             if (node.type === 'reset') return 'rgba(245,158,11,0.2)';
+            if (node.type === 'challenge') return 'rgba(52,211,153,0.15)';
             return CURRENCIES[node.costCurrency]?.fillBg || 'rgba(255,255,255,0.05)';
         }
 
         function getNodeBorderColor(node) {
             if (node.type === 'info') return '#0e7490';
             if (node.type === 'reset') return '#b45309';
+            if (node.type === 'challenge') {
+                if (gameState.activeChallenge === node.id) return '#22c55e';
+                if (getChallengeCompletions(node.id) >= (node.maxLevel||1)) return '#27272a';
+                return '#34d399';
+            }
             if (getLevel(node.id) >= getMaxLevel(node)) return '#27272a';
             if (node.borderColor) return node.borderColor === 'green' ? '#22c55e' : node.borderColor === 'orange' ? '#f59e0b' : node.borderColor === 'red' ? '#ef4444' : '#3f3f46';
             return '#3f3f46';
@@ -2047,6 +2515,11 @@ function wrapText(text, maxWidth, fontSize) {
         function getNodeBgColor(node) {
             if (node.type === 'info') return 'rgba(8,47,73,0.75)';
             if (node.type === 'reset') return 'rgba(69,26,3,0.85)';
+            if (node.type === 'challenge') {
+                if (gameState.activeChallenge === node.id) return 'rgba(6,78,60,0.85)';
+                if (getChallengeCompletions(node.id) >= (node.maxLevel||1)) return 'rgba(9,9,11,0.85)';
+                return 'rgba(5,46,22,0.85)';
+            }
             if (getLevel(node.id) >= getMaxLevel(node)) return 'rgba(9,9,11,0.85)';
             return 'rgba(24,24,27,0.9)';
         }
@@ -2062,7 +2535,12 @@ function wrapText(text, maxWidth, fontSize) {
             // Calculate progress
             let progressPct = 0;
             let canAfford = false;
-            if (node.type === 'upgrade') {
+            if (node.type === 'challenge') {
+                const completions = getChallengeCompletions(node.id);
+                const maxLvl = node.maxLevel || 1;
+                progressPct = (completions / maxLvl) * 100;
+                canAfford = completions < maxLvl && isNodeUnlocked(node);
+            } else if (node.type === 'upgrade') {
                 const cost = getDisplayCost(node);
                 const curr = gameState.currencies[node.costCurrency] || 0;
                 const isMax = getLevel(node.id) >= getMaxLevel(node);
@@ -2133,7 +2611,36 @@ function wrapText(text, maxWidth, fontSize) {
             // Bottom section
             const bottomY = posY + height - padding * 2;
             
-            if (node.type === 'info') {
+            if (node.type === 'challenge') {
+                const completions = getChallengeCompletions(node.id);
+                const maxLvl = node.maxLevel || 1;
+                const isActive = gameState.activeChallenge === node.id;
+                ctx.fillStyle = '#22c55e';
+                ctx.textAlign = 'center';
+                ctx.font = '9px "Fira Code", monospace';
+                ctx.textAlign = 'left';
+ctx.font = '9px "Fira Code", monospace';
+ctx.fillStyle = '#a1a1aa';
+ctx.fillText(completions + '/' + maxLvl, posX + padding, bottomY);
+ctx.textAlign = 'right';
+ctx.fillStyle = completions >= maxLvl ? '#34d399' : (isActive ? '#fbbf24' : '#a1a1aa');
+ctx.font = '9px "Fira Code", monospace';
+ctx.fillText(completions >= maxLvl ? 'DONE' : (isActive ? 'LEAVE' : 'ENTER'), posX + width - padding, bottomY);
+if (gameState.showEffects) {
+    const effectSummary = getNodeEffectSummary(node, completions);
+    if (effectSummary) {
+        ctx.fillStyle = '#67e8f9';
+        ctx.font = '7px "Fira Code", monospace';
+        ctx.textAlign = 'left';
+        const effLines = wrapTextCached(effectSummary, 60, 7);
+        const maxLines = 5;
+        const visibleLines = effLines.slice(0, maxLines);
+        visibleLines.forEach((line, i) => {
+            ctx.fillText(line, posX + padding, bottomY + 10 + i * 8);
+        });
+    }
+}
+            } else if (node.type === 'info') {
                 const infoText = node.getInfoText ? node.getInfoText(getLevel, getCurr) : '';
                     ctx.fillStyle = 'rgba(103,232,249,0.8)';
                     ctx.textAlign = 'center';
@@ -2151,6 +2658,7 @@ function wrapText(text, maxWidth, fontSize) {
                 ctx.fillStyle = 'rgba(161,161,170,0.6)';
                 ctx.font = '8px "Fira Code", monospace';
                 ctx.fillText('RESET', posX + width / 2, bottomY + 2);
+            
             } else {
                 const displayLvl = getDisplayLevel(node.id);
                 const effectiveMax = getMaxLevel(node);
@@ -2487,6 +2995,12 @@ function draw() {
             if (effects && effects.length > 0) {
                 for (let i = 0, len = effects.length; i < len; i++) {
                     const eff = effects[i];
+                    // Reward effects (nodeId ends with _reward) are always active — the formula reads completions internally
+                    if (typeof eff.nodeId === 'string' && eff.nodeId.endsWith('_reward')) {
+                        const val = eff.formula(0, getLevel, getCurr);
+                        mult *= val;
+                        continue;
+                    }
                     const lvl = gameState.levels[eff.nodeId] || 0;
                     if (lvl <= 0) continue;
                     const val = eff.formula(lvl, getLevel, getCurr);
@@ -2498,11 +3012,13 @@ function draw() {
             // Safety: ensure mult is never 0 or negative (prevents any buggy formula from killing gain)
             //if (mult <= 0) mult = 1;
             // BOTH base and baseRaw should be multiplied by currency_mult effects!
-            const result = base * mult + baseRaw;
+            let result = base * mult + baseRaw;
+            // Apply challenge debuffs
+            result = applyChallengeEffectsToRate(currency, result);
             cache.gainRate.set(currency, result);
             _currencyRateCache[currency] = result;
             _currencyRateFrame[currency] = cacheDirtyFrame;
-            return result;
+            return Math.max(0, result); // Guard against negative rates from challenge debuffs
             } catch(e) { console.warn('gainRate error for', currency, e); return 0; }
         }
 
@@ -2670,8 +3186,8 @@ function buyUpgrade(nodeId, isAutomated = false, isFree = false) {
         function scheduleMultiBuySound(levels) {
             if (levels <= 0) return;
             const count = Math.min(levels, 64);
-            // Total duration = 0.5 + 0.1 * sqrt(count)
-            const totalDuration = 0.1 + 0.02 * Math.pow(count, 0.);
+            // Total duration scales with count
+            const totalDuration = 0.1 + 0.02 * Math.pow(count, 0.5);
             // sqrt(i) for i=1..count, scaled & shifted so first=0, last=totalDuration
             const sqrt1 = Math.sqrt(1);
             const sqrtN = Math.sqrt(count);
@@ -3709,6 +4225,17 @@ document.getElementById('btn-font-up').onclick = (e) => {
                     if (node) {
                         if (node.type === 'upgrade') buyUpgrade(node.id);
                         else if (node.type === 'reset') openResetModal(node);
+                        else if (node.type === 'challenge') {
+                            // If we're already in this challenge, leave it
+                            if (gameState.activeChallenge === node.id) {
+                                leaveChallenge(false);
+                            } else if (gameState.activeChallenge) {
+                                showToast('⚠️ Already in another challenge! Leave it first.');
+                                playSound('fail');
+                            } else {
+                                enterChallenge(node.id);
+                            }
+                        }
                     }
                 }
             }
@@ -3739,7 +4266,15 @@ document.getElementById('btn-font-up').onclick = (e) => {
                 if (node) {
                     if (node.type === 'upgrade') buyUpgrade(node.id);
                     else if (node.type === 'reset') openResetModal(node);
+                    else if (node.type === 'challenge') {
+                        if (gameState.activeChallenge === node.id) leaveChallenge(false);
+                        else if (gameState.activeChallenge) {
+                            showToast('⚠️ Already in another challenge!');
+                            playSound('fail');
+                        } else enterChallenge(node.id);
+                    }
                 }
+                
             }
             
         });
@@ -3839,6 +4374,13 @@ document.getElementById('btn-font-up').onclick = (e) => {
                 if (node) {
                     if (node.type === 'upgrade') buyUpgrade(node.id);
                     else if (node.type === 'reset') openResetModal(node);
+                    else if (node.type === 'challenge') {
+                        if (gameState.activeChallenge === node.id) leaveChallenge(false);
+                        else if (gameState.activeChallenge) {
+                            showToast('⚠️ Already in another challenge!');
+                            playSound('fail');
+                        } else enterChallenge(node.id);
+                    }
                 }
             }
             if (!e.touches || e.touches.length === 0) { isDragging = false; isPinching = false; touchHandled = true; }
@@ -4938,6 +5480,10 @@ window.updateNewsMessageCount = updateNewsMessageCount;
                 lastAutomationTime = performance.now();
                 checkAutomation();
             }
+            // Check challenge completion (every tick)
+            checkChallengeCompletion();
+            // Update challenge overlay every tick if active
+            if (gameState.activeChallenge) updateChallengeOverlay();
             } catch(e) { console.warn('tick error:', e); }
         }
 
@@ -5057,6 +5603,8 @@ window.updateNewsMessageCount = updateNewsMessageCount;
         window.onload = () => {
             try {
                 loadGame();
+                initChallengeState();
+                indexChallengeRewardEffects();
                 // Ensure news state is initialized before any tick runs
                 if (!gameState.news || typeof gameState.news !== 'object') {
                     gameState.news = { enabled: true, groupState: {}, history: [], seenMessages: {}, autoAdd: true, scrollSpeed: 1.0, duplicatePrevention: 20, newWeight: 2.0 };
