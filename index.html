@@ -436,6 +436,43 @@
         </div>
     </div>
     <script>
+        // ==================== DECIMAL SAFEGUARD (must be first) ====================
+        // Provide a full Decimal-like constructor so any lingering references in old save data or code don't crash
+        if (typeof window.Decimal === 'undefined') {
+            window.Decimal = function Decimal(v) { this.v = Number(v) || 0; };
+            var _proto = window.Decimal.prototype;
+            _proto.valueOf = function() { return Number(this.v); };
+            _proto.toString = function() { return String(this.v); };
+            _proto.toNumber = function() { return Number(this.v); };
+            _proto.isZero = function() { return this.v === 0; };
+            _proto.lt = function(v) { return this.v < Number(v); };
+            _proto.gt = function(v) { return this.v > Number(v); };
+            _proto.eq = function(v) { return this.v === Number(v); };
+            _proto.neq = function(v) { return this.v !== Number(v); };
+            _proto.lte = function(v) { return this.v <= Number(v); };
+            _proto.gte = function(v) { return this.v >= Number(v); };
+            _proto.add = function(v) { return new window.Decimal(this.v + Number(v)); };
+            _proto.sub = function(v) { return new window.Decimal(Math.max(0, this.v - Number(v))); };
+            _proto.mul = function(v) { return new window.Decimal(this.v * Number(v)); };
+            _proto.div = function(v) { return new window.Decimal(v === 0 ? 0 : this.v / Number(v)); };
+            _proto.pow = function(v) { return new window.Decimal(Math.pow(this.v, Number(v))); };
+            _proto.abs = function() { return new window.Decimal(Math.abs(this.v)); };
+            _proto.floor = function() { return new window.Decimal(Math.floor(this.v)); };
+            _proto.ceil = function() { return new window.Decimal(Math.ceil(this.v)); };
+            _proto.round = function() { return new window.Decimal(Math.round(this.v)); };
+            _proto.sqrt = function() { return new window.Decimal(Math.sqrt(this.v)); };
+            _proto.log = function(v) { return new window.Decimal(Math.log(this.v) / Math.log(Number(v || 10))); };
+            _proto.log10 = function() { return new window.Decimal(Math.log10(this.v)); };
+            _proto.min = function(v) { return new window.Decimal(Math.min(this.v, Number(v))); };
+            _proto.max = function(v) { return new window.Decimal(Math.max(this.v, Number(v))); };
+            _proto.times = _proto.mul;
+            _proto.plus = _proto.add;
+            _proto.minus = _proto.sub;
+            _proto.dividedBy = _proto.div;
+            window.Decimal.fromValue = function(v) { return new window.Decimal(Number(v) || 0); };
+            window.Decimal.fromNumber = function(v) { return new window.Decimal(Number(v) || 0); };
+            window.Decimal.isDecimal = function(v) { return v instanceof window.Decimal; };
+        }
         // ==================== SOUND CONFIGURATION ====================
         const SOUND_CONFIG = { baseFreq: 392.00, freqMultiplier: 1.06, maxStreak: 21, comboResetTimeout: 2000, buyVolume: 1, buyMaxVolume: 1, autoVolume: 0, masterVolume: 0.2, minSoundInterval: 0.05, stepAnimInterval: 0.02 };
 // ==================== CURRENCIES EXCLUDED FROM OFFLINE PROGRESS ====================
@@ -662,7 +699,41 @@ const OFFLINE_EXCLUDED_CURRENCIES = new Set([
                 osc.stop(ctxNow + 0.3);
             } catch (e) {}
         }
-        // ==================== NOTATION SYSTEM ====================
+        // ==================== SIMPLIFIED MATH (plain numbers only) ====================
+// All math uses standard JavaScript numbers. Values cap at Number.MAX_SAFE_INTEGER.
+// The game runs smoothly without any BigNum/Decimal overhead.
+// Helper: safe addition that caps at Number.MAX_SAFE_INTEGER
+// ==================== SIMPLIFIED MATH (plain numbers only) ====================
+function safeAdd(a, b) { 
+    if (typeof a === 'object' && a !== null) { if (typeof a.valueOf === 'function') a = a.valueOf(); else a = 0; }
+    if (typeof b === 'object' && b !== null) { if (typeof b.valueOf === 'function') b = b.valueOf(); else b = 0; }
+    a = Number(a) || 0; b = Number(b) || 0; const r = a + b; 
+    if (!isFinite(r)) return Number.MAX_VALUE;
+    return r; 
+}
+function safeSub(a, b) { 
+    if (typeof a === 'object' && a !== null) { if (typeof a.valueOf === 'function') a = a.valueOf(); else a = 0; }
+    if (typeof b === 'object' && b !== null) { if (typeof b.valueOf === 'function') b = b.valueOf(); else b = 0; }
+    a = Number(a) || 0; b = Number(b) || 0; const r = a - b; 
+    if (!isFinite(r)) return 0;
+    return Math.max(r, 0); 
+}
+function safeMul(a, b) { 
+    if (typeof a === 'object' && a !== null) { if (typeof a.valueOf === 'function') a = a.valueOf(); else a = 0; }
+    if (typeof b === 'object' && b !== null) { if (typeof b.valueOf === 'function') b = b.valueOf(); else b = 0; }
+    a = Number(a) || 0; b = Number(b) || 0; const r = a * b; 
+    if (!isFinite(r)) return Number.MAX_VALUE;
+    return r; 
+}
+function safeDiv(a, b) { 
+    if (typeof a === 'object' && a !== null) { if (typeof a.valueOf === 'function') a = a.valueOf(); else a = 0; }
+    if (typeof b === 'object' && b !== null) { if (typeof b.valueOf === 'function') b = b.valueOf(); else b = 0; }
+    a = Number(a) || 0; b = Number(b) || 0; if (b === 0) return 0; const r = a / b; 
+    if (!isFinite(r)) return 0;
+    return r; 
+}
+
+// ==================== NOTATION SYSTEM ====================
         // Notation modes. Add new ones here. "key" is stored in save.
         // format(num, precision) returns the formatted string.
         const NOTATION_MODES = [
@@ -693,7 +764,12 @@ const OFFLINE_EXCLUDED_CURRENCIES = new Set([
         // Suffix-based standard formatting (same as original formatNum)
         function formatNumberStandard(num, precision) {
             if (num === Infinity) return 'MAX';
-            if (num === undefined || num === null || isNaN(num)) return '0';
+            if (num === undefined || num === null) return '0';
+            if (typeof num === 'object') {
+                if (typeof num.valueOf === 'function') num = num.valueOf();
+                else return '0';
+            }
+            if (typeof num !== 'number' || isNaN(num)) return '0';
             if (num === 0) return '0';
             const abs = Math.abs(num);
             let result;
@@ -719,7 +795,12 @@ const OFFLINE_EXCLUDED_CURRENCIES = new Set([
         // Scientific notation: always "1.23e45" except below threshold
         function formatNumberScientific(num, thresholdDigits) {
             if (num === Infinity) return 'MAX';
-            if (num === undefined || num === null || isNaN(num)) return '0';
+            if (num === undefined || num === null) return '0';
+            if (typeof num === 'object') {
+                if (typeof num.valueOf === 'function') num = num.valueOf();
+                else return '0';
+            }
+            if (typeof num !== 'number' || isNaN(num)) return '0';
             if (num === 0) return '0';
             const threshold = Math.pow(10, thresholdDigits);
             if (Math.abs(num) < threshold) return parseFloat(Number(num).toPrecision(3)).toString();
@@ -731,7 +812,12 @@ const OFFLINE_EXCLUDED_CURRENCIES = new Set([
         // Long notation: uses word names (Septillion, etc.) same threshold as standard
         function formatNumberLong(num, precision) {
             if (num === Infinity) return 'MAX';
-            if (num === undefined || num === null || isNaN(num)) return '0';
+            if (num === undefined || num === null) return '0';
+            if (typeof num === 'object') {
+                if (typeof num.valueOf === 'function') num = num.valueOf();
+                else return '0';
+            }
+            if (typeof num !== 'number' || isNaN(num)) return '0';
             if (num === 0) return '0';
             const abs = Math.abs(num);
             // Use same named suffixes as standard but with full words
@@ -755,7 +841,12 @@ const OFFLINE_EXCLUDED_CURRENCIES = new Set([
         
         function formatNumberLetter(num, precision) {
             if (num === Infinity) return 'MAX';
-            if (num === undefined || num === null || isNaN(num)) return '0';
+            if (num === undefined || num === null) return '0';
+            if (typeof num === 'object') {
+                if (typeof num.valueOf === 'function') num = num.valueOf();
+                else return '0';
+            }
+            if (typeof num !== 'number' || isNaN(num)) return '0';
             if (num === 0) return '0';
             const abs = Math.abs(num);
             // Use same named suffixes as standard but with full words
@@ -779,7 +870,12 @@ const OFFLINE_EXCLUDED_CURRENCIES = new Set([
         
         function formatNumberFull(num, precision) {
             if (num === Infinity) return 'MAX';
-            if (num === undefined || num === null || isNaN(num)) return '0';
+            if (num === undefined || num === null) return '0';
+            if (typeof num === 'object') {
+                if (typeof num.valueOf === 'function') num = num.valueOf();
+                else return '0';
+            }
+            if (typeof num !== 'number' || isNaN(num)) return '0';
             if (num === 0) return '0';
             const abs = Math.abs(num);
             // Use same named suffixes as standard but with full words
@@ -971,23 +1067,40 @@ function checkChallengeCompletion() {
     return true;
 }
 
-// Apply challenge debuff effects to a currency's gain rate
-// Apply challenge debuff effects to a currency's gain rate
-function applyChallengeEffectsToRate(currency, baseRate) {
+// Apply challenge debuff effects to a currency's gain rate.
+// regularMult is the cumulative currency_mult from regular (non-challenge) effects.
+// baseRate should already have raw separated conceptually — challenge effects only
+// modify the base*mult portion (the non-raw part).
+function applyChallengeEffectsToRate(currency, baseRate, regularMult) {
     if (!gameState.activeChallenge) return baseRate;
     const node = NODE_MAP.get(gameState.activeChallenge);
     if (!node || !node.challengeEffects) return baseRate;
-    let mult = 1;
-    let add = 0;
+    let mult = 1, add_base = 0, add_raw = 0;
     for (const eff of node.challengeEffects) {
         if (!eff.formula || eff.currency !== currency) continue;
         const lvl = getChallengeCompletions(node.id);
         const val = eff.formula(lvl, getLevel, getCurr);
-        if (typeof val !== 'number' || isNaN(val)) continue;
+        if (typeof val === 'object' && val !== null) {
+                    if (typeof val.valueOf === 'function') val = val.valueOf();
+                    else continue;
+                }
+                if (typeof val !== 'number' || isNaN(val)) continue;
         if (eff.type === 'currency_mult' || eff.type === 'dynamic_mult') mult *= val;
-        else if (eff.type === 'base_gain' || eff.type === 'base_gain_raw') add += val;
+        else if (eff.type === 'base_gain') add_base += val;
+        else if (eff.type === 'base_gain_raw') add_raw += val;
     }
-    return baseRate * mult + add;
+    let regularRaw = 0;
+    const effects = CURRENCY_EFFECT_INDEX[currency];
+    if (effects) {
+        for (const eff of effects) {
+            if (eff.type === 'base_gain_raw') {
+                const lvl = gameState.levels[eff.nodeId] || 0;
+                if (lvl > 0) regularRaw += eff.formula(lvl, getLevel, getCurr) || 0;
+            }
+        }
+    }
+    const regularNonRaw = baseRate - regularRaw;
+    return (regularNonRaw + add_base * regularMult) * mult + regularRaw + add_raw;
 }
 
 // Update the challenge overlay UI
@@ -1027,7 +1140,10 @@ function updateChallengeOverlay() {
                 const lvl = getChallengeCompletions(node.id);
                 let val = '?';
                 try { val = formatNum(eff.formula(lvl, getLevel, getCurr)); } catch(e) {}
-                effectsHtml += `<div class="text-orange-400">${eff.desc} (x${val})</div>`;
+                let prefix = '';
+                if (eff.type === 'currency_mult' || eff.type === 'dynamic_mult') prefix = 'x';
+                else if (eff.type === 'base_gain' || eff.type === 'base_gain_raw') prefix = '+';
+                effectsHtml += `<div class="text-orange-400">${eff.desc} (${prefix}${val})</div>`;
             }
         }
     }
@@ -1038,14 +1154,24 @@ function updateChallengeOverlay() {
         if (completions < maxLvl) {
             for (const rew of node.rewards) {
                 const useLvl = completions;
-                if (rew.type === 'currency_mult' && (rew.currency || rew.targetCurrency)) {
+                const rewCurrency = rew.currency || rew.targetCurrency;
+                if ((rew.type === 'currency_mult' || rew.type === 'dynamic_mult') && rewCurrency) {
                     let val = '?';
                     try { val = formatNum(rew.formula(useLvl, getLevel, getCurr)); } catch(e) {}
-                    effectsHtml += `<div class="text-emerald-400">Rew: x${val} ${rew.currency||rew.targetCurrency}</div>`;
+                    effectsHtml += `<div class="text-emerald-400">Rew: x${val} ${rewCurrency}</div>`;
                 } else if (rew.type === 'reset_gain_mult' && rew.targetCurrency) {
                     let val = '?';
                     try { val = formatNum(rew.formula(useLvl, getLevel, getCurr)); } catch(e) {}
                     effectsHtml += `<div class="text-emerald-400">Rew: x${val} ${rew.targetCurrency} on reset</div>`;
+                } else if (rew.type === 'reset_gain_add' && rew.targetCurrency) {
+                    let val = '?';
+                    try { val = formatNum(rew.formula(useLvl, getLevel, getCurr)); } catch(e) {}
+                    effectsHtml += `<div class="text-emerald-400">Rew: +${val} ${rew.targetCurrency} on reset</div>`;
+                } else if ((rew.type === 'base_gain' || rew.type === 'base_gain_raw') && rewCurrency) {
+                    let val = '?';
+                    try { val = formatNum(rew.formula(useLvl, getLevel, getCurr)); } catch(e) {}
+                    const suffix = rew.type === 'base_gain_raw' ? '/s raw' : '/s';
+                    effectsHtml += `<div class="text-emerald-400">Rew: +${val} ${rewCurrency}${suffix}</div>`;
                 }
             }
         }
@@ -1054,15 +1180,25 @@ function updateChallengeOverlay() {
     if (node.effects && getChallengeCompletions(node.id) > 0) {
         for (const eff of node.effects) {
             const completions = getChallengeCompletions(node.id);
-            if (eff.type === 'currency_mult' && eff.currency) {
+            const effCurrency = eff.currency || eff.targetCurrency;
+            if ((eff.type === 'currency_mult' || eff.type === 'dynamic_mult') && effCurrency) {
                 let val = '?';
                 try { val = formatNum(eff.formula(completions, getLevel, getCurr)); } catch(e) {}
-                effectsHtml += `<div class="text-cyan-400">x${val} ${eff.currency}</div>`;
+                effectsHtml += `<div class="text-cyan-400">x${val} ${effCurrency}</div>`;
             } else if (eff.type === 'reset_gain_mult' && eff.targetCurrency) {
                 let val = '?';
                 try { val = formatNum(eff.formula(completions, getLevel, getCurr)); } catch(e) {}
                 effectsHtml += `<div class="text-cyan-400">x${val} ${eff.targetCurrency} r/g</div>`;
-            }
+            } else if (eff.type === 'reset_gain_add' && eff.targetCurrency) {
+                let val = '?';
+                try { val = formatNum(eff.formula(completions, getLevel, getCurr)); } catch(e) {}
+                effectsHtml += `<div class="text-cyan-400">+${val} ${eff.targetCurrency} r/g</div>`;
+            } else if ((eff.type === 'base_gain' || eff.type === 'base_gain_raw') && effCurrency) {
+                    let val = '?';
+                    try { val = formatNum(eff.formula(completions, getLevel, getCurr)); } catch(e) {}
+                    const suffix = eff.type === 'base_gain_raw' ? '/s raw' : '/s';
+                    effectsHtml += `<div class="text-cyan-400">+${val} ${effCurrency}${suffix}</div>`;
+                }
         }
     }
     effectsEl.innerHTML = effectsHtml;
@@ -1202,6 +1338,13 @@ if (typeof gameState.currencies.P !== 'number' || isNaN(gameState.currencies.P))
         let cacheDirtyFrame = 0;
         let frameCounter = 0;
         
+        // No-op stubs for removed Decimal/BigNum/BREAK features — ensures old save data doesn't crash
+        function isBigNum(v) { return false; }
+        function isD(v) { return false; }
+        function D(v) { return Number(v) || 0; }
+        function toNum(v) { return Number(v) || 0; }
+        // Decimal safeguard is at the top of the script (above SOUND_CONFIG)
+        
         // Persistent max-level mod index — built once, never rebuilt
         let _maxLevelModEffectsBuilt = false;
         function ensureMaxLevelModIndex() {
@@ -1224,8 +1367,12 @@ if (typeof gameState.currencies.P !== 'number' || isNaN(gameState.currencies.P))
             cacheDirtyFrame++;
             _maxLevelCache = {};
             _currencyRateCache = {};
+            _currencyRateFrame = {};
             _resetGainCache = {};
+            _resetGainFrame = {};
             _displayCostCache = {};
+            _displayCostFrame = {};
+            _formatCache = {};
         }
         
         // Track previous currency values to avoid unnecessary redraws
@@ -1239,7 +1386,21 @@ if (typeof gameState.currencies.P !== 'number' || isNaN(gameState.currencies.P))
     return gameState.levels[nodeId] || 0; 
 }
 
-        function getCurr(key) { return gameState.currencies[key] || 0; }
+        function getCurr(key) {
+    const v = gameState.currencies[key];
+    if (v === undefined || v === null) return 0;
+    if (typeof v === 'number') return v;
+    // Convert Decimal/object to number
+    if (typeof v === 'object') {
+        if (typeof v.valueOf === 'function') {
+            const n = Number(v.valueOf());
+            gameState.currencies[key] = isNaN(n) ? 0 : n;
+            return isNaN(n) ? 0 : n;
+        }
+        return 0;
+    }
+    return 0;
+}
         
         function clearCaches(clearAll = false) {
             cacheDirty = true;
@@ -1393,6 +1554,49 @@ const CHALLENGE_NODES = [
     {id: 'CCC07', type: 'challenge', code: 'CCC07', name: 'Cyan Challenge VII', coords: [47, 11], reqs: [[47,10]],
       resetCurrencies: ['cyan', 'anticyan'],
       desc: '[first levels are easy!] gen anticyan at 1/s. if anticyan > 1 cyan gen stops. Reward: x2.5 cyan per level',
+
+ 
+      goals: [
+          
+          { currency: 'cyan', target: (lvl) => 1e75*Math.pow(100*Math.pow(10,Math.max(lvl-5,0)),lvl) },
+      ],
+      challengeEffects: [
+          { type: 'currency_mult', currency: 'cyan', formula: (lvl) => (1>=getCurr('anticyan')), desc: 'cyan deboost' },
+          { type: 'base_gain_raw', currency: 'anticyan', formula: (lvl) => 1, desc: 'anticyan generation' },
+      ],
+      rewards: [
+          { type: 'currency_mult', currency: 'cyan', formula: (lvl) => Math.pow(2.5, lvl), desc: 'x2.5 cyan per completion' },
+          
+          ],
+      effects: [
+          
+      ],
+      maxLevel: 10
+    },
+    {id: 'CCC08', type: 'challenge', code: 'CCC08', name: 'Cyan Challenge VIII', coords: [47, 12], reqs: [[47,11]],
+      resetCurrencies: ['cyan', 'anticyan'],
+      desc: 'big nerf to cyan that gets better quite a bit over time based on anticyan [its good this time!]. Reward: x5 cyan per level',
+
+ 
+      goals: [
+          
+          { currency: 'cyan', target: (lvl) => 1e20*Math.pow(1e20,lvl) },
+      ],
+      challengeEffects: [
+          { type: 'currency_mult', currency: 'cyan', formula: (lvl) => 1e-100*Math.pow(1+0.1*Math.pow(getCurr('anticyan'),2),8), desc: 'cyan nerf' },
+      { type: 'base_gain_raw', currency: 'anticyan', formula: (lvl) => 1, desc: 'anticyan generation' },
+      
+      ],
+      rewards: [
+          { type: 'currency_mult', currency: 'cyan', formula: (lvl) => Math.pow(5, lvl), desc: 'x5 cyan per completion' },
+          
+          ],
+      effects: [
+          
+      ],
+      maxLevel: 5
+    },
+];
 
  
       goals: [
@@ -2054,6 +2258,7 @@ const CHALLENGE_NODES = [
     { id: 'CC16', type: 'upgrade', code: 'CC16', name: 'almost there', coords: [45, 12], reqs: [[44,12]], borderColor: 'green', desc: '2x cyan per level', effects: [{ type: 'currency_mult', currency: 'cyan', formula: (lvl) => Math.pow(2,lvl) }], costCurrency: 'cyan', costFormula: (lvl) => 1e295, maxLevel: 1 },
     { id: 'CC17', type: 'upgrade', code: 'CC17', name: 'nice', coords: [46, 12], reqs: [[45,12]], borderColor: 'green', desc: 'complete cyan. expand the grey baseplate.', effects: [], costCurrency: 'cyan', costFormula: (lvl) => 1.78e308, maxLevel: 1 },
 
+    
 
     
 
@@ -2222,7 +2427,7 @@ const CHALLENGE_NODES = [
     { id: 'AU20', type: 'upgrade', code: 'AU20', name: 'Auto(R1,R2,R3)', coords: [8, 0], reqs: [[7,0]], borderColor: 'green', desc: 'Start automating R1,R2,R3.', effects: [{ type: 'automation', target: 'R1' },{ type: 'automation', target: 'R2' },{ type: 'automation', target: 'R3' }], costCurrency: '€', costFormula: (lvl) => 2, maxLevel: 1 },
     { id: 'AU21', type: 'upgrade', code: 'AU21', name: 'Auto(R4,R5,R6)', coords: [8, 1], reqs: [[8,0]], borderColor: 'green', desc: 'Start automating R4,R5,R6.', effects: [{ type: 'automation', target: 'R4' },{ type: 'automation', target: 'R5' },{ type: 'automation', target: 'R6' }], costCurrency: '€', costFormula: (lvl) => 3, maxLevel: 1 },
     { id: 'AU22', type: 'upgrade', code: 'AU22', name: 'Auto(R7,R8,R9)', coords: [8, -1], reqs: [[8,0]], borderColor: 'green', desc: 'Start automating R7,R8,R9.', effects: [{ type: 'automation', target: 'R7' },{ type: 'automation', target: 'R8' },{ type: 'automation', target: 'R9' }], costCurrency: '€', costFormula: (lvl) => 5, maxLevel: 1 },
-    { id: 'AU23', type: 'upgrade', code: 'AU23', name: 'Auto(R10,+R11)', coords: [9, 0], reqs: [[8,0]], borderColor: 'green', desc: 'Start automating R10,+R11.', effects: [{ type: 'automation', target: 'R10' },{ type: 'automation', target: '++R11' }], costCurrency: '€', costFormula: (lvl) => 7, maxLevel: 1 },
+    { id: 'AU23', type: 'upgrade', code: 'AU23', name: 'Auto(R10,+R11)', coords: [9, 0], reqs: [[8,0]], borderColor: 'green', desc: 'Start automating R10,+R11.', effects: [{ type: 'automation', target: 'R10' },{ type: 'automation', target: '+R11' }], costCurrency: '€', costFormula: (lvl) => 7, maxLevel: 1 },
     { id: 'AU24', type: 'upgrade', code: 'AU24', name: 'Auto(R12,R13)', coords: [10, 0], reqs: [[9,0]], borderColor: 'green', desc: 'Start automating R12,R13.', effects: [{ type: 'automation', target: 'R12' },{ type: 'automation', target: 'R13' }], costCurrency: '€', costFormula: (lvl) => 11, maxLevel: 1 },
     { id: 'AU25', type: 'upgrade', code: 'AU25', name: 'Auto(E1,E2,E3,E4,E10)', coords: [9, 1], reqs: [[9,0]], borderColor: 'green', desc: 'Start automating E1,E2,E3,E4,E10.', effects: [{ type: 'automation', target: 'E01' },{ type: 'automation', target: 'E02' },{ type: 'automation', target: 'E03' },{ type: 'automation', target: 'E04' },{ type: 'automation', target: 'E10' }], costCurrency: '€', costFormula: (lvl) => 50, maxLevel: 1 },
     { id: 'AU26', type: 'upgrade', code: 'AU26', name: 'Auto(E5,E6,E7,E8,E9,E11)', coords: [9, -1], reqs: [[9,0]], borderColor: 'green', desc: 'Start automating E5,E6,E7,E8,E9,E11.', effects: [{ type: 'automation', target: 'E05' },{ type: 'automation', target: 'E06' },{ type: 'automation', target: 'E07' },{ type: 'automation', target: 'E08' },{ type: 'automation', target: 'E09' },{ type: 'automation', target: 'E11' }], costCurrency: '€', costFormula: (lvl) => 50, maxLevel: 1 },
@@ -2388,9 +2593,9 @@ const CHALLENGE_NODES = [
 { id: 'BCBP04', height: 0.5,type: 'upgrade', code: 'C04', name: '3', coords: [-3, -4.6875], reqs: [[-3, -5.0625]], borderColor: 'green', desc: '+500C/s/lvl.', effects: [{type: 'max_level_mod', target:'BCBP04', amount:(lvl)=>lvl},{ type: 'base_gain', currency: 'C', formula: (lvl) => 500 * lvl }], costCurrency: 'C', costFormula: (lvl) => 100000, maxLevel: 1 },
 { id: 'BCBP05', height: 0.5,type: 'upgrade', code: 'C05', name: '4', coords: [-3, -4.3125], reqs: [[-3, -4.6875]], borderColor: 'green', desc: '+10kC/s/lvl.', effects: [{type: 'max_level_mod', target:'BCBP05', amount:(lvl)=>lvl},{ type: 'base_gain', currency: 'C', formula: (lvl) => 1e4 * lvl }], costCurrency: 'C', costFormula: (lvl) => 4e6, maxLevel: 1 },
 { id: 'BCBP06', height: 0.5,type: 'upgrade', code: 'C06', name: '5', coords: [-3, -3.9375], reqs: [[-3, -4.3125]], borderColor: 'green', desc: '+100kC/s/lvl.', effects: [{type: 'max_level_mod', target:'BCBP06', amount:(lvl)=>lvl},{ type: 'base_gain', currency: 'C', formula: (lvl) => 1e5 * lvl }], costCurrency: 'C', costFormula: (lvl) => 7.5e7, maxLevel: 1 },
-{ id: 'BCBP07', height: 0.5,type: 'upgrade', code: 'C07', name: '6', coords: [-3, -3.5625], reqs: [[-3, -3.9375]], borderColor: 'green', desc: '+10MC/s/lvl.', effects: [{type: 'max_level_mod', target:'BCBP07', amount:(lvl)=>lvl},{ type: 'base_gain', currency: 'C', formula: (lvl) => 2e7 * lvl }], costCurrency: 'C', costFormula: (lvl) => 5, maxLevel: 1 },
-{ id: 'BCBP08', height: 0.5,type: 'upgrade', code: 'C08', name: '7', coords: [-3, -3.1875], reqs: [[-3, -3.5625]], borderColor: 'green', desc: '+1BC/s/lvl.', effects: [{type: 'max_level_mod', target:'BCBP08', amount:(lvl)=>lvl},{ type: 'base_gain', currency: 'C', formula: (lvl) => 4e9 * lvl }], costCurrency: 'C', costFormula: (lvl) => 5, maxLevel: 1 },
-{ id: 'BCBP09', height: 0.5,type: 'upgrade', code: 'C09', name: '8', coords: [-3, -2.8125], reqs: [[-3, -3.1875]], borderColor: 'green', desc: '+100BC/s/lvl.', effects: [{type: 'max_level_mod', target:'BCBP09', amount:(lvl)=>lvl},{ type: 'base_gain', currency: 'C', formula: (lvl) => 8e10 * lvl }], costCurrency: 'C', costFormula: (lvl) => 5, maxLevel: 1 },
+{ id: 'BCBP07', height: 0.5,type: 'upgrade', code: 'C07', name: '6', coords: [-3, -3.5625], reqs: [[-3, -3.9375]], borderColor: 'green', desc: '+10MC/s/lvl.', effects: [{type: 'max_level_mod', target:'BCBP07', amount:(lvl)=>lvl},{ type: 'base_gain', currency: 'C', formula: (lvl) => 2e7 * lvl }], costCurrency: 'C', costFormula: (lvl) => 1e10, maxLevel: 1 },
+{ id: 'BCBP08', height: 0.5,type: 'upgrade', code: 'C08', name: '7', coords: [-3, -3.1875], reqs: [[-3, -3.5625]], borderColor: 'green', desc: '+1BC/s/lvl.', effects: [{type: 'max_level_mod', target:'BCBP08', amount:(lvl)=>lvl},{ type: 'base_gain', currency: 'C', formula: (lvl) => 4e9 * lvl }], costCurrency: 'C', costFormula: (lvl) => 2e12, maxLevel: 1 },
+{ id: 'BCBP09', height: 0.5,type: 'upgrade', code: 'C09', name: '8', coords: [-3, -2.8125], reqs: [[-3, -3.1875]], borderColor: 'green', desc: '+100BC/s/lvl.', effects: [{type: 'max_level_mod', target:'BCBP09', amount:(lvl)=>lvl},{ type: 'base_gain', currency: 'C', formula: (lvl) => 8e10 * lvl }], costCurrency: 'C', costFormula: (lvl) => 5e14, maxLevel: 1 },
 { id: 'BCBP10', type: 'upgrade', code: 'C10', name: 'my mouse/finger hurts', coords: [-4, -6], reqs: [[-3, -6]], borderColor: 'red', desc: '+1 max buy to C01s upgrade towers/perchase/lvl.', effects: [{type: 'max_level_mod', target:['BCBP02','BCBP03','BCBP04','BCBP05','BCBP06','BCBP07','BCBP08','BCBP09'], amount:(lvl)=>lvl}], costCurrency: 'C', costFormula: (lvl) => 5000*Math.pow(10, Math.pow(lvl, 0.7)), maxLevel: 99 },
 { id: 'BCBP11', height: 0.5,type: 'upgrade', code: 'C11', name: '1', coords: [-4, -5.4375], reqs: [[-4, -6]], borderColor: 'orange', desc: '+1%C/s/lvl.', effects: [{type: 'max_level_mod', target:'BCBP11', amount:(lvl)=>lvl},{ type: 'currency_mult', currency: 'C', formula: (lvl) => 1+0.01 * lvl }], costCurrency: 'C', costFormula: (lvl) => 50000*Math.pow(2, Math.pow(lvl, 0.5)), maxLevel: 1 },
 { id: 'BCBP12', height: 0.5,type: 'upgrade', code: 'C12', name: '2', coords: [-4, -5.0625], reqs: [[-4, -6]], borderColor: 'orange', desc: '+1%C/s/lvl.', effects: [{type: 'max_level_mod', target:'BCBP12', amount:(lvl)=>lvl},{ type: 'currency_mult', currency: 'C', formula: (lvl) => 1+0.01 * lvl }], costCurrency: 'C', costFormula: (lvl) => 2000000*Math.pow(2, Math.pow(lvl, 0.3)), maxLevel: 1 },
@@ -2406,6 +2611,20 @@ const CHALLENGE_NODES = [
     { bulkFinalCost: true, id: 'I08', type: 'upgrade', code: 'I08', name: 'Expander', coords: [5, -5], reqs: [[4, -5]], borderColor: 'green', desc: 'Unlock new content below. Also +1% infinity per level', effects: [{ type: 'currency_mult', currency: '∞', formula: (lvl) => 1 + 0.01 * lvl }, { type: 'max_level_mod', target: 'I08', amount: (lvl) => 1 * lvl }], costCurrency: '∞', costFormula: (lvl) => 1e45 * Math.pow(2, Math.pow(lvl - 1, 0.7)), maxLevel: 1000 },
     { id: 'Inifnity!', type: 'reset', code: 'Fragmentation', name: 'Reset prev. infinity progress except I08 for fragments.', coords: [3, -6], reqs: [[5, -5]], desc: '', targetCurrency: '♦', resetCurrencies: ['∞'], resettedCoords: [[4, -3], [5, -3], [3, -4], [4, -4], [5, -4], [3, -5], [4, -5]], calculateGain: (lvl, getCurr, getLvl) => Math.floor(Math.pow(getCurr('∞') / 1e45, 0.175) * 100) / 100 },
     //infinity fragments
+    
+    { id: 'V01', type: 'upgrade', code: 'V01', name: 'void.', coords: [-50, -50], reqs: [[0, -2]], borderColor: 'green', desc: '+1 void/s.', effects: [{ type: 'base_gain', currency: 'void', formula: (lvl) => lvl }], costCurrency: 'void', costFormula: (lvl) => 0, maxLevel: 1 },
+    { id: 'V02', type: 'upgrade', code: 'V02', name: 'add.', coords: [-50, -49], reqs: [[-50, -50]], borderColor: 'green', desc: '+1 void/s.', effects: [{ type: 'base_gain', currency: 'void', formula: (lvl) => lvl }], costCurrency: 'void', costFormula: (lvl) => 8, maxLevel: 1 },
+    { id: 'V03', type: 'upgrade', code: 'V03', name: 'add+.', coords: [-49, -49], reqs: [[-50, -49]], borderColor: 'green', desc: '+2 void/s.', effects: [{ type: 'base_gain', currency: 'void', formula: (lvl) => 2*lvl }], costCurrency: 'void', costFormula: (lvl) => 12, maxLevel: 1 },
+    { id: 'V04', type: 'upgrade', code: 'V04', name: 'add++.', coords: [-49, -48], reqs: [[-49, -49]], borderColor: 'green', desc: '+1 void/s/lvl.', effects: [{ type: 'base_gain', currency: 'void', formula: (lvl) => lvl }], costCurrency: 'void', costFormula: (lvl) => (20+4*lvl)*Math.pow(1.05, Math.max(0, lvl-20)), maxLevel: 1000 },
+    { id: 'V05', type: 'upgrade', code: 'V05', name: 'mult.', coords: [-49, -50], reqs: [[-50, -50]], borderColor: 'green', desc: 'x2 void/s.', effects: [{ type: 'currency_mult', currency: 'void', formula: (lvl) => Math.pow(2, lvl) }], costCurrency: 'void', costFormula: (lvl) => 175, maxLevel: 1 },
+    { id: 'V06', type: 'upgrade', code: 'V06', name: 'mult.', coords: [-48, -50], reqs: [[-49, -50]], borderColor: 'green', desc: 'x2 void/s.', effects: [{ type: 'currency_mult', currency: 'void', formula: (lvl) => Math.pow(2, lvl) }], costCurrency: 'void', costFormula: (lvl) => 500, maxLevel: 1 },
+    { id: 'V07', type: 'upgrade', code: 'V07', name: 'mult.', coords: [-47, -50], reqs: [[-48, -50]], borderColor: 'green', desc: 'x1.2 void/s.', effects: [{ type: 'currency_mult', currency: 'void', formula: (lvl) => Math.pow(1.2, lvl) }], costCurrency: 'void', costFormula: (lvl) => 3000, maxLevel: 1 },
+    { id: 'V08', type: 'upgrade', code: 'V08', name: 'mult.', coords: [-48, -49], reqs: [[-48, -50]], borderColor: 'green', desc: 'x1.5 void/s/lvl.', effects: [{ type: 'currency_mult', currency: 'void', formula: (lvl) => Math.pow(1.5, lvl) }], costCurrency: 'void', costFormula: (lvl) => 2500*Math.pow(4, lvl), maxLevel: 2 },
+    { id: 'V09', type: 'upgrade', code: 'V09', name: 'mult.', coords: [-48, -51], reqs: [[-48, -50]], borderColor: 'green', desc: 'x1.1 void/s/lvl.', effects: [{ type: 'currency_mult', currency: 'void', formula: (lvl) => Math.pow(1.1, lvl) }], costCurrency: 'void', costFormula: (lvl) => 1000*Math.pow(10,lvl), maxLevel: 1000 },
+    { id: 'V10', type: 'upgrade', code: 'V10', name: 'mult.', coords: [-47, -49], reqs: [[-47, -50]], borderColor: 'green', desc: '+25% void/s/lvl.', effects: [{ type: 'currency_mult', currency: 'void', formula: (lvl) => 1+0.25*lvl }], costCurrency: 'void', costFormula: (lvl) => 8000*Math.pow(1.25,lvl), maxLevel: 36 },
+    { id: 'V11', type: 'upgrade', code: 'V11', name: 'add+++.', coords: [-48, -48], reqs: [[-49, -48]], borderColor: 'green', desc: '+5 void/s/lvl.', effects: [{ type: 'base_gain', currency: 'void', formula: (lvl) => 5*lvl }], costCurrency: 'void', costFormula: (lvl) => (1e4+2e3*lvl)*Math.pow(1.05, Math.max(0, lvl-25)), maxLevel: 1000 },
+    
+    
     { id: 'IF01', type: 'upgrade', code: 'IF01', name: 'Recovery', coords: [4, -6], reqs: [[5, -5]], borderColor: 'orange', desc: 'x3∞/s.', effects: [{ type: 'currency_mult', currency: '∞', formula: (lvl) => Math.pow(3, lvl) }, { type: 'max_level_mod', target: 'IF01', amount: (lvl) => 10 * lvl }], costCurrency: '♦', costFormula: (lvl) => Math.floor(Math.pow(2 + 0.25 * lvl, lvl)), maxLevel: 1000 },
     { id: 'IF02', type: 'upgrade', code: 'IF02', name: 'Ultra Cheap', coords: [5, -6], reqs: [[4, -6]], borderColor: 'red', desc: '/10K to I02s cost per level.', effects: [{ type: 'max_level_mod', target: 'IF02', amount: (lvl) => 10 * lvl }], costCurrency: '♦', costFormula: (lvl) => 3 * Math.floor(Math.pow(1.25 * lvl, lvl)), maxLevel: 1000 },
     { id: 'IF03', type: 'upgrade', code: 'IF03', name: 'Auto', coords: [3, -7], reqs: [[4, -6]], borderColor: 'red', desc: 'Automate I01 & /5 its cost/lvl.', effects: [{ type: 'automation', target: 'I01' }, { type: 'max_level_mod', target: 'IF03', amount: (lvl) => 10 * lvl }], costCurrency: '♦', costFormula: (lvl) => Math.floor(1000 * Math.pow(1.5 * lvl, lvl)), maxLevel: 1000 },
@@ -2474,7 +2693,14 @@ const CHALLENGE_NODES = [
         let _formatFrame = 0;
         function formatNum(num) {
             if (num === Infinity) return 'MAX';
-            if (num === undefined || num === null || isNaN(num)) return '0';
+            if (num === undefined || num === null) return '0';
+            // Convert Decimal/object to number
+            if (typeof num === 'object') {
+                if (typeof num.valueOf === 'function') num = num.valueOf();
+                else return '0';
+            }
+            if (typeof num !== 'number') return '0';
+            if (isNaN(num)) return '0';
             if (num === 0) return '0';
             const key = num + '|' + currentNotation;
             if (_formatCache[key] !== undefined) return _formatCache[key];
@@ -2595,11 +2821,12 @@ function wrapText(text, maxWidth, fontSize) {
     // Show current active challenge effects (debuffs) if we're inside this challenge
     if (gameState.activeChallenge === node.id && node.challengeEffects) {
         for (const eff of node.challengeEffects) {
-            if ((eff.type === 'currency_mult' || eff.type === 'base_gain' || eff.type === 'base_gain_raw') && eff.currency) {
-    let val = '?';
-    try { val = formatNum(eff.formula(completions, getLevel, getCurr)); } catch(e) {}
-    parts.push((eff.type === 'currency_mult' ? 'x' : '+') + val + ' ' + eff.currency);
-}
+            if ((eff.type === 'currency_mult' || eff.type === 'dynamic_mult' || eff.type === 'base_gain' || eff.type === 'base_gain_raw') && eff.currency) {
+                let val = '?';
+                try { val = formatNum(eff.formula(completions, getLevel, getCurr)); } catch(e) {}
+                const prefix = (eff.type === 'currency_mult' || eff.type === 'dynamic_mult') ? 'x' : '+';
+                parts.push(prefix + val + ' ' + eff.currency);
+            }
         }
     }
     
@@ -3157,49 +3384,82 @@ function draw() {
         let _currencyRateCache = {};
         let _currencyRateFrame = {};
         function calculateGainRate(currency) {
-            try {
-            if (_currencyRateFrame[currency] === cacheDirtyFrame && _currencyRateCache[currency] !== undefined) return _currencyRateCache[currency];
-            if (!cacheDirty && cache.gainRate.has(currency)) return cache.gainRate.get(currency);
-            let base = 0,
-                baseRaw = 0,
-                mult = 1;
-            const effects = CURRENCY_EFFECT_INDEX[currency];
-            if (effects && effects.length > 0) {
-                for (let i = 0, len = effects.length; i < len; i++) {
-                    const eff = effects[i];
-                    // Reward effects (nodeId ends with _reward) are always active — the formula reads completions internally
-                    if (typeof eff.nodeId === 'string' && eff.nodeId.endsWith('_reward')) {
-                        const val = eff.formula(0, getLevel, getCurr);
-                        mult *= val;
-                        continue;
+    try {
+        // Always recalculate — clearTickCaches wipes _currencyRateFrame = {} 
+        // so this early return only helps within the SAME tick when the same currency is queried multiple times
+        if (_currencyRateFrame[currency] === cacheDirtyFrame && _currencyRateCache[currency] !== undefined) return _currencyRateCache[currency];
+
+        let base = 0, baseRaw = 0, mult = 1, rewardMult = 1;
+        const effects = CURRENCY_EFFECT_INDEX[currency];
+        if (effects && effects.length > 0) {
+            for (let i = 0, len = effects.length; i < len; i++) {
+                const eff = effects[i];
+
+                if (typeof eff.nodeId === 'string' && eff.nodeId.endsWith('_reward')) {
+                    const raw = eff.formula(0, getLevel, getCurr);
+                    if (typeof raw === 'number' && !isNaN(raw)) {
+                        rewardMult *= raw;
                     }
-                    const lvl = gameState.levels[eff.nodeId] || 0;
-                    if (lvl <= 0) continue;
+                    continue;
+                }
+
+                const lvl = gameState.levels[eff.nodeId] || 0;
+                if (lvl <= 0) continue;
+                const val = eff.formula(lvl, getLevel, getCurr);
+                if (typeof val === 'object' && val !== null) {
+                    if (typeof val.valueOf === 'function') val = val.valueOf();
+                    else continue;
+                }
+                if (typeof val !== 'number' || isNaN(val)) continue;
+                if (eff.type === 'base_gain')          base    += val;
+                else if (eff.type === 'base_gain_raw') baseRaw += val;
+                else if (eff.type === 'currency_mult' || eff.type === 'dynamic_mult') mult *= val;
+            }
+        }
+
+        let result = (base * mult * rewardMult) + baseRaw;
+        if (isNaN(result)) result = 0;
+
+        // Apply challenge effects (simplified — plain number path)
+        if (gameState.activeChallenge) {
+            const node = NODE_MAP.get(gameState.activeChallenge);
+            if (node && node.challengeEffects) {
+                for (const eff of node.challengeEffects) {
+                    if (!eff.formula || eff.currency !== currency) continue;
+                    const lvl = getChallengeCompletions(node.id);
                     const val = eff.formula(lvl, getLevel, getCurr);
-                    if (eff.type === 'base_gain') base += val;
-                    else if (eff.type === 'base_gain_raw') baseRaw += val;
-                    else mult *= val;
+                    if (typeof val === 'object' && val !== null) {
+                    if (typeof val.valueOf === 'function') val = val.valueOf();
+                    else continue;
+                }
+                if (typeof val !== 'number' || isNaN(val)) continue;
+                    if (eff.type === 'currency_mult' || eff.type === 'dynamic_mult') result *= val;
+                    else if (eff.type === 'base_gain') result += val * mult;
+                    else if (eff.type === 'base_gain_raw') result += val;
                 }
             }
-            // Safety: ensure mult is never 0 or negative (prevents any buggy formula from killing gain)
-            //if (mult <= 0) mult = 1;
-            // BOTH base and baseRaw should be multiplied by currency_mult effects!
-            let result = base * mult + baseRaw;
-            // Apply challenge debuffs
-            result = applyChallengeEffectsToRate(currency, result);
-            cache.gainRate.set(currency, result);
-            _currencyRateCache[currency] = result;
-            _currencyRateFrame[currency] = cacheDirtyFrame;
-            return Math.max(0, result); // Guard against negative rates from challenge debuffs
-            } catch(e) { console.warn('gainRate error for', currency, e); return 0; }
         }
+
+        cache.gainRate.set(currency, result);
+        _currencyRateCache[currency] = result;
+        _currencyRateFrame[currency] = cacheDirtyFrame;
+        return result;
+    } catch(e) {
+        console.warn('gainRate error for', currency, e);
+        _currencyRateFrame[currency] = 0;
+        return 0;
+    }
+}
 
         function getCost(node, levelOffset = 0) {
             const curLvl = getLevel(node.id) + levelOffset;
             const max = getMaxLevel(node);
             if (curLvl >= max) return Infinity;
-            if (node.bulkFinalCost) { return node.costFormula(curLvl + 1, getLevel, getCurr); }
-            return node.costFormula(curLvl, getLevel, getCurr);
+            let cost;
+            if (node.bulkFinalCost) { cost = node.costFormula(curLvl + 1, getLevel, getCurr); }
+            else { cost = node.costFormula(curLvl, getLevel, getCurr); }
+            // Costs are typically small numbers; but if formula returns Decimal (from huge getCurr), keep it
+            return cost;
         }
 
         let _displayCostCache = {};
@@ -3212,6 +3472,12 @@ function draw() {
             let cost;
             if (curLvl >= max) { cost = Infinity; } else {
                 cost = getCost(node);
+            }
+            // Convert Decimal cost to number for display if safe
+            // Decimal check removed — plain numbers only
+                if (false) {
+                const n = cost.toNumber();
+                if (isFinite(n)) cost = n;
             }
             cache.displayCost.set(node.id, cost);
             _displayCostCache[node.id] = cost;
@@ -3269,6 +3535,15 @@ function draw() {
         // ==================== BUY LOGIC ====================
         function ensureCurrency(key) {
     if (gameState.currencies[key] === undefined) gameState.currencies[key] = 0;
+    // Convert any Decimal object to plain number
+    const v = gameState.currencies[key];
+    if (typeof v === 'object' && v !== null) {
+        if (typeof v.valueOf === 'function') {
+            gameState.currencies[key] = Number(v.valueOf()) || 0;
+        } else {
+            gameState.currencies[key] = 0;
+        }
+    }
     if (!gameState.discoveredCurrencies.includes(key)) {
         gameState.discoveredCurrencies.push(key);
         addCurrencyToOrder(key);
@@ -3285,43 +3560,43 @@ function buyUpgrade(nodeId, isAutomated = false, isFree = false) {
             const currentLvl = getLevel(node.id);
             const max = getMaxLevel(node);
             if (currentLvl >= max) return false;
-            const currency = gameState.currencies[node.costCurrency] || 0;
-            let bought = 0,
-                totalCost = 0;
+            let currency = getCurr(node.costCurrency) || 0;
+            // Force to number if it's an object (Decimal carry-over)
+            if (typeof currency === 'object' && currency !== null) {
+                if (typeof currency.valueOf === 'function') currency = currency.valueOf();
+                else currency = 0;
+                gameState.currencies[node.costCurrency] = Number(currency) || 0;
+            }
+
+            let bought = 0, totalCost = 0;
             if (node.bulkFinalCost) {
                 let target = currentLvl;
                 const desiredMax = isAutomated || buyMode === 'MAX' ? max : Math.min(max, currentLvl + buyMode);
-                let lo = currentLvl + 1,
-                    hi = desiredMax;
-                let iterations = 0;
-                while (lo <= hi && iterations < 1200) {
+                let lo = currentLvl + 1, hi = desiredMax;
+                while (lo <= hi) {
                     const mid = Math.floor((lo + hi) / 2);
-                    const cost = node.costFormula(mid, getLevel, getCurr);
-                    if (typeof cost === 'number' && !isNaN(cost) && cost <= currency) { target = mid;
-                        lo = mid + 1; } else { hi = mid - 1; }
-                    iterations++;
+                    const cost = getCost(node, mid - currentLvl);
+                    if (cost !== undefined && cost !== null && cost !== Infinity && currency >= cost) { target = mid; lo = mid + 1; } else { hi = mid - 1; }
                 }
-                if (target > currentLvl) { bought = target - currentLvl;
-                    totalCost = node.costFormula(target, getLevel, getCurr); }
+                if (target > currentLvl) { bought = target - currentLvl; totalCost = getCost(node, target - currentLvl); }
             } else {
                 const levelsToBuy = isAutomated || buyMode === 'MAX' ? (max - currentLvl) : Math.min(buyMode, max - currentLvl);
                 for (let i = 0; i < levelsToBuy; i++) {
                     const cost = node.costFormula(currentLvl + i, getLevel, getCurr);
-                    if (currency >= totalCost + cost) { totalCost += cost;
-                        bought++; } else break;
+                    const remaining = currency - totalCost;
+                    if (remaining >= cost) { totalCost += cost; bought++; } else break;
                 }
             }
             if (bought > 0) {
-                if (!isFree) gameState.currencies[node.costCurrency] -= totalCost;
-                const oldLevel = currentLvl,
-                    newLevel = currentLvl + bought;
+                if (!isFree) {
+                    gameState.currencies[node.costCurrency] = safeSub(currency, totalCost);
+                }
+                const oldLevel = currentLvl, newLevel = currentLvl + bought;
                 gameState.levels[node.id] = newLevel;
-                // Only add to discoveredCurrencies if not already there
                 if (!gameState.discoveredCurrencies.includes(node.costCurrency)) {
                     gameState.discoveredCurrencies.push(node.costCurrency);
                     addCurrencyToOrder(node.costCurrency);
                 }
-                // Auto-discover currencies referenced by this node's effects
                 if (node.effects) {
                     node.effects.forEach(eff => {
                         const ckey = eff.currency || eff.targetCurrency;
@@ -3329,18 +3604,13 @@ function buyUpgrade(nodeId, isAutomated = false, isFree = false) {
                     });
                 }
                 needsNodeUpdate = true;
-                // Clear caches immediately for costs/gain rates/max levels (but not resetGain which updates on tick)
                 clearCaches();
                 if (bought > 1 && !isAutomated && !node.bulkFinalCost) {
                     startStepAnimation(node.id, oldLevel, newLevel, isAutomated);
-                    // Schedule multi-buy sounds spread over time
                     scheduleMultiBuySound(bought);
                 } else {
                     startLevelAnimation(node.id, oldLevel, newLevel);
-                    // Autobuyers: no sound. Single manual buy: fire immediately.
-                    if (!isAutomated) {
-                        playSound('buy');
-                    }
+                    if (!isAutomated) { playSound('buy'); }
                 }
                 requestCanvasRedraw();
                 return true;
@@ -3668,6 +3938,12 @@ function renderCurrencyBar() {
         updateVisibleCurrencies();
     }
     
+    // Clear value cache periodically so 0-amount currencies always get refreshed
+    // This ensures currencies like e4, e5 etc. display "0" properly after resets
+    if (!_lastBarValues._resetTimer || ++_lastBarValues._resetTimer > 50) {
+        _lastBarValues = { _resetTimer: 0 };
+    }
+    
     // Every ~850ms, refresh which currencies are in the scroll viewport
     const now = performance.now();
     if (now - _barViewportCheckTime > BAR_VIEWPORT_CHECK_INTERVAL) {
@@ -3683,30 +3959,41 @@ function renderCurrencyBar() {
         });
     }
     
-    // Update values — always update ALL visible currencies regardless of cached value
-    // This ensures "0" gets shown properly after a reset
-    for (const [key, cached] of currencyBarCache) {
-        if (!_visibleCurrencyKeys.has(key)) continue;
-        
-        const amt = gameState.currencies[key] || 0;
-        const rate = calculateGainRate(key);
-        const fmtAmt = formatNum(amt);
-        const fmtRate = `(+${formatNum(rate)}/s)`;
-        let potentialText = '';
-        const resetNode = _resetNodeCache[key];
-        if (resetNode) {
-            const g = getEffectiveResetGain(resetNode);
-            if (g > 0) potentialText = ` (+${formatNum(g)} on reset)`;
-        }
-        const valKey = fmtAmt + fmtRate + potentialText;
-        // Force update when value is 0 (to display "0" after reset)
-        if (_lastBarValues[key] === valKey && amt !== 0) continue;
-        _lastBarValues[key] = valKey;
-        cached.amount.textContent = fmtAmt;
-        cached.rate.textContent = fmtRate;
-        cached.rate.style.fontSize = `${Math.max(8, currencyFontSize - 1)}px`;
-        cached.potential.textContent = potentialText;
-    }
+    // Update values — update ALL currencies unconditionally every frame
+            for (const [key, cached] of currencyBarCache) {
+                // Always update — no scroll-position filter
+                
+                const rawAmt = gameState.currencies[key];
+                // Defend against Decimal objects lingering in old save data
+                let amt;
+                if (typeof rawAmt === 'object' && rawAmt !== null) {
+                    if (typeof rawAmt.m === 'number' && typeof rawAmt.e === 'number') {
+                        amt = rawAmt.m * Math.pow(10, rawAmt.e);
+                    } else if (typeof rawAmt.valueOf === 'function') {
+                        amt = rawAmt.valueOf();
+                    } else {
+                        amt = 0;
+                    }
+                    // Convert to plain number in the save
+                    gameState.currencies[key] = Number(amt) || 0;
+                } else {
+                    amt = Number(rawAmt) || 0;
+                }
+                const rate = calculateGainRate(key);
+                // Always update the display — skip caching so small increments are always visible
+                const fmtAmt = formatNum(amt);
+                const fmtRate = `(+${formatNum(rate)}/s)`;
+                let potentialText = '';
+                const resetNode = _resetNodeCache[key];
+                if (resetNode) {
+                    const g = getEffectiveResetGain(resetNode);
+                    if (g > 0) potentialText = ` (+${formatNum(g)} on reset)`;
+                }
+                cached.amount.textContent = fmtAmt;
+                cached.rate.textContent = fmtRate;
+                cached.rate.style.fontSize = `${Math.max(8, currencyFontSize - 1)}px`;
+                cached.potential.textContent = potentialText;
+            }
     
     // Also refresh bar for all currencies that are not in the visible set but have value 0
     // (e.g. after a reset, a currency that was previously non-zero is now 0 and should show)
@@ -3820,19 +4107,28 @@ function renderCurrencyBar() {
 
         function executeReset(node) {
     try {
+    // Convert any Decimal currency objects to plain numbers before reset
+    for (const key of Object.keys(gameState.currencies)) {
+        const v = gameState.currencies[key];
+        if (typeof v === 'object' && v !== null) {
+            if (typeof v.valueOf === 'function') {
+                gameState.currencies[key] = Number(v.valueOf()) || 0;
+            } else {
+                gameState.currencies[key] = 0;
+            }
+        }
+    }
     if (!node) return;
     const gain = getEffectiveResetGain(node);
     if (gain <= 0) { playSound('fail');
         document.getElementById('reset-modal').classList.add('hidden'); return; }
-    // Save BEFORE reset in case something goes wrong
     try { saveGame(); } catch(e) {}
-    gameState.currencies[node.targetCurrency] = (gameState.currencies[node.targetCurrency] || 0) + gain;
+    gameState.currencies[node.targetCurrency] = safeAdd(gameState.currencies[node.targetCurrency] || 0, gain);
     if (!gameState.discoveredCurrencies.includes(node.targetCurrency)) { 
         gameState.discoveredCurrencies.push(node.targetCurrency);
         addCurrencyToOrder(node.targetCurrency); 
     } else if (gameState.hiddenCurrencies && gameState.hiddenCurrencies.includes(node.targetCurrency) 
                && (!gameState.userHiddenCurrencies || !gameState.userHiddenCurrencies.includes(node.targetCurrency))) {
-        // Un-hide when currency is earned from a reset, but only if user didn't manually hide it
         gameState.hiddenCurrencies = gameState.hiddenCurrencies.filter(k => k !== node.targetCurrency);
     }
     resetNodeLevels(node);
@@ -3844,12 +4140,10 @@ function renderCurrencyBar() {
             activeResetNode = null;
             requestCanvasRedraw();
             } catch(e) { console.warn('executeReset error:', e); document.getElementById('reset-modal').classList.add('hidden'); activeResetNode = null; }
-            // Force bar rebuild after reset (currencies that went to 0 need to reappear)
     _lastRenderedBarOrder = '';
     _lastBarValues = {};
     renderCurrencyBar();
     lastCurrencyUpdateTime = performance.now();
-    // Save again after reset
     try { saveGame(); } catch(e) {}
 }
 
@@ -3893,9 +4187,9 @@ document.getElementById('btn-pause').onclick = () => {
             localStorage.removeItem(SAVE_KEY);
             localStorage.removeItem(SAVE_BACKUP_KEY);
             gameState = { _fresh: true, currencies: { P: 0, PR: 0, QT: 0, T: 0, D1: 0, D2: 0, D3: 0, D4: 0, D5: 0, D6: 0, D7: 0, D8: 0 }, discoveredCurrencies: ['P'], currencyOrder: ['P'],
-                hiddenCurrencies: [], levels: {}, unlockedDecorations: [], camera: { panX: 0, panY: 0,
+                hiddenCurrencies: [], userHiddenCurrencies: [], levels: {}, unlockedDecorations: [], camera: { panX: 0, panY: 0,
                     scale: 1 }, soundMuted: false, showEffects: true, buyMode: 1, skipResetConfirm: {},
-                paused: false, offlineTimestamp: Date.now(), notation: 'standard' };
+                paused: false, offlineTimestamp: Date.now(), notation: 'standard', challengeCompletions: {}, activeChallenge: null };
             panX = 0;
             panY = 0;
             scale = 1;
@@ -4407,6 +4701,8 @@ document.getElementById('btn-font-up').onclick = (e) => {
                             } else {
                                 enterChallenge(node.id);
                             }
+                        } else if (node.type === 'break') {
+                            buyUpgrade(node.id);
                         }
                     }
                 }
@@ -4427,29 +4723,7 @@ document.getElementById('btn-font-up').onclick = (e) => {
         let touchHandled = false;
         let isPinching = false;
         window.addEventListener('touchstart', () => { touchHandled = true; }, { passive: true });
-        window.addEventListener('mouseup', (e) => {
-            if (touchHandled) {
-                touchHandled = false;
-                isDragging = false;
-                return;
-            }
-            if (isDragging && !mouseMoved) {
-                const node = getNodeAtScreen(e.clientX, e.clientY);
-                if (node) {
-                    if (node.type === 'upgrade') buyUpgrade(node.id);
-                    else if (node.type === 'reset') openResetModal(node);
-                    else if (node.type === 'challenge') {
-                        if (gameState.activeChallenge === node.id) leaveChallenge(false);
-                        else if (gameState.activeChallenge) {
-                            showToast('⚠️ Already in another challenge!');
-                            playSound('fail');
-                        } else enterChallenge(node.id);
-                    }
-                }
-                
-            }
-            
-        });
+        
         canvas.addEventListener('mousemove', e => {
             const node = getNodeAtScreen(e.clientX, e.clientY);
             const newHover = node ? node.id : null;
@@ -5192,27 +5466,20 @@ window.updateNewsMessageCount = updateNewsMessageCount;
         settingsMenu.addEventListener('mouseleave', () => { newsPaused = false; });
 
         // ==================== PERSISTENCE ====================
-        const SAVE_KEY = 'UPGRADEX_SAVE_V7'; //why i use upgradex lol
+        const SAVE_KEY = 'UPGRADEX_SAVE_V7';
         const SAVE_BACKUP_KEY = 'UPGRADEX_SAVE_BACKUP_V7';
         const SAVE_VERSION = 1;
         let loadSucceeded = false;
         let hasExistingSave = false;
 
-        function saveGame() {
-            // CRITICAL GUARD: if _fresh flag is still set, loadGame did not complete successfully.
-            // Refuse to overwrite any existing save on disk.
+function saveGame() {
             if (gameState._fresh) {
-                // Check if a real save exists on disk — if so, NEVER write the blank state.
                 if (localStorage.getItem(SAVE_KEY)) {
                     console.warn('⛔ saveGame blocked — _fresh state present, save exists on disk. Not overwriting.');
                     return;
                 }
-                // No save on disk AND _fresh: this is a legitimate first-ever visit — allow it.
-                // Remove _fresh so subsequent saves work normally.
                 delete gameState._fresh;
             }
-            // NEVER overwrite a good save with invalid data.
-            // Validate gameState is sane before writing.
             if (!gameState || typeof gameState !== 'object') {
                 console.warn('saveGame skipped — gameState is invalid');
                 return;
@@ -5221,92 +5488,80 @@ window.updateNewsMessageCount = updateNewsMessageCount;
                 console.warn('saveGame skipped — currencies is missing');
                 return;
             }
-            if (typeof gameState.currencies.P !== 'number' || isNaN(gameState.currencies.P)) {
-                console.warn('saveGame skipped — P is NaN or not a number');
-                return;
-            }
-            // GUARD: Detect a wiped/fresh state (only P at 0, no levels, nothing else with >0)
-            // and refuse to overwrite a real save with it.
-            const hasRealProgress = gameState.currencies.P > 0 ||
-                Object.keys(gameState.currencies).length > 1 ||
-                Object.keys(gameState.levels).length > 0;
-            // Ensure news object is complete but never corrupt the save if it's missing
-            if (!gameState.news || typeof gameState.news !== 'object') {
-                // Silently set defaults so setNewsEnabled etc. don't crash
-                gameState.news = { enabled: true, groupState: {}, history: [], seenMessages: {}, autoAdd: true, scrollSpeed: 1.0, duplicatePrevention: 20, newWeight: 2.0 };
-            }
             try {
-                // SAFETY: if loading failed but a save exists on disk, do NOT overwrite it.
                 if (!loadSucceeded && hasExistingSave) {
                     console.warn('⛔ saveGame skipped — game state was not loaded successfully.');
-                    return;
-                }
-                // DO NOT overwrite a real save with a blank fresh state.
-                if (!hasRealProgress && hasExistingSave) {
-                    console.warn('⚠️ saveGame skipped — refusing to overwrite save with blank state (likely page reload during init)');
                     return;
                 }
                 gameState.camera = { panX, panY, scale };
                 gameState.buyMode = buyMode;
                 gameState.offlineTimestamp = Date.now();
-                // Sanitize all currency values to numbers before saving
-                if (gameState.currencies) {
-                    for (const key of Object.keys(gameState.currencies)) {
-                        const v = gameState.currencies[key];
-                        if (typeof v !== 'number' || isNaN(v)) {
-                            gameState.currencies[key] = 0;
-                        }
-                    }
-                    // Ensure P at least exists
-                    if (typeof gameState.currencies.P !== 'number' || isNaN(gameState.currencies.P)) gameState.currencies.P = 0;
-                } else {
-                    gameState.currencies = { P: 0 };
+                
+                if (!gameState.news || typeof gameState.news !== 'object') {
+                    gameState.news = { enabled: true, groupState: {}, history: [], seenMessages: {}, autoAdd: true, scrollSpeed: 1.0, duplicatePrevention: 20, newWeight: 2.0 };
                 }
-                // Sanitize levels too
-                if (gameState.levels) {
-                    for (const key of Object.keys(gameState.levels)) {
-                        const v = gameState.levels[key];
-                        if (typeof v !== 'number' || isNaN(v)) {
-                            gameState.levels[key] = 0;
+                
+                // Clone gameState — ensure all numeric values are plain numbers
+                const clone = {};
+                for (const key of Object.keys(gameState)) {
+                    if (key === '_fresh') continue;
+                    const val = gameState[key];
+                    if (Array.isArray(val)) {
+                        clone[key] = val.slice();
+                    } else if (val && typeof val === 'object') {
+                        if (key === 'currencies') {
+                            const cclone = {};
+                            for (const ckey of Object.keys(val)) {
+                                let cv = val[ckey];
+                                // Convert Decimal objects to plain numbers
+                                if (cv && typeof cv === 'object') {
+                                    if (typeof cv.toNumber === 'function') cv = cv.toNumber();
+                                    else if (typeof cv.valueOf === 'function') cv = cv.valueOf();
+                                    else cv = 0;
+                                }
+                                if (typeof cv === 'number') {
+                                    cclone[ckey] = isFinite(cv) ? cv : 0;
+                                } else {
+                                    cclone[ckey] = 0;
+                                }
+                            }
+                            clone[key] = cclone;
+                        } else {
+                            clone[key] = JSON.parse(JSON.stringify(val));
                         }
+                    } else if (typeof val === 'number') {
+                        clone[key] = isFinite(val) ? val : 0;
+                    } else {
+                        clone[key] = val;
                     }
-                } else {
-                    gameState.levels = {};
                 }
-                const toSave = { __version: SAVE_VERSION, ...gameState };
+                
+                const toSave = { __version: SAVE_VERSION, ...clone };
                 const raw = JSON.stringify(toSave);
-                // Strict validation: must parse, have currencies as an object, and have P as a number
-                const test = JSON.parse(raw);
-                if (!test || typeof test !== 'object' || !test.currencies || typeof test.currencies !== 'object') {
-                    console.warn('Save validation failed — not saving corrupt data');
-                    return;
-                }
-                if (typeof test.currencies.P !== 'number' || isNaN(test.currencies.P)) {
-                    console.warn('Save validation failed — P is missing or NaN');
-                    return;
-                }
-                // Also check that levels if present, are objects
-                if (test.levels && typeof test.levels !== 'object') {
-                    console.warn('Save validation failed — levels is not an object');
-                    return;
-                }
-                // Rotate: the current main save becomes the backup BEFORE we overwrite it.
+                // Validate
+                try {
+                    const test = JSON.parse(raw);
+                    if (!test || typeof test !== 'object' || !test.currencies || typeof test.currencies !== 'object') {
+                        console.warn('Save validation failed — not saving corrupt data');
+                        return;
+                    }
+                } catch(_) { console.warn('Save validation failed'); return; }
+                
+                // Rotate backup
                 const previousRaw = localStorage.getItem(SAVE_KEY);
                 if (previousRaw && previousRaw !== raw) {
-                    // Only promote a save that had real progress (not a wiped state)
                     try {
                         const prevParsed = JSON.parse(previousRaw);
                         if (prevParsed && prevParsed.currencies) {
                             const prevP = typeof prevParsed.currencies.P === 'number' ? prevParsed.currencies.P : 0;
-                            const prevOtherCurrencies = Object.keys(prevParsed.currencies).length > 1;
+                            const prevOther = Object.keys(prevParsed.currencies).length > 1;
                             const prevLevels = prevParsed.levels && Object.keys(prevParsed.levels).length > 0;
-                            if (prevP > 0 || prevOtherCurrencies || prevLevels) {
+                            if (prevP > 0 || prevOther || prevLevels) {
                                 localStorage.setItem(SAVE_BACKUP_KEY, previousRaw);
                             }
                         }
-                    } catch (_) { /* don't promote corrupt backups */ }
+                    } catch (_) {}
                 }
-                // Write the validated save
                 localStorage.setItem(SAVE_KEY, raw);
             } catch (e) {
                 console.warn('Save failed (non-critical):', e);
@@ -5389,15 +5644,22 @@ window.updateNewsMessageCount = updateNewsMessageCount;
             if (!gameState.currencies) gameState.currencies = { P: 0 };
             // Ensure every known currency key exists in currencies, defaulting non-numeric/undefined to 0
             for (const key of Object.keys(gameState.currencies)) {
-                const v = gameState.currencies[key];
-                if (typeof v !== 'number' || isNaN(v)) {
-                    gameState.currencies[key] = 0;
-                }
-            }
-            // Also ensure P exists and is numeric
-            if (typeof gameState.currencies.P !== 'number' || isNaN(gameState.currencies.P)) {
-                gameState.currencies.P = 0;
-            }
+    const v = gameState.currencies[key];
+    if (typeof v === 'number') {
+        if (isNaN(v)) gameState.currencies[key] = 0;
+    } else if (v && typeof v === 'object' && 'm' in v) {
+        // old Decimal carry-over
+        const n = (v.m || 0) * Math.pow(10, (v.e || 0));
+        gameState.currencies[key] = isFinite(n) ? Math.min(n, Number.MAX_SAFE_INTEGER) : 0;
+    } else {
+        gameState.currencies[key] = 0;
+    }
+}
+if (typeof gameState.currencies.P !== 'number' || isNaN(gameState.currencies.P)) {
+    gameState.currencies.P = 0;
+}
+            
+            // NEVER clamp BigNum values stored as {m,e} in save — they're legitimate.
             
             if (!gameState.hiddenCurrencies) gameState.hiddenCurrencies = [];
             if (!gameState.userHiddenCurrencies) gameState.userHiddenCurrencies = [];
@@ -5414,17 +5676,41 @@ window.updateNewsMessageCount = updateNewsMessageCount;
             if (!Array.isArray(gameState.unlockedDecorations)) gameState.unlockedDecorations = [];
             // Ensure currencies with amounts are in order
             if (gameState.currencies) {
-                for (const key of Object.keys(gameState.currencies)) {
-                    if ((gameState.currencies[key] || 0) > 0 && gameState.currencyOrder && !gameState.currencyOrder.includes(key)) {
-                        gameState.currencyOrder.push(key);
-                        if (!gameState.discoveredCurrencies.includes(key)) gameState.discoveredCurrencies.push(key);
-                    }
-                }
+                
+    for (const key of Object.keys(gameState.currencies)) {
+    if ((gameState.currencies[key] || 0) > 0) {
+        if (!gameState.currencyOrder.includes(key)) gameState.currencyOrder.push(key);
+        if (!gameState.discoveredCurrencies.includes(key)) gameState.discoveredCurrencies.push(key);
+    }
+}
             }
             if (gameState.camera) { panX = gameState.camera.panX || 0;
                 panY = gameState.camera.panY || 0;
                 scale = gameState.camera.scale || 1; }
             if (gameState.buyMode !== undefined) { buyMode = gameState.buyMode; }
+            // Validate all currency values — ensure they're plain numbers
+            if (gameState.currencies) {
+                for (const key of Object.keys(gameState.currencies)) {
+                    const v = gameState.currencies[key];
+                    if (v === null || v === undefined) { gameState.currencies[key] = 0; continue; }
+                    if (typeof v === 'number') {
+                        if (!isFinite(v)) gameState.currencies[key] = 0;
+                        continue;
+                    }
+                    // Convert any {m,e} object to number (from old Decimal saves)
+                    // Skip any object (old Decimal carries) — set to 0
+                    if (v && typeof v === 'object' && 'm' in v && 'e' in v) {
+                        const n = (v.m || 0) * Math.pow(10, (v.e || 0));
+                        gameState.currencies[key] = isFinite(n) ? Math.min(n, Number.MAX_SAFE_INTEGER) : 0;
+                        continue;
+                    }
+                    if (v && typeof v === 'object') {
+                        gameState.currencies[key] = 0;
+                        continue;
+                    }
+                    gameState.currencies[key] = 0;
+                }
+            }
             if (gameState.currencyFontSize !== undefined) {
                 currencyFontSize = gameState.currencyFontSize;
             } else {
@@ -5475,22 +5761,28 @@ window.updateNewsMessageCount = updateNewsMessageCount;
             cacheDirty = true;
             const gains = {};
             for (const key of Object.keys(CURRENCIES)) {
-                // Skip currencies excluded from offline progress (diminishing returns, random chance, tick-based)
-                if (OFFLINE_EXCLUDED_CURRENCIES.has(key)) continue;
-                const rate = calculateGainRate(key);
-                if (rate > 0 && (gameState.currencies[key] || 0) > 0) {
-                    const earned = rate * dt;
-                    if (earned > 0.01 || (key === 'P' && earned > 0)) {
-                        gains[key] = earned;
-                        gameState.currencies[key] = (gameState.currencies[key] || 0) + earned;
-                        // Ensure currency is discovered and in order
-                        if (!gameState.discoveredCurrencies.includes(key)) {
-                            gameState.discoveredCurrencies.push(key);
-                            addCurrencyToOrder(key);
-                        }
-                    }
-                }
-            }
+    if (OFFLINE_EXCLUDED_CURRENCIES.has(key)) continue;
+    const rate = calculateGainRate(key);
+    if (!isFinite(rate) || rate <= 0) continue;
+
+    let curr = gameState.currencies[key] || 0;
+    if (curr <= 0) continue;
+
+    // Already at the JavaScript numeric ceiling — nothing to add.
+    if (curr >= Number.MAX_VALUE) continue;
+
+    // Cap the raw earned value so `formatNum` never sees Infinity.
+    let earned = rate * dt;
+    const headroom = Number.MAX_VALUE - curr;
+    if (!isFinite(earned) || earned > headroom) earned = headroom;
+    if (earned <= 0) continue;
+
+    const newVal = safeAdd(curr, earned);
+    if (key === 'P' || Math.abs(newVal - curr) >= 0.001) {
+        gains[key] = earned;              // now always finite
+        gameState.currencies[key] = newVal;
+    }
+}
             if (Object.keys(gains).length === 0) return;
             clearCaches(true);
             // Show popup
@@ -5602,50 +5894,45 @@ window.updateNewsMessageCount = updateNewsMessageCount;
             if (gameState.paused) return;
             // Clear frame-level caches every tick
             clearTickCaches();
-            let changed = false;
-            // Mark changed if any discovered currency has a negative rate
-            for (const key of gameState.discoveredCurrencies) {
-                if (calculateGainRate(key) < 0) { changed = true; break; }
-            }
+            
             // Check all defined currencies for new gains or drains
             const discoveredSet = new Set(gameState.discoveredCurrencies);
             for (const key of Object.keys(CURRENCIES)) {
                 const rate = calculateGainRate(key);
-                if (rate !== 0) {
+                if (rate !== 0 && isFinite(rate)) {
                     if (!discoveredSet.has(key)) {
                         gameState.discoveredCurrencies.push(key);
                         addCurrencyToOrder(key);
                         discoveredSet.add(key);
                         needsNodeUpdate = true;
                     }
-                    if (gameState.currencies[key] === undefined) gameState.currencies[key] = 0;
+                    if (gameState.currencies[key] === undefined || gameState.currencies[key] === null) gameState.currencies[key] = 0;
                 }
             }
             // Process all discovered currencies for gain
             for (const key of gameState.discoveredCurrencies) {
                 const rate = calculateGainRate(key);
-                if (rate !== 0) {
-                    const old = gameState.currencies[key] || 0;
-                    const newVal = old + rate * dt;
-                    gameState.currencies[key] = newVal;
-                    if (Math.abs(newVal - old) > Math.max(1, Math.abs(old) * 0.005)) changed = true;
-                    else if (newVal < old && old > 0) changed = true;
+                if (isNaN(rate) || !isFinite(rate) || rate === 0) continue;
+                let old = gameState.currencies[key] || 0;
+                // Convert any Decimal object to plain number
+                if (typeof old === 'object' && old !== null) {
+                    if (typeof old.valueOf === 'function') old = old.valueOf();
+                    else old = 0;
+                    gameState.currencies[key] = Number(old) || 0;
                 }
-            }
-            // Auto-unhide currencies with gain
-            for (const key of gameState.discoveredCurrencies || []) {
-                const rate = calculateGainRate(key);
+                const gain = rate * dt;
+                gameState.currencies[key] = safeAdd(old, gain);
+
+                // Auto-unhide
                 if (rate > 0 && gameState.hiddenCurrencies && gameState.hiddenCurrencies.includes(key)) {
                     if (!gameState.userHiddenCurrencies || !gameState.userHiddenCurrencies.includes(key)) {
                         gameState.hiddenCurrencies = gameState.hiddenCurrencies.filter(k => k !== key);
-                        if (typeof renderCurrencyBar === 'function') renderCurrencyBar();
-                        if (typeof renderCurrencyToggles === 'function') renderCurrencyToggles();
                     }
                 }
             }
-            // Periodically refresh currency bar for currencies that exist but show 0
-            // This handles the case where a currency went to 0 after reset
-            if (typeof renderCurrencyBar === 'function' && performance.now() % 2000 < 20) {
+
+            // Always refresh currency bar every tick so numbers visibly increment
+            if (typeof renderCurrencyBar === 'function') {
                 renderCurrencyBar();
             }
             if (performance.now() - lastAutomationTime >= 200) {
@@ -5752,8 +6039,9 @@ window.updateNewsMessageCount = updateNewsMessageCount;
         // ---- Build maps ----
         const CURRENCY_EFFECT_INDEX = {};
         Object.keys(CURRENCIES).forEach(c => CURRENCY_EFFECT_INDEX[c] = []);
+        // Index ALL effects from ALL nodes (including challenge nodes that were pushed above)
         TREE_NODES.forEach(node => {
-            if (node.type !== 'upgrade' || !node.effects) return;
+            if ((node.type !== 'upgrade' && node.type !== 'break') || !node.effects) return;
             node.effects.forEach(eff => {
                 const target = eff.currency || eff.targetCurrency;
                 if (!target) return;
