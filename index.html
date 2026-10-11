@@ -5697,18 +5697,28 @@ if (typeof gameState.currencies.P !== 'number' || isNaN(gameState.currencies.P))
             cacheDirty = true;
             const gains = {};
             for (const key of Object.keys(CURRENCIES)) {
-                if (OFFLINE_EXCLUDED_CURRENCIES.has(key)) continue;
-                const rate = calculateGainRate(key);
-                if (rate <= 0) continue;
-                const curr = gameState.currencies[key] || 0;
-                if (curr <= 0) continue;
-                const earned = rate * dt;
-                const newVal = safeAdd(curr, earned);
-                if (key === 'P' || Math.abs(newVal - curr) >= 0.001) {
-                    gains[key] = earned;
-                    gameState.currencies[key] = newVal;
-                }
-            }
+    if (OFFLINE_EXCLUDED_CURRENCIES.has(key)) continue;
+    const rate = calculateGainRate(key);
+    if (!isFinite(rate) || rate <= 0) continue;
+
+    let curr = gameState.currencies[key] || 0;
+    if (curr <= 0) continue;
+
+    // Already at the JavaScript numeric ceiling — nothing to add.
+    if (curr >= Number.MAX_VALUE) continue;
+
+    // Cap the raw earned value so `formatNum` never sees Infinity.
+    let earned = rate * dt;
+    const headroom = Number.MAX_VALUE - curr;
+    if (!isFinite(earned) || earned > headroom) earned = headroom;
+    if (earned <= 0) continue;
+
+    const newVal = safeAdd(curr, earned);
+    if (key === 'P' || Math.abs(newVal - curr) >= 0.001) {
+        gains[key] = earned;              // now always finite
+        gameState.currencies[key] = newVal;
+    }
+}
             if (Object.keys(gains).length === 0) return;
             clearCaches(true);
             // Show popup
