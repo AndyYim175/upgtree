@@ -660,7 +660,357 @@ const OFFLINE_EXCLUDED_CURRENCIES = new Set([
                 osc.stop(ctxNow + 0.3);
             } catch (e) {}
         }
-        // ==================== NOTATION SYSTEM ====================
+        // ==================== DECIMAL CLASS (like break_infinity.js) ====================
+// Full Decimal implementation with mantissa/exponent representation.
+// Supports numbers up to 1e(10^15) — effectively infinite for gameplay.
+class Decimal {
+    constructor(value) {
+        this.m = 0;
+        this.e = 0;
+        if (typeof value === 'number') {
+            if (!isFinite(value) || value === 0) { this.m = 0; this.e = 0; return; }
+            this._fromNumber(value);
+        } else if (value instanceof Decimal) {
+            this.m = value.m; this.e = value.e;
+        } else if (value && typeof value === 'object' && 'm' in value && 'e' in value) {
+            this.m = value.m; this.e = value.e;
+        }
+        this._normalize();
+    }
+    _fromNumber(n) {
+        if (n === 0) { this.m = 0; this.e = 0; return; }
+        const abs = Math.abs(n);
+        this.e = Math.floor(Math.log10(abs));
+        this.m = n / Math.pow(10, this.e);
+        this._normalize();
+    }
+    _normalize() {
+        if (this.m === 0) { this.e = 0; return; }
+        while (Math.abs(this.m) >= 10) { this.m /= 10; this.e++; }
+        while (Math.abs(this.m) < 1) { this.m *= 10; this.e--; }
+    }
+    // Safely convert to number; return Infinity if out of range
+    toNumber() {
+        if (this.m === 0) return 0;
+        if (this.e > 308) return this.m > 0 ? Number.POSITIVE_INFINITY : Number.NEGATIVE_INFINITY;
+        if (this.e < -308) return 0;
+        const n = this.m * Math.pow(10, this.e);
+        if (isFinite(n)) return n;
+        return this.m > 0 ? Number.POSITIVE_INFINITY : Number.NEGATIVE_INFINITY;
+    }
+    toString() { return this.m + 'e' + this.e; }
+    valueOf() { return this.toNumber(); }
+    // Check if this is exactly 0
+    isZero() { return this.m === 0; }
+    // Absolute value
+    abs() { return new Decimal({ m: Math.abs(this.m), e: this.e }); }
+    // Negate
+    neg() { return new Decimal({ m: -this.m, e: this.e }); }
+    // Add
+    plus(v) {
+        v = new Decimal(v);
+        if (this.isZero()) return v;
+        if (v.isZero()) return this;
+        let m, e;
+        if (this.e > v.e) { const d = Math.min(this.e - v.e, 20); m = this.m + v.m / Math.pow(10, d); e = this.e; }
+        else if (v.e > this.e) { const d = Math.min(v.e - this.e, 20); m = v.m + this.m / Math.pow(10, d); e = v.e; }
+        else { m = this.m + v.m; e = this.e; }
+        const r = new Decimal({ m, e });
+        r._normalize();
+        return r;
+    }
+    // Subtract
+        // Subtract
+    minus(v) {
+        v = new Decimal(v);
+        if (v.isZero()) return this;
+        if (this.isZero()) return v.neg();
+        let m, e;
+        if (this.e > v.e) { const d = Math.min(this.e - v.e, 20); m = this.m - v.m / Math.pow(10, d); e = this.e; }
+        else if (v.e > this.e) { const d = Math.min(v.e - this.e, 20); m = this.m / Math.pow(10, d) - v.m; e = v.e; }
+        else { m = this.m - v.m; e = this.e; }
+        const r = new Decimal({ m, e });
+        r._normalize();
+        return r;
+    }
+    // Multiply
+    times(v) {
+        v = new Decimal(v);
+        if (this.isZero() || v.isZero()) return new Decimal(0);
+        const r = new Decimal({ m: this.m * v.m, e: this.e + v.e });
+        r._normalize();
+        return r;
+    }
+    // Divide
+    div(v) {
+        v = new Decimal(v);
+        if (v.isZero()) return new Decimal(0);
+        if (this.isZero()) return new Decimal(0);
+        const r = new Decimal({ m: this.m / v.m, e: this.e - v.e });
+        r._normalize();
+        return r;
+    }
+    // Power — handles any real exponent
+    pow(exp) {
+        exp = new Decimal(exp);
+        if (exp.isZero()) return new Decimal(1);
+        if (this.isZero()) return new Decimal(0);
+        // log10 of this value
+        const logVal = this.e + Math.log10(Math.abs(this.m));
+        const newExp = logVal * exp.toNumber();
+        const intExp = Math.floor(newExp);
+        const frac = newExp - intExp;
+        const newM = Math.pow(10, frac);
+        const sign = this.m < 0 && exp.m % 2 !== 0 ? -1 : 1;
+        return new Decimal({ m: sign * newM, e: intExp });
+    }
+    // log10
+    log10() {
+        if (this.m <= 0) return -Infinity;
+        return this.e + Math.log10(this.m);
+    }
+    // log2
+    log2() {
+        return this.log10() / Math.LN10 * Math.LN2;
+    }
+    // Natural log
+    ln() {
+        return this.log10() * Math.LN10;
+    }
+    // Floor
+    floor() {
+        if (this.e < 0) return new Decimal(0);
+        if (this.e > 15) return this; // too large for accurate floor
+        return new Decimal(Math.floor(this.toNumber()));
+    }
+    // Ceil
+    ceil() {
+        if (this.e < 0) return new Decimal(this.m > 0 ? 1 : 0);
+        if (this.e > 15) return this;
+        return new Decimal(Math.ceil(this.toNumber()));
+    }
+    // Round
+    round() {
+        if (this.e < 0) return new Decimal(Math.round(this.toNumber()));
+        if (this.e > 15) return this;
+        return new Decimal(Math.round(this.toNumber()));
+    }
+    // Compare: returns -1, 0, 1
+    cmp(v) {
+        v = new Decimal(v);
+        if (this.m === 0 && v.m === 0) return 0;
+        if (this.m === 0) return -1;
+        if (v.m === 0) return 1;
+        if (this.e > v.e) return 1;
+        if (this.e < v.e) return -1;
+        if (this.m > v.m) return 1;
+        if (this.m < v.m) return -1;
+        return 0;
+    }
+    gt(v) { return this.cmp(v) > 0; }
+    gte(v) { return this.cmp(v) >= 0; }
+    lt(v) { return this.cmp(v) < 0; }
+    lte(v) { return this.cmp(v) <= 0; }
+    eq(v) { return this.cmp(v) === 0; }
+    // Static helpers
+    static max(a, b) { a = new Decimal(a); b = new Decimal(b); return a.gt(b) ? a : b; }
+    static min(a, b) { a = new Decimal(a); b = new Decimal(b); return a.lt(b) ? a : b; }
+    static abs(v) { return new Decimal(v).abs(); }
+    static floor(v) { return new Decimal(v).floor(); }
+    static ceil(v) { return new Decimal(v).ceil(); }
+    static round(v) { return new Decimal(v).round(); }
+}
+// Ensure no duplicate stray `w Decimal(v)` code lives after the class
+// (cleaning up old corrupt duplicates from earlier edits)
+
+// (removed stale duplicate)
+// Global flag: break infinity enabled
+let BROKEN = false;
+const BREAK_NODE_ID = 'BRK01';
+const BREAK_THRESHOLD = 1.79e308;
+const MAX_EXP = 1e15;
+
+// Detect if a value is Decimal
+// Detect if a value is Decimal
+function isD(v) { return v instanceof Decimal; }
+
+// Detect any big-number representation: Decimal instance OR legacy {m, e} object
+function isBigNum(v) {
+    if (v instanceof Decimal) return true;
+    if (v && typeof v === 'object' && 'm' in v && 'e' in v) return true;
+    return false;
+}
+
+// Smart conversion: number → Decimal if too big, otherwise keep as number
+function D(v) {
+    if (v instanceof Decimal) return v;
+    if (typeof v === 'number') {
+        if (!isFinite(v) || v === 0) return v;
+        const abs = Math.abs(v);
+        if (abs >= BREAK_THRESHOLD) return new Decimal(v);
+        return v;
+    }
+    if (v && typeof v === 'object' && 'm' in v && 'e' in v) return new Decimal(v);
+    return v;
+}
+
+// Force a number to Decimal regardless
+function forceD(v) {
+    if (v instanceof Decimal) return v;
+    if (typeof v === 'number' && isFinite(v) && v !== 0) return new Decimal(v);
+    if (v && typeof v === 'object' && 'm' in v && 'e' in v) return new Decimal(v);
+    return new Decimal(0);
+}
+
+// MONKEY-PATCH Math functions to auto-convert arguments and results
+const _origPow = Math.pow;
+const _origLog10 = Math.log10;
+const _origLog2 = Math.log2;
+const _origRound = Math.round;
+const _origFloor = Math.floor;
+const _origCeil = Math.ceil;
+const _origAbs = Math.abs;
+const _origMin = Math.min;
+const _origMax = Math.max;
+
+Math.pow = function(a, b) {
+    // If either argument is Decimal or a huge number, use Decimal path
+    if (a instanceof Decimal || (typeof a === 'number' && Math.abs(a) >= BREAK_THRESHOLD)) {
+        return new Decimal(a).pow(new Decimal(b));
+    }
+    if (b instanceof Decimal) {
+        return new Decimal(a).pow(b);
+    }
+    // Both are normal numbers — regular Math.pow (small constants like 1.1^lvl)
+    // But check if result might overflow
+    if (typeof a === 'number' && typeof b === 'number') {
+        const result = _origPow(a, b);
+        if (isFinite(result)) return result;
+        // Overflow — use Decimal
+        return new Decimal(a).pow(new Decimal(b));
+    }
+    return _origPow(a, b);
+};
+
+Math.log10 = function(x) {
+    if (x instanceof Decimal) return x.log10();
+    if (typeof x === 'number' && !isFinite(x)) return x > 0 ? Infinity : -Infinity;
+    if (typeof x === 'number') return _origLog10(x);
+    if (x && typeof x === 'object' && 'm' in x && 'e' in x) return new Decimal(x).log10();
+    return _origLog10(x);
+};
+
+Math.log2 = function(x) {
+    if (x instanceof Decimal) return x.log2();
+    if (typeof x === 'number') return _origLog2(x);
+    if (x && typeof x === 'object' && 'm' in x && 'e' in x) return new Decimal(x).log2();
+    return _origLog2(x);
+};
+
+Math.round = function(x) {
+    if (x instanceof Decimal) return x.round().toNumber();
+    if (x && typeof x === 'object' && 'm' in x && 'e' in x) return new Decimal(x).round().toNumber();
+    return _origRound(x);
+};
+
+Math.floor = function(x) {
+    if (x instanceof Decimal) return x.floor().toNumber();
+    if (x && typeof x === 'object' && 'm' in x && 'e' in x) return new Decimal(x).floor().toNumber();
+    return _origFloor(x);
+};
+
+Math.ceil = function(x) {
+    if (x instanceof Decimal) return x.ceil().toNumber();
+    if (x && typeof x === 'object' && 'm' in x && 'e' in x) return new Decimal(x).ceil().toNumber();
+    return _origCeil(x);
+};
+
+Math.abs = function(x) {
+    if (x instanceof Decimal) return x.abs();
+    if (x && typeof x === 'object' && 'm' in x && 'e' in x) return new Decimal(x).abs();
+    return _origAbs(x);
+};
+
+Math.min = function(a, b) {
+    if (a instanceof Decimal || b instanceof Decimal) {
+        return Decimal.min(a, b);
+    }
+    return _origMin(a, b);
+};
+
+Math.max = function(a, b) {
+    if (a instanceof Decimal || b instanceof Decimal) {
+        return Decimal.max(a, b);
+    }
+    return _origMax(a, b);
+};
+
+// Number.toPrecision safely handles Decimals
+const _origToPrecision = Number.prototype.toPrecision;
+// We don't override toPrecision — instead fix formatNum below.
+
+// Smart helper: convert any value (Decimal or number) to a plain number if safe
+function toNum(v) {
+    if (v instanceof Decimal) return v.toNumber();
+    if (typeof v === 'number') return v;
+    if (v && typeof v === 'object' && 'm' in v && 'e' in v) return new Decimal(v).toNumber();
+    return v;
+}
+
+// Smart addition: returns Decimal when result is huge, otherwise number
+function dAdd(a, b) {
+    a = D(a); b = D(b);
+    if (typeof a === 'number' && typeof b === 'number') {
+        const sum = a + b;
+        if (isFinite(sum)) return D(sum); // return Decimal if sum > threshold, else number
+        return new Decimal(a).plus(new Decimal(b));
+    }
+    a = a instanceof Decimal ? a : new Decimal(a);
+    b = b instanceof Decimal ? b : new Decimal(b);
+    return a.plus(b);
+}
+
+// Smart subtraction
+function dSub(a, b) {
+    a = D(a); b = D(b);
+    if (typeof a === 'number' && typeof b === 'number') return D(a - b);
+    a = a instanceof Decimal ? a : new Decimal(a);
+    b = b instanceof Decimal ? b : new Decimal(b);
+    return a.minus(b);
+}
+
+// Smart multiplication
+function dMul(a, b) {
+    a = D(a); b = D(b);
+    if (typeof a === 'number' && typeof b === 'number') {
+        const prod = a * b;
+        if (isFinite(prod)) return D(prod);
+        return new Decimal(a).times(new Decimal(b));
+    }
+    a = a instanceof Decimal ? a : new Decimal(a);
+    b = b instanceof Decimal ? b : new Decimal(b);
+    return a.times(b);
+}
+
+// Smart division
+function dDiv(a, b) {
+    a = D(a); b = D(b);
+    if (typeof a === 'number' && typeof b === 'number') return D(a / b);
+    a = a instanceof Decimal ? a : new Decimal(a);
+    b = b instanceof Decimal ? b : new Decimal(b);
+    return a.div(b);
+}
+
+// Clamp an exponent-scaled result back to number if safe
+function clampToNumber(v) {
+    if (v instanceof Decimal) {
+        if (v.lt(BREAK_THRESHOLD) && v.gt(-BREAK_THRESHOLD)) return v.toNumber();
+        return v;
+    }
+    return v;
+}
+
+// ==================== NOTATION SYSTEM ====================
         // Notation modes. Add new ones here. "key" is stored in save.
         // format(num, precision) returns the formatted string.
         const NOTATION_MODES = [
@@ -969,23 +1319,49 @@ function checkChallengeCompletion() {
     return true;
 }
 
-// Apply challenge debuff effects to a currency's gain rate
-// Apply challenge debuff effects to a currency's gain rate
-function applyChallengeEffectsToRate(currency, baseRate) {
+// Apply challenge debuff effects to a currency's gain rate.
+// regularMult is the cumulative currency_mult from regular (non-challenge) effects.
+// baseRate should already have raw separated conceptually — challenge effects only
+// modify the base*mult portion (the non-raw part).
+function applyChallengeEffectsToRate(currency, baseRate, regularMult) {
     if (!gameState.activeChallenge) return baseRate;
+
+    // Coerce BigNum → number for challenge math (challenges operate in normal numeric space)
+    const toNum = v => isBigNum(v)
+        ? (v.e > 308 ? Number.MAX_VALUE : v.e < -308 ? 0 : v.m * Math.pow(10, v.e))
+        : v;
+    const baseNum = toNum(baseRate);
+    const multNum = toNum(regularMult);
+
     const node = NODE_MAP.get(gameState.activeChallenge);
     if (!node || !node.challengeEffects) return baseRate;
     let mult = 1;
-    let add = 0;
+    let add_base = 0;
+    let add_raw = 0;
     for (const eff of node.challengeEffects) {
         if (!eff.formula || eff.currency !== currency) continue;
         const lvl = getChallengeCompletions(node.id);
         const val = eff.formula(lvl, getLevel, getCurr);
-        if (typeof val !== 'number' || isNaN(val)) continue;
         if (eff.type === 'currency_mult' || eff.type === 'dynamic_mult') mult *= val;
-        else if (eff.type === 'base_gain' || eff.type === 'base_gain_raw') add += val;
+        else if (eff.type === 'base_gain') add_base += val;
+        else if (eff.type === 'base_gain_raw') add_raw += val;
     }
-    return baseRate * mult + add;
+    // Compute the non-raw portion: baseRate - baseRaw
+    // baseRaw from regular (non-challenge) effects:
+    let regularRaw = 0;
+    const effects = CURRENCY_EFFECT_INDEX[currency];
+    if (effects) {
+        for (const eff of effects) {
+            if (eff.type === 'base_gain_raw') {
+                const lvl = gameState.levels[eff.nodeId] || 0;
+                if (lvl > 0) regularRaw += eff.formula(lvl, getLevel, getCurr);
+            }
+        }
+    }
+    // baseRate = regularNonRaw + regularRaw
+    // We want: (regularNonRaw + add_base * regularMult) * mult + regularRaw + add_raw
+    const regularNonRaw = baseRate - regularRaw;
+    return (regularNonRaw + add_base * regularMult) * mult + regularRaw + add_raw;
 }
 
 // Update the challenge overlay UI
@@ -1025,7 +1401,10 @@ function updateChallengeOverlay() {
                 const lvl = getChallengeCompletions(node.id);
                 let val = '?';
                 try { val = formatNum(eff.formula(lvl, getLevel, getCurr)); } catch(e) {}
-                effectsHtml += `<div class="text-orange-400">${eff.desc} (x${val})</div>`;
+                let prefix = '';
+                if (eff.type === 'currency_mult' || eff.type === 'dynamic_mult') prefix = 'x';
+                else if (eff.type === 'base_gain' || eff.type === 'base_gain_raw') prefix = '+';
+                effectsHtml += `<div class="text-orange-400">${eff.desc} (${prefix}${val})</div>`;
             }
         }
     }
@@ -1036,14 +1415,24 @@ function updateChallengeOverlay() {
         if (completions < maxLvl) {
             for (const rew of node.rewards) {
                 const useLvl = completions;
-                if (rew.type === 'currency_mult' && (rew.currency || rew.targetCurrency)) {
+                const rewCurrency = rew.currency || rew.targetCurrency;
+                if ((rew.type === 'currency_mult' || rew.type === 'dynamic_mult') && rewCurrency) {
                     let val = '?';
                     try { val = formatNum(rew.formula(useLvl, getLevel, getCurr)); } catch(e) {}
-                    effectsHtml += `<div class="text-emerald-400">Rew: x${val} ${rew.currency||rew.targetCurrency}</div>`;
+                    effectsHtml += `<div class="text-emerald-400">Rew: x${val} ${rewCurrency}</div>`;
                 } else if (rew.type === 'reset_gain_mult' && rew.targetCurrency) {
                     let val = '?';
                     try { val = formatNum(rew.formula(useLvl, getLevel, getCurr)); } catch(e) {}
                     effectsHtml += `<div class="text-emerald-400">Rew: x${val} ${rew.targetCurrency} on reset</div>`;
+                } else if (rew.type === 'reset_gain_add' && rew.targetCurrency) {
+                    let val = '?';
+                    try { val = formatNum(rew.formula(useLvl, getLevel, getCurr)); } catch(e) {}
+                    effectsHtml += `<div class="text-emerald-400">Rew: +${val} ${rew.targetCurrency} on reset</div>`;
+                } else if ((rew.type === 'base_gain' || rew.type === 'base_gain_raw') && rewCurrency) {
+                    let val = '?';
+                    try { val = formatNum(rew.formula(useLvl, getLevel, getCurr)); } catch(e) {}
+                    const suffix = rew.type === 'base_gain_raw' ? '/s raw' : '/s';
+                    effectsHtml += `<div class="text-emerald-400">Rew: +${val} ${rewCurrency}${suffix}</div>`;
                 }
             }
         }
@@ -1052,15 +1441,25 @@ function updateChallengeOverlay() {
     if (node.effects && getChallengeCompletions(node.id) > 0) {
         for (const eff of node.effects) {
             const completions = getChallengeCompletions(node.id);
-            if (eff.type === 'currency_mult' && eff.currency) {
+            const effCurrency = eff.currency || eff.targetCurrency;
+            if ((eff.type === 'currency_mult' || eff.type === 'dynamic_mult') && effCurrency) {
                 let val = '?';
                 try { val = formatNum(eff.formula(completions, getLevel, getCurr)); } catch(e) {}
-                effectsHtml += `<div class="text-cyan-400">x${val} ${eff.currency}</div>`;
+                effectsHtml += `<div class="text-cyan-400">x${val} ${effCurrency}</div>`;
             } else if (eff.type === 'reset_gain_mult' && eff.targetCurrency) {
                 let val = '?';
                 try { val = formatNum(eff.formula(completions, getLevel, getCurr)); } catch(e) {}
                 effectsHtml += `<div class="text-cyan-400">x${val} ${eff.targetCurrency} r/g</div>`;
-            }
+            } else if (eff.type === 'reset_gain_add' && eff.targetCurrency) {
+                let val = '?';
+                try { val = formatNum(eff.formula(completions, getLevel, getCurr)); } catch(e) {}
+                effectsHtml += `<div class="text-cyan-400">+${val} ${eff.targetCurrency} r/g</div>`;
+            } else if ((eff.type === 'base_gain' || eff.type === 'base_gain_raw') && effCurrency) {
+                    let val = '?';
+                    try { val = formatNum(eff.formula(completions, getLevel, getCurr)); } catch(e) {}
+                    const suffix = eff.type === 'base_gain_raw' ? '/s raw' : '/s';
+                    effectsHtml += `<div class="text-cyan-400">+${val} ${effCurrency}${suffix}</div>`;
+                }
         }
     }
     effectsEl.innerHTML = effectsHtml;
@@ -1237,7 +1636,28 @@ if (typeof gameState.currencies.P !== 'number' || isNaN(gameState.currencies.P))
     return gameState.levels[nodeId] || 0; 
 }
 
-        function getCurr(key) { return gameState.currencies[key] || 0; }
+        function getCurr(key) {
+    const v = gameState.currencies[key];
+    if (v === undefined || v === null) return 0;
+    // If it's already a Decimal, return it directly — formulas can use Math.pow/log10 on it
+    if (v instanceof Decimal) return v;
+    // If it's a BigNum object (from old save), convert to Decimal
+    if (v && typeof v === 'object' && 'm' in v && 'e' in v) {
+        const d = new Decimal(v);
+        gameState.currencies[key] = d; // upgrade to Decimal for future
+        return d;
+    }
+    if (typeof v === 'number') {
+        // If it's a huge number and broken, upgrade to Decimal
+        if (BROKEN && Math.abs(v) >= BREAK_THRESHOLD) {
+            const d = new Decimal(v);
+            gameState.currencies[key] = d;
+            return d;
+        }
+        return v;
+    }
+    return 0;
+}
         
         function clearCaches(clearAll = false) {
             cacheDirty = true;
@@ -1326,7 +1746,113 @@ const CHALLENGE_NODES = [
       ],
       maxLevel: 5
     },
-    
+    {id: 'CCC04', type: 'challenge', code: 'CCC04', name: 'Cyan Challenge IV', coords: [47, 9], reqs: [[46,9]],
+      resetCurrencies: ['cyan', 'anticyan'],
+      desc: 'generate anticyan at a fixed rate based on challenge level. cyan generation stops when anticyan is above cyan. Reward: x2 cyan per level',
+
+ 
+      goals: [
+          
+          { currency: 'cyan', target: (lvl) => 2e13*Math.pow(5,lvl) },
+      ],
+      challengeEffects: [
+          { type: 'currency_mult', currency: 'cyan', formula: (lvl) => getCurr('cyan')>=getCurr('anticyan'), desc: 'cyan deboost' },
+          { type: 'base_gain_raw', currency: 'anticyan', formula: (lvl) => 1+getCurr('anticyan')*Math.pow(2,1+lvl), desc: 'anticyan generation' },
+      ],
+      rewards: [
+          { type: 'currency_mult', currency: 'cyan', formula: (lvl) => Math.pow(2, lvl), desc: 'x2 cyan per completion' },
+          
+          ],
+      effects: [
+          
+      ],
+      maxLevel: 5
+    },
+    {id: 'CCC05', type: 'challenge', code: 'CCC05', name: 'Cyan Challenge V', coords: [47, 8], reqs: [[47,9]],
+      resetCurrencies: ['cyan', 'anticyan'],
+      desc: '/1e12 cyan and /10 more per level. Reward: x2.5 cyan per level',
+
+ 
+      goals: [
+          
+          { currency: 'cyan', target: (lvl) => 100 },
+      ],
+      challengeEffects: [
+          { type: 'currency_mult', currency: 'cyan', formula: (lvl) => 1/(1e12*Math.pow(10,lvl)), desc: 'cyan deboost' },
+          ],
+      rewards: [
+          { type: 'currency_mult', currency: 'cyan', formula: (lvl) => Math.pow(2.5, lvl), desc: 'x2 cyan per completion' },
+          
+          ],
+      effects: [
+          
+      ],
+      maxLevel: 5
+    },
+    {id: 'CCC06', type: 'challenge', code: 'CCC06', name: 'Cyan Challenge VI', coords: [47, 10], reqs: [[47,9]],
+      resetCurrencies: ['cyan'],
+      desc: '/lvl^lvl cyan. Reward: x2 cyan per level',
+      goals: [
+          
+          { currency: 'cyan', target: (lvl) => 1e48 },
+      ],
+      challengeEffects: [
+          { type: 'currency_mult', currency: 'cyan', formula: (lvl) => 1/Math.pow(lvl+1,lvl+1), desc: '/lvl^lvl' },
+      ],
+      rewards: [
+          { type: 'currency_mult', currency: 'cyan', formula: (lvl) => Math.pow(2, lvl), desc: 'x2 cyan per completion' },
+          
+          ],
+      effects: [
+          
+      ],
+      maxLevel: 25
+    },
+    {id: 'CCC07', type: 'challenge', code: 'CCC07', name: 'Cyan Challenge VII', coords: [47, 11], reqs: [[47,10]],
+      resetCurrencies: ['cyan', 'anticyan'],
+      desc: '[first levels are easy!] gen anticyan at 1/s. if anticyan > 1 cyan gen stops. Reward: x2.5 cyan per level',
+
+ 
+      goals: [
+          
+          { currency: 'cyan', target: (lvl) => 1e75*Math.pow(100*Math.pow(10,Math.max(lvl-5,0)),lvl) },
+      ],
+      challengeEffects: [
+          { type: 'currency_mult', currency: 'cyan', formula: (lvl) => (1>=getCurr('anticyan')), desc: 'cyan deboost' },
+          { type: 'base_gain_raw', currency: 'anticyan', formula: (lvl) => 1, desc: 'anticyan generation' },
+      ],
+      rewards: [
+          { type: 'currency_mult', currency: 'cyan', formula: (lvl) => Math.pow(2.5, lvl), desc: 'x2.5 cyan per completion' },
+          
+          ],
+      effects: [
+          
+      ],
+      maxLevel: 10
+    },
+    {id: 'CCC08', type: 'challenge', code: 'CCC08', name: 'Cyan Challenge VIII', coords: [47, 12], reqs: [[47,11]],
+      resetCurrencies: ['cyan', 'anticyan'],
+      desc: 'big nerf to cyan that gets better quite a bit over time based on anticyan [its good this time!]. Reward: x5 cyan per level',
+
+ 
+      goals: [
+          
+          { currency: 'cyan', target: (lvl) => 1e20*Math.pow(1e20,lvl) },
+      ],
+      challengeEffects: [
+          { type: 'currency_mult', currency: 'cyan', formula: (lvl) => 1e-100*Math.pow(1+0.1*Math.pow(getCurr('anticyan'),2),8), desc: 'cyan nerf' },
+      { type: 'base_gain_raw', currency: 'anticyan', formula: (lvl) => 1, desc: 'anticyan generation' },
+      
+      ],
+      rewards: [
+          { type: 'currency_mult', currency: 'cyan', formula: (lvl) => Math.pow(5, lvl), desc: 'x5 cyan per completion' },
+          
+          ],
+      effects: [
+          
+      ],
+      maxLevel: 5
+    },
 ];
 
 // Merge challenge nodes into TREE_NODES
@@ -1934,8 +2460,20 @@ const CHALLENGE_NODES = [
     { id: 'CC02', type: 'upgrade', code: 'CC02', name: 'mult', coords: [43, 9], reqs: [[43,8]], borderColor: 'green', desc: 'x1.125 cyan/lvl.', effects: [{ type: 'currency_mult', currency: 'cyan', formula: (lvl) => Math.pow(1.125,lvl) }], costCurrency: 'cyan', costFormula: (lvl) => 3*Math.pow(1.2*Math.pow(1.0025,lvl),lvl), maxLevel: 250 },
     { id: 'CC03', type: 'upgrade', code: 'CC03', name: 'something new', coords: [44, 8], reqs: [[43,8]], borderColor: 'green', desc: 'unlock a feature you haven\'t seen in main progression til this point. hvae fun with it!', effects: [], costCurrency: 'cyan', costFormula: (lvl) => 20, maxLevel: 1 },
     { id: 'CC04', type: 'upgrade', code: 'CC04', name: 'mult2', coords: [44, 9], reqs: [[43,9]], borderColor: 'green', desc: '+0.2x cyan per CCC01 completion.', effects: [{ type: 'currency_mult', currency: 'cyan', formula: (lvl) => 1+0.2*getLevel('CCC01') }], costCurrency: 'cyan', costFormula: (lvl) => 10000, maxLevel: 1 },
-    { id: 'CC05', type: 'upgrade', code: 'CC05', name: 'need help?', coords: [45, 9], reqs: [[44,9]], borderColor: 'green', desc: 'cyan boost cyan.', effects: [{ type: 'currency_mult', currency: 'cyan', formula: (lvl) => Math.pow(getCurr('cyan')/1e6+1,0.2) }], costCurrency: 'cyan', costFormula: (lvl) => 2.25e7, maxLevel: 1 },
-
+    { id: 'CC05', type: 'upgrade', code: 'CC05', name: 'need help?', coords: [45, 9], reqs: [[44,9]], borderColor: 'orange', desc: 'cyan boost cyan.', effects: [{ type: 'currency_mult', currency: 'cyan', formula: (lvl) => Math.pow(dDiv(getCurr('cyan'),1e6)+1,0.2) }], costCurrency: 'cyan', costFormula: (lvl) => 2.25e7, maxLevel: 1 },
+    { id: 'CC06', type: 'upgrade', code: 'CC06', name: 'calm down', coords: [46, 10], reqs: [[46,9]], borderColor: 'green', desc: '/1.125 anticyan/lvl.', effects: [{ type: 'currency_mult', currency: 'anticyan', formula: (lvl) => 1/Math.pow(1.125,lvl) }], costCurrency: 'cyan', costFormula: (lvl) => 1e8*Math.pow(2, Math.pow(lvl, 0.8)), maxLevel: 25 },
+    { id: 'CC07', type: 'upgrade', code: 'CC07', name: 'need more?', coords: [45, 10], reqs: [[45,9]], borderColor: 'orange', desc: 'cyan boost cyan again, this time its jumping values!', effects: [{ type: 'currency_mult', currency: 'cyan', formula: (lvl) => Math.pow(1.05,Math.floor(5*Math.log(dDiv(getCurr('cyan'),5e5)+1))) }], costCurrency: 'cyan', costFormula: (lvl) => 5e7, maxLevel: 1 },
+    { id: 'CC08', type: 'upgrade', code: 'CC08', name: 'mult', coords: [46, 11], reqs: [[46,10]], borderColor: 'green', desc: 'x1.125 cyan/lvl. since the last one inflated too much', effects: [{ type: 'currency_mult', currency: 'cyan', formula: (lvl) => Math.pow(1.125,lvl) }], costCurrency: 'cyan', costFormula: (lvl) => 2e14*Math.pow(1.5*Math.pow(1.025,lvl),lvl), maxLevel: 250 },
+    { id: 'CC09', type: 'upgrade', code: 'CC09', name: 'oh?', coords: [45, 11], reqs: [[46,11]], borderColor: 'orange', desc: 'cyan boost cyan slightly per level.', effects: [{ type: 'currency_mult', currency: 'cyan', formula: (lvl) => Math.pow(Math.log(dDiv(getCurr('cyan'),1e24)+10),1+0.1*Math.max(0,lvl-1)) }], costCurrency: 'cyan', costFormula: (lvl) => 5e26*Math.pow(2+0.1*Math.max(0, lvl-10),lvl), maxLevel: 50 },
+    { id: 'CC10', type: 'upgrade', code: 'CC10', name: 'need more?', coords: [44, 11], reqs: [[45,9]], borderColor: 'orange', desc: 'cyan boost cyan again, bigger and more distant jumps!', effects: [{ type: 'currency_mult', currency: 'cyan', formula: (lvl) => Math.pow(1.125,Math.floor(Math.log(dDiv(getCurr('cyan'),1e45)+1))) }], costCurrency: 'cyan', costFormula: (lvl) => 1e52, maxLevel: 1 },
+    { id: 'CC11', type: 'upgrade', code: 'CC11', name: 'linear', coords: [44, 10], reqs: [[44,11]], borderColor: 'orange', desc: 'amount jump is linear', effects: [{ type: 'currency_mult', currency: 'cyan', formula: (lvl) => 1+Math.floor(0.1*Math.pow(Math.log(dDiv(getCurr('cyan'),1e75)+10),2)) }], costCurrency: 'cyan', costFormula: (lvl) => 1e78, maxLevel: 1 },
+    { id: 'CC12', type: 'upgrade', code: 'CC12', name: 'mult3', coords: [43, 11], reqs: [[44,11]], borderColor: 'green', desc: '+0.2x cyan per CCC07 completion.', effects: [{ type: 'currency_mult', currency: 'cyan', formula: (lvl) => 1+0.2*getLevel('CCC07') }], costCurrency: 'cyan', costFormula: (lvl) => 2e97, maxLevel: 1 },
+    { id: 'CC13', type: 'upgrade', code: 'CC13', name: 'uh', coords: [43, 10], reqs: [[43,11]], borderColor: 'orange', desc: 'x2 cyan per level, x1e6 more if you max this upgrade...?', effects: [{ type: 'currency_mult', currency: 'cyan', formula: (lvl) => Math.pow(2,lvl)},{type: 'max_level_mod', target:'CC13', amount: (lvl)=>Math.pow(Math.max(0, lvl-4), 1+Math.max(0, lvl-10))}], costCurrency: 'cyan', costFormula: (lvl) => 1e100*Math.pow(10,lvl), maxLevel: 5 },
+    { id: 'CC14', type: 'upgrade', code: 'CC14', name: 'inflation time', coords: [43, 12], reqs: [[43,11]], borderColor: 'orange', desc: 'x10 cyan per level', effects: [{ type: 'currency_mult', currency: 'cyan', formula: (lvl) => Math.pow(10,lvl) }], costCurrency: 'cyan', costFormula: (lvl) => 1e175*Math.pow(1e5,lvl)*Math.pow(1e20,Math.max(0,lvl-5)), maxLevel: 10 },
+    { id: 'CC15', type: 'upgrade', code: 'CC15', name: 'enemy -> friend', coords: [44, 12], reqs: [[43,12]], borderColor: 'green', desc: 'start generating anticyan outside of challenges (inside too) and it boost cyan! (not effectet by upgrade CC06) and +1 anticyan/s/lvl after', effects: [{ type: 'base_gain_raw', currency: 'anticyan', formula: (lvl) => 1*lvl },{ type: 'currency_mult', currency: 'cyan', formula: (lvl) => 2+Math.pow(getCurr('anticyan'),0.2) }], costCurrency: 'cyan', costFormula: (lvl) => 1e280*Math.pow(1e10,Math.pow(lvl, 0.25)), maxLevel: 10 },
+    { id: 'CC16', type: 'upgrade', code: 'CC16', name: 'almost there', coords: [45, 12], reqs: [[44,12]], borderColor: 'green', desc: '2x cyan per level', effects: [{ type: 'currency_mult', currency: 'cyan', formula: (lvl) => Math.pow(2,lvl) }], costCurrency: 'cyan', costFormula: (lvl) => 1e295, maxLevel: 1 },
+    { id: 'CC17', type: 'upgrade', code: 'CC17', name: 'nice', coords: [46, 12], reqs: [[45,12]], borderColor: 'green', desc: 'complete cyan. expand the grey baseplate.', effects: [], costCurrency: 'cyan', costFormula: (lvl) => 1.78e308, maxLevel: 1 },
+    
 
     
 
@@ -2294,10 +2832,53 @@ const CHALLENGE_NODES = [
     { id: 'IF04', type: 'upgrade', code: 'IF04', name: 'Auto II', coords: [4, -7], reqs: [[3, -7]], borderColor: 'red', desc: 'Automate I02 and +20% fragments additive per level.', effects: [{ type: 'automation', target: 'I02' }, { type: 'reset_gain_mult', targetCurrency: '♦', formula: (lvl) => 1 + 0.2 * lvl }], costCurrency: '♦', costFormula: (lvl) => Math.floor(1e7 * Math.pow(1.25, lvl)), maxLevel: 1000 }
     
             ];
+        // ==================== BREAK INFINITY NODES ====================
+// "Break" nodes — when purchased, they enable broken (infinite) mode for all currencies.
+// Type: 'break' — behaves like a toggle: once purchased, currencies can exceed 1e308.
+// There is no "break" reset — once broken, always broken on this save.
+const BREAK_NODES = [
+    {
+        id: 'BRK01us',
+        type: 'break',
+        code: 'BRK01',
+        name: 'Break Infinity',
+        coords: [43, 7],
+        reqs: [[42959594, 3288]],  // after CBL25 (grey baseplate unlock)
+        borderColor: 'red',
+        desc: 'Allows currencies to exceed 1e308. Enables truly infinite precision! [effects apply after purchase]',
+        costCurrency: 'gray',
+        costFormula: (lvl) => 1,  // expensive but reachable
+        maxLevel: 1,
+        effects: [{
+            type: 'break_infinity',
+            currency: 'cyan',
+            formula: () => true
+        }]
+    },
+    {
+        id: 'BRK02ks',
+        type: 'break',
+        code: 'BRK02',
+        name: 'Eternal Reach',
+        coords: [44, 7],
+        reqs: [[43, 718177]],  // after BRK01
+        borderColor: 'red',
+        desc: 'All exponentials in display show as scientific notation. +1e20 max exp.',
+        costCurrency: 'gray',
+        costFormula: (lvl) => 1,
+        maxLevel: 1,
+        effects: [{
+            type: 'break_extend',
+            formula: () => 1e20
+        }]
+    }
+];
         // Push challenge nodes into TREE_NODES
         if (typeof CHALLENGE_NODES !== 'undefined' && CHALLENGE_NODES.length > 0) {
             CHALLENGE_NODES.forEach(n => TREE_NODES.push(n));
         }
+        // Push break nodes
+        BREAK_NODES.forEach(n => TREE_NODES.push(n));
         // ==================== HELPER FUNCTIONS ====================
         let _maxLevelCache = {};
         let _maxLevelFrame = {};
@@ -2305,7 +2886,7 @@ const CHALLENGE_NODES = [
         function getMaxLevel(node) {
             if (!node) return 0;
             if (node.type === 'challenge') return node.maxLevel || 1;
-            if (node.type !== 'upgrade') return 0;
+            if (node.type !== 'upgrade' && node.type !== 'break') return 0;
             if (_maxLevelFrame[node.id] === cacheDirtyFrame && _maxLevelCache[node.id] !== undefined) return _maxLevelCache[node.id];
             if (!cacheDirty && cache.maxLevel.has(node.id)) return cache.maxLevel.get(node.id);
             let maxCap = node.maxLevel || 1;
@@ -2342,7 +2923,41 @@ const CHALLENGE_NODES = [
         let _formatFrame = 0;
         function formatNum(num) {
             if (num === Infinity) return 'MAX';
-            if (num === undefined || num === null || isNaN(num)) return '0';
+            if (num === undefined || num === null) return '0';
+            
+            // Decimal support
+            if (num instanceof Decimal) {
+                if (num.m === 0) return '0';
+                const absM = Math.abs(num.m);
+                const sign = num.m < 0 ? '-' : '';
+                const exp = num.e;
+                if (exp > MAX_EXP) return '∞';
+                if (exp < -MAX_EXP) return '0';
+                const mode = getNotationMode();
+                if (mode.key === 'standard') {
+                    if (exp >= 45) return sign + absM.toPrecision(3) + 'e' + exp;
+                    const suffixes = [
+                        { min: 42, label: 'TDe' }, { min: 39, label: 'DDe' },
+                        { min: 36, label: 'UDe' }, { min: 33, label: 'De'  },
+                        { min: 30, label: 'No'  }, { min: 27, label: 'Oc'  },
+                        { min: 24, label: 'Sp'  }, { min: 21, label: 'Sx'  },
+                        { min: 18, label: 'Qn'  }, { min: 15, label: 'Qd'  },
+                        { min: 12, label: 'T'   }, { min:  9, label: 'B'   },
+                        { min:  6, label: 'M'   }, { min:  3, label: 'K'   },
+                        { min:  0, label: ''    },
+                    ];
+                    for (const s of suffixes) {
+                        if (exp >= s.min) {
+                            const adjusted = absM * Math.pow(10, exp - s.min);
+                            return sign + adjusted.toPrecision(3) + s.label;
+                        }
+                    }
+                }
+                // Scientific / other modes
+                return sign + absM.toFixed(2) + 'e' + num.e;
+            }
+            
+            if (typeof num !== 'number' || isNaN(num)) return '0';
             if (num === 0) return '0';
             const key = num + '|' + currentNotation;
             if (_formatCache[key] !== undefined) return _formatCache[key];
@@ -2463,11 +3078,12 @@ function wrapText(text, maxWidth, fontSize) {
     // Show current active challenge effects (debuffs) if we're inside this challenge
     if (gameState.activeChallenge === node.id && node.challengeEffects) {
         for (const eff of node.challengeEffects) {
-            if ((eff.type === 'currency_mult' || eff.type === 'base_gain' || eff.type === 'base_gain_raw') && eff.currency) {
-    let val = '?';
-    try { val = formatNum(eff.formula(completions, getLevel, getCurr)); } catch(e) {}
-    parts.push((eff.type === 'currency_mult' ? 'x' : '+') + val + ' ' + eff.currency);
-}
+            if ((eff.type === 'currency_mult' || eff.type === 'dynamic_mult' || eff.type === 'base_gain' || eff.type === 'base_gain_raw') && eff.currency) {
+                let val = '?';
+                try { val = formatNum(eff.formula(completions, getLevel, getCurr)); } catch(e) {}
+                const prefix = (eff.type === 'currency_mult' || eff.type === 'dynamic_mult') ? 'x' : '+';
+                parts.push(prefix + val + ' ' + eff.currency);
+            }
         }
     }
     
@@ -2548,6 +3164,9 @@ function wrapText(text, maxWidth, fontSize) {
                 return '#34d399';
             }
             if (getLevel(node.id) >= getMaxLevel(node)) return '#27272a';
+            if (node.type === 'break') {
+                return BROKEN ? '#22c55e' : '#ef4444';
+            }
             if (node.borderColor) return node.borderColor === 'green' ? '#22c55e' : node.borderColor === 'orange' ? '#f59e0b' : node.borderColor === 'red' ? '#ef4444' : '#3f3f46';
             return '#3f3f46';
         }
@@ -2699,6 +3318,17 @@ if (gameState.showEffects) {
                 ctx.font = '8px "Fira Code", monospace';
                 ctx.fillText('RESET', posX + width / 2, bottomY + 2);
             
+            } else if (node.type === 'break') {
+                const isBroken = getLevel(node.id) >= 1;
+                ctx.fillStyle = '#a1a1aa';
+                ctx.textAlign = 'left';
+                ctx.font = '9px "Fira Code", monospace';
+                ctx.fillText(isBroken ? 'ACTIVE' : 'INACTIVE', posX + padding, bottomY);
+                const cost = getDisplayCost(node);
+                ctx.textAlign = 'right';
+                ctx.fillStyle = canAfford ? '#34d399' : '#a1a1aa';
+                ctx.font = '9px "Fira Code", monospace';
+                ctx.fillText(isBroken ? 'DONE' : `${formatNum(cost)} ${node.costCurrency}`, posX + width - padding, bottomY);
             } else {
                 const displayLvl = getDisplayLevel(node.id);
                 const effectiveMax = getMaxLevel(node);
@@ -3025,49 +3655,82 @@ function draw() {
         let _currencyRateCache = {};
         let _currencyRateFrame = {};
         function calculateGainRate(currency) {
-            try {
-            if (_currencyRateFrame[currency] === cacheDirtyFrame && _currencyRateCache[currency] !== undefined) return _currencyRateCache[currency];
-            if (!cacheDirty && cache.gainRate.has(currency)) return cache.gainRate.get(currency);
-            let base = 0,
-                baseRaw = 0,
-                mult = 1;
-            const effects = CURRENCY_EFFECT_INDEX[currency];
-            if (effects && effects.length > 0) {
-                for (let i = 0, len = effects.length; i < len; i++) {
-                    const eff = effects[i];
-                    // Reward effects (nodeId ends with _reward) are always active — the formula reads completions internally
-                    if (typeof eff.nodeId === 'string' && eff.nodeId.endsWith('_reward')) {
-                        const val = eff.formula(0, getLevel, getCurr);
-                        mult *= val;
-                        continue;
+    try {
+        if (_currencyRateFrame[currency] === cacheDirtyFrame && _currencyRateCache[currency] !== undefined) return _currencyRateCache[currency];
+        if (!cacheDirty && cache.gainRate.has(currency)) return cache.gainRate.get(currency);
+
+        // Base/raw/mult as numbers (Decimal-safe — formulas return Decimal when inputs are huge)
+        let base = 0, baseRaw = 0, mult = 1, rewardMult = 1;
+        const effects = CURRENCY_EFFECT_INDEX[currency];
+        if (effects && effects.length > 0) {
+            for (let i = 0, len = effects.length; i < len; i++) {
+                const eff = effects[i];
+
+                // Challenge reward effects — indexed under "<nodeId>_reward", always active.
+                // Their formula reads completion count internally, so pass lvl=0.
+                if (typeof eff.nodeId === 'string' && eff.nodeId.endsWith('_reward')) {
+                    const raw = eff.formula(0, getLevel, getCurr);
+                    if (typeof raw === 'number' && !isNaN(raw)) {
+                        rewardMult = dMul(rewardMult, raw);
+                    } else if (raw instanceof Decimal) {
+                        rewardMult = dMul(rewardMult, raw);
                     }
-                    const lvl = gameState.levels[eff.nodeId] || 0;
-                    if (lvl <= 0) continue;
-                    const val = eff.formula(lvl, getLevel, getCurr);
-                    if (eff.type === 'base_gain') base += val;
-                    else if (eff.type === 'base_gain_raw') baseRaw += val;
-                    else mult *= val;
+                    continue;
+                }
+
+                const lvl = gameState.levels[eff.nodeId] || 0;
+                if (lvl <= 0) continue;
+                const val = eff.formula(lvl, getLevel, getCurr);
+                if (eff.type === 'base_gain')          base    = dAdd(base,    val);
+                else if (eff.type === 'base_gain_raw') baseRaw = dAdd(baseRaw, val);
+                else if (eff.type === 'currency_mult' || eff.type === 'dynamic_mult') mult = dMul(mult, val);
+            }
+        }
+
+        // (base * mult * rewardMult) + baseRaw
+        let result = dAdd(dMul(dMul(base, mult), rewardMult), baseRaw);
+
+        // Apply challenge effects
+        result = applyChallengeEffectsToRate(currency, result, mult);
+
+        // Collapse to number when safe
+        if (result instanceof Decimal) {
+            if (result.m === 0) result = 0;
+            else if (result.e < 308 && result.e > -308) {
+                const n = result.toNumber();
+                if (isFinite(n) && Math.abs(n) < BREAK_THRESHOLD) {
+                    result = n;
                 }
             }
-            // Safety: ensure mult is never 0 or negative (prevents any buggy formula from killing gain)
-            //if (mult <= 0) mult = 1;
-            // BOTH base and baseRaw should be multiplied by currency_mult effects!
-            let result = base * mult + baseRaw;
-            // Apply challenge debuffs
-            result = applyChallengeEffectsToRate(currency, result);
-            cache.gainRate.set(currency, result);
-            _currencyRateCache[currency] = result;
-            _currencyRateFrame[currency] = cacheDirtyFrame;
-            return Math.max(0, result); // Guard against negative rates from challenge debuffs
-            } catch(e) { console.warn('gainRate error for', currency, e); return 0; }
+        } else if (typeof result === 'number') {
+            if (isNaN(result)) result = 0;
         }
+
+                cache.gainRate.set(currency, result);
+        _currencyRateCache[currency] = result;
+        _currencyRateFrame[currency] = cacheDirtyFrame;
+
+        // Return the SAME value as cached — do not convert! If we convert to a number
+        // here, e>308 becomes Infinity, but the cache still holds a Decimal, so the
+        // next caller in the same tick gets a different type. That causes the
+        // "+MAX/s <-> +1.2e309/s" flicker.
+        return result;
+    } catch(e) {
+        console.warn('gainRate error for', currency, e);
+        _currencyRateFrame[currency] = 0;
+        return 0;
+    }
+}
 
         function getCost(node, levelOffset = 0) {
             const curLvl = getLevel(node.id) + levelOffset;
             const max = getMaxLevel(node);
             if (curLvl >= max) return Infinity;
-            if (node.bulkFinalCost) { return node.costFormula(curLvl + 1, getLevel, getCurr); }
-            return node.costFormula(curLvl, getLevel, getCurr);
+            let cost;
+            if (node.bulkFinalCost) { cost = node.costFormula(curLvl + 1, getLevel, getCurr); }
+            else { cost = node.costFormula(curLvl, getLevel, getCurr); }
+            // Costs are typically small numbers; but if formula returns Decimal (from huge getCurr), keep it
+            return cost;
         }
 
         let _displayCostCache = {};
@@ -3080,6 +3743,11 @@ function draw() {
             let cost;
             if (curLvl >= max) { cost = Infinity; } else {
                 cost = getCost(node);
+            }
+            // Convert Decimal cost to number for display if safe
+            if (cost instanceof Decimal && cost.lt(1e308)) {
+                const n = cost.toNumber();
+                if (isFinite(n)) cost = n;
             }
             cache.displayCost.set(node.id, cost);
             _displayCostCache[node.id] = cost;
@@ -3107,8 +3775,11 @@ function draw() {
         function getEffectiveResetGain(resetNode) {
             if (_resetGainFrame[resetNode.id] === cacheDirtyFrame && _resetGainCache[resetNode.id] !== undefined) return _resetGainCache[resetNode.id];
             if (!cacheDirty && cache.resetGain.has(resetNode.id)) return cache.resetGain.get(resetNode.id);
-            const base = resetNode.calculateGain(getLevel, getCurr) || 0;
-            if (base <= 0) { 
+                        const base = resetNode.calculateGain(getLevel, getCurr) || 0;
+            const baseIsZero = (typeof base === 'number') ? base <= 0
+                             : (base instanceof Decimal) ? base.m === 0
+                             : true;
+            if (baseIsZero) { 
                 cache.resetGain.set(resetNode.id, 0);
                 _resetGainCache[resetNode.id] = 0;
                 return 0; 
@@ -3123,7 +3794,12 @@ function draw() {
                     if (eff.type === 'reset_gain_mult') mult *= eff.formula(lvl, getLevel, getCurr);
                 }
             }
-            const result = (base + add) * mult;
+                        let result;
+            if (typeof base === 'number' && typeof add === 'number' && typeof mult === 'number') {
+                result = (base + add) * mult;
+            } else {
+                result = dMul(dAdd(base, add), mult);
+            }
             cache.resetGain.set(resetNode.id, result);
             _resetGainCache[resetNode.id] = result;
             _resetGainFrame[resetNode.id] = cacheDirtyFrame;
@@ -3149,11 +3825,39 @@ function draw() {
 function buyUpgrade(nodeId, isAutomated = false, isFree = false) {
             try {
             const node = NODE_MAP.get(nodeId);
-            if (!node || node.type !== 'upgrade' || !isNodeUnlocked(node)) return false;
+            if (!node || (node.type !== 'upgrade' && node.type !== 'break') || !isNodeUnlocked(node)) return false;
             const currentLvl = getLevel(node.id);
             const max = getMaxLevel(node);
             if (currentLvl >= max) return false;
-            const currency = gameState.currencies[node.costCurrency] || 0;
+            const currency = getCurr(node.costCurrency) || 0;
+            
+            // Helper: compare any values (Decimal or number)
+            function geq(a, b) {
+                const da = a instanceof Decimal ? a : D(a);
+                const db = b instanceof Decimal ? b : D(b);
+                if (da instanceof Decimal && db instanceof Decimal) return da.gte(db);
+                if (da instanceof Decimal) return da.gte(db);
+                if (db instanceof Decimal) return false;
+                return da >= db;
+            }
+            function subValues(a, b) {
+                a = D(a); b = D(b);
+                if (typeof a === 'number' && typeof b === 'number') return D(a - b);
+                a = a instanceof Decimal ? a : new Decimal(a);
+                b = b instanceof Decimal ? b : new Decimal(b);
+                const r = a.minus(b);
+                // Collapse to number if safe
+                if (r.lt(BREAK_THRESHOLD) && r.gt(-BREAK_THRESHOLD)) return r.toNumber();
+                return r;
+            }
+            function addValues(a, b) {
+                a = D(a); b = D(b);
+                if (typeof a === 'number' && typeof b === 'number') return D(a + b);
+                a = a instanceof Decimal ? a : new Decimal(a);
+                b = b instanceof Decimal ? b : new Decimal(b);
+                return a.plus(b);
+            }
+            
             let bought = 0,
                 totalCost = 0;
             if (node.bulkFinalCost) {
@@ -3164,23 +3868,34 @@ function buyUpgrade(nodeId, isAutomated = false, isFree = false) {
                 let iterations = 0;
                 while (lo <= hi && iterations < 1200) {
                     const mid = Math.floor((lo + hi) / 2);
-                    const cost = node.costFormula(mid, getLevel, getCurr);
-                    if (typeof cost === 'number' && !isNaN(cost) && cost <= currency) { target = mid;
+                    const cost = getCost(node, mid - currentLvl);
+                    if (cost !== undefined && cost !== null && cost !== Infinity && geq(currency, cost)) { target = mid;
                         lo = mid + 1; } else { hi = mid - 1; }
                     iterations++;
                 }
                 if (target > currentLvl) { bought = target - currentLvl;
-                    totalCost = node.costFormula(target, getLevel, getCurr); }
+                    totalCost = getCost(node, target - currentLvl); }
             } else {
                 const levelsToBuy = isAutomated || buyMode === 'MAX' ? (max - currentLvl) : Math.min(buyMode, max - currentLvl);
                 for (let i = 0; i < levelsToBuy; i++) {
                     const cost = node.costFormula(currentLvl + i, getLevel, getCurr);
-                    if (currency >= totalCost + cost) { totalCost += cost;
-                        bought++; } else break;
+                    const remaining = subValues(currency, totalCost);
+                    if (geq(remaining, cost)) {
+                        totalCost = addValues(totalCost, cost);
+                        bought++; 
+                    } else break;
                 }
             }
             if (bought > 0) {
-                if (!isFree) gameState.currencies[node.costCurrency] -= totalCost;
+                if (!isFree) {
+                    const cur = getCurr(node.costCurrency) || 0;
+                    let newBal = subValues(cur, totalCost);
+                    // Collapse Decimal to number if it gets small
+                    if (newBal instanceof Decimal && newBal.lt(BREAK_THRESHOLD) && newBal.gt(-BREAK_THRESHOLD)) {
+                        newBal = newBal.toNumber();
+                    }
+                    gameState.currencies[node.costCurrency] = newBal;
+                }
                 const oldLevel = currentLvl,
                     newLevel = currentLvl + bought;
                 gameState.levels[node.id] = newLevel;
@@ -3211,6 +3926,12 @@ function buyUpgrade(nodeId, isAutomated = false, isFree = false) {
                     }
                 }
                 requestCanvasRedraw();
+                    // If this is a break node that was just purchased, activate broken mode
+                    if (node.type === 'break' && node.id === 'BRK01' && !BROKEN) {
+                        BROKEN = true;
+                        showToast('🔓 Infinity broken! Currencies can now exceed 1e308.');
+                        playSound('reset');
+                    }
                 return true;
             }
             return false;
@@ -3552,29 +4273,28 @@ function renderCurrencyBar() {
     }
     
     // Update values — always update ALL visible currencies regardless of cached value
-    // This ensures "0" gets shown properly after a reset
-    for (const [key, cached] of currencyBarCache) {
-        if (!_visibleCurrencyKeys.has(key)) continue;
-        
-        const amt = gameState.currencies[key] || 0;
-        const rate = calculateGainRate(key);
-        const fmtAmt = formatNum(amt);
-        const fmtRate = `(+${formatNum(rate)}/s)`;
-        let potentialText = '';
-        const resetNode = _resetNodeCache[key];
-        if (resetNode) {
-            const g = getEffectiveResetGain(resetNode);
-            if (g > 0) potentialText = ` (+${formatNum(g)} on reset)`;
-        }
-        const valKey = fmtAmt + fmtRate + potentialText;
-        // Force update when value is 0 (to display "0" after reset)
-        if (_lastBarValues[key] === valKey && amt !== 0) continue;
-        _lastBarValues[key] = valKey;
-        cached.amount.textContent = fmtAmt;
-        cached.rate.textContent = fmtRate;
-        cached.rate.style.fontSize = `${Math.max(8, currencyFontSize - 1)}px`;
-        cached.potential.textContent = potentialText;
-    }
+            for (const [key, cached] of currencyBarCache) {
+                if (!_visibleCurrencyKeys.has(key)) continue;
+                
+                const rawAmt = gameState.currencies[key];
+                const amt = (rawAmt instanceof Decimal) ? rawAmt : (rawAmt || 0);
+                const rate = calculateGainRate(key);
+                const fmtAmt = formatNum(amt);
+                const fmtRate = `(+${formatNum(rate)}/s)`;
+                let potentialText = '';
+                const resetNode = _resetNodeCache[key];
+                if (resetNode) {
+                    const g = getEffectiveResetGain(resetNode);
+                    if (g > 0) potentialText = ` (+${formatNum(g)} on reset)`;
+                }
+                const valKey = fmtAmt + fmtRate + potentialText;
+                if (_lastBarValues[key] === valKey && (typeof amt === 'number' ? amt !== 0 : !amt.isZero())) continue;
+                _lastBarValues[key] = valKey;
+                cached.amount.textContent = fmtAmt;
+                cached.rate.textContent = fmtRate;
+                cached.rate.style.fontSize = `${Math.max(8, currencyFontSize - 1)}px`;
+                cached.potential.textContent = potentialText;
+            }
     
     // Also refresh bar for all currencies that are not in the visible set but have value 0
     // (e.g. after a reset, a currency that was previously non-zero is now 0 and should show)
@@ -3692,15 +4412,41 @@ function renderCurrencyBar() {
     const gain = getEffectiveResetGain(node);
     if (gain <= 0) { playSound('fail');
         document.getElementById('reset-modal').classList.add('hidden'); return; }
-    // Save BEFORE reset in case something goes wrong
     try { saveGame(); } catch(e) {}
-    gameState.currencies[node.targetCurrency] = (gameState.currencies[node.targetCurrency] || 0) + gain;
+    // Add gain using Decimal-safe addition
+        const old = gameState.currencies[node.targetCurrency] || 0;
+    const gainIsDecimal = gain instanceof Decimal;
+    const gainVal = gainIsDecimal ? gain : new Decimal(gain);
+
+    if (old instanceof Decimal) {
+        gameState.currencies[node.targetCurrency] = old.plus(gainVal);
+    } else if (typeof old === 'number') {
+        let result = null;
+        if (!gainIsDecimal) {
+            const cand = old + gain;
+            if (isFinite(cand)) result = cand;
+        }
+        if (result !== null) {
+            if (!BROKEN && result >= BREAK_THRESHOLD) {
+                gameState.currencies[node.targetCurrency] = BREAK_THRESHOLD;
+            } else {
+                gameState.currencies[node.targetCurrency] = result;
+            }
+        } else {
+            if (!BROKEN) {
+                gameState.currencies[node.targetCurrency] = BREAK_THRESHOLD;
+            } else {
+                gameState.currencies[node.targetCurrency] = new Decimal(old).plus(gainVal);
+            }
+        }
+    } else {
+        gameState.currencies[node.targetCurrency] = gainVal;
+    }
     if (!gameState.discoveredCurrencies.includes(node.targetCurrency)) { 
         gameState.discoveredCurrencies.push(node.targetCurrency);
         addCurrencyToOrder(node.targetCurrency); 
     } else if (gameState.hiddenCurrencies && gameState.hiddenCurrencies.includes(node.targetCurrency) 
                && (!gameState.userHiddenCurrencies || !gameState.userHiddenCurrencies.includes(node.targetCurrency))) {
-        // Un-hide when currency is earned from a reset, but only if user didn't manually hide it
         gameState.hiddenCurrencies = gameState.hiddenCurrencies.filter(k => k !== node.targetCurrency);
     }
     resetNodeLevels(node);
@@ -3712,12 +4458,10 @@ function renderCurrencyBar() {
             activeResetNode = null;
             requestCanvasRedraw();
             } catch(e) { console.warn('executeReset error:', e); document.getElementById('reset-modal').classList.add('hidden'); activeResetNode = null; }
-            // Force bar rebuild after reset (currencies that went to 0 need to reappear)
     _lastRenderedBarOrder = '';
     _lastBarValues = {};
     renderCurrencyBar();
     lastCurrencyUpdateTime = performance.now();
-    // Save again after reset
     try { saveGame(); } catch(e) {}
 }
 
@@ -4275,6 +5019,8 @@ document.getElementById('btn-font-up').onclick = (e) => {
                             } else {
                                 enterChallenge(node.id);
                             }
+                        } else if (node.type === 'break') {
+                            buyUpgrade(node.id);
                         }
                     }
                 }
@@ -4420,6 +5166,8 @@ document.getElementById('btn-font-up').onclick = (e) => {
                             showToast('⚠️ Already in another challenge!');
                             playSound('fail');
                         } else enterChallenge(node.id);
+                    } else if (node.type === 'break') {
+                        buyUpgrade(node.id);
                     }
                 }
             }
@@ -5066,21 +5814,38 @@ window.updateNewsMessageCount = updateNewsMessageCount;
         let loadSucceeded = false;
         let hasExistingSave = false;
 
-        function saveGame() {
+        function bigNumToJSON() {
+    // Convert any BigNum objects in gameState.currencies to a special serializable format
+    // BigNums are stored as {m, e} — JSON handles them natively.
+    // No conversion needed — they're plain objects.
+}
+
+function sanitizeBigNum(v) {
+    if (isBigNum(v)) {
+        if (typeof v.m !== 'number' || typeof v.e !== 'number') return 0;
+        if (!isFinite(v.m) || !isFinite(v.e)) return 0;
+        if (v.e > MAX_EXP || v.e < -MAX_EXP) return { m: 1, e: v.e > 0 ? MAX_EXP : -MAX_EXP };
+        return v;
+    }
+    return v;
+}
+// ADD this helper near the save code:
+function isValidCurrVal(v) {
+    if (typeof v === 'number') return !isNaN(v);
+    if (isBigNum(v)) return typeof v.m === 'number' && typeof v.e === 'number' && !isNaN(v.m) && !isNaN(v.e);
+    return false;
+}
+
+function saveGame() {
             // CRITICAL GUARD: if _fresh flag is still set, loadGame did not complete successfully.
             // Refuse to overwrite any existing save on disk.
             if (gameState._fresh) {
-                // Check if a real save exists on disk — if so, NEVER write the blank state.
                 if (localStorage.getItem(SAVE_KEY)) {
                     console.warn('⛔ saveGame blocked — _fresh state present, save exists on disk. Not overwriting.');
                     return;
                 }
-                // No save on disk AND _fresh: this is a legitimate first-ever visit — allow it.
-                // Remove _fresh so subsequent saves work normally.
                 delete gameState._fresh;
             }
-            // NEVER overwrite a good save with invalid data.
-            // Validate gameState is sane before writing.
             if (!gameState || typeof gameState !== 'object') {
                 console.warn('saveGame skipped — gameState is invalid');
                 return;
@@ -5089,92 +5854,81 @@ window.updateNewsMessageCount = updateNewsMessageCount;
                 console.warn('saveGame skipped — currencies is missing');
                 return;
             }
-            if (typeof gameState.currencies.P !== 'number' || isNaN(gameState.currencies.P)) {
-                console.warn('saveGame skipped — P is NaN or not a number');
-                return;
-            }
-            // GUARD: Detect a wiped/fresh state (only P at 0, no levels, nothing else with >0)
-            // and refuse to overwrite a real save with it.
-            const hasRealProgress = gameState.currencies.P > 0 ||
-                Object.keys(gameState.currencies).length > 1 ||
-                Object.keys(gameState.levels).length > 0;
-            // Ensure news object is complete but never corrupt the save if it's missing
-            if (!gameState.news || typeof gameState.news !== 'object') {
-                // Silently set defaults so setNewsEnabled etc. don't crash
-                gameState.news = { enabled: true, groupState: {}, history: [], seenMessages: {}, autoAdd: true, scrollSpeed: 1.0, duplicatePrevention: 20, newWeight: 2.0 };
-            }
             try {
                 // SAFETY: if loading failed but a save exists on disk, do NOT overwrite it.
                 if (!loadSucceeded && hasExistingSave) {
                     console.warn('⛔ saveGame skipped — game state was not loaded successfully.');
                     return;
                 }
-                // DO NOT overwrite a real save with a blank fresh state.
-                if (!hasRealProgress && hasExistingSave) {
-                    console.warn('⚠️ saveGame skipped — refusing to overwrite save with blank state (likely page reload during init)');
-                    return;
-                }
                 gameState.camera = { panX, panY, scale };
                 gameState.buyMode = buyMode;
                 gameState.offlineTimestamp = Date.now();
-                // Sanitize all currency values to numbers before saving
-                if (gameState.currencies) {
-                    for (const key of Object.keys(gameState.currencies)) {
-                        const v = gameState.currencies[key];
-                        if (typeof v !== 'number' || isNaN(v)) {
-                            gameState.currencies[key] = 0;
-                        }
-                    }
-                    // Ensure P at least exists
-                    if (typeof gameState.currencies.P !== 'number' || isNaN(gameState.currencies.P)) gameState.currencies.P = 0;
-                } else {
-                    gameState.currencies = { P: 0 };
+                
+                // Ensure news object exists
+                if (!gameState.news || typeof gameState.news !== 'object') {
+                    gameState.news = { enabled: true, groupState: {}, history: [], seenMessages: {}, autoAdd: true, scrollSpeed: 1.0, duplicatePrevention: 20, newWeight: 2.0 };
                 }
-                // Sanitize levels too
-                if (gameState.levels) {
-                    for (const key of Object.keys(gameState.levels)) {
-                        const v = gameState.levels[key];
-                        if (typeof v !== 'number' || isNaN(v)) {
-                            gameState.levels[key] = 0;
+                
+                // Clone gameState for serialization, converting Decimals to {m, e}
+                const clone = {};
+                for (const key of Object.keys(gameState)) {
+                    if (key === '_fresh') continue;
+                    const val = gameState[key];
+                    if (val instanceof Decimal) {
+                        clone[key] = { m: val.m, e: val.e };
+                    } else if (Array.isArray(val)) {
+                        clone[key] = val.slice();
+                    } else if (val && typeof val === 'object') {
+                        // Recursively convert Decimals in nested objects (currencies)
+                        if (key === 'currencies') {
+                            const cclone = {};
+                            for (const ckey of Object.keys(val)) {
+                                const cv = val[ckey];
+                                if (cv instanceof Decimal) {
+                                    cclone[ckey] = { m: cv.m, e: cv.e };
+                                } else if (typeof cv === 'number') {
+                                    cclone[ckey] = isFinite(cv) ? cv : 0;
+                                } else {
+                                    cclone[ckey] = 0;
+                                }
+                            }
+                            clone[key] = cclone;
+                        } else {
+                            clone[key] = JSON.parse(JSON.stringify(val));
                         }
+                    } else if (typeof val === 'number') {
+                        clone[key] = isFinite(val) ? val : 0;
+                    } else {
+                        clone[key] = val;
                     }
-                } else {
-                    gameState.levels = {};
                 }
-                const toSave = { __version: SAVE_VERSION, ...gameState };
+                
+                const toSave = { __version: SAVE_VERSION, ...clone };
                 const raw = JSON.stringify(toSave);
-                // Strict validation: must parse, have currencies as an object, and have P as a number
-                const test = JSON.parse(raw);
-                if (!test || typeof test !== 'object' || !test.currencies || typeof test.currencies !== 'object') {
-                    console.warn('Save validation failed — not saving corrupt data');
-                    return;
-                }
-                if (typeof test.currencies.P !== 'number' || isNaN(test.currencies.P)) {
-                    console.warn('Save validation failed — P is missing or NaN');
-                    return;
-                }
-                // Also check that levels if present, are objects
-                if (test.levels && typeof test.levels !== 'object') {
-                    console.warn('Save validation failed — levels is not an object');
-                    return;
-                }
-                // Rotate: the current main save becomes the backup BEFORE we overwrite it.
+                // Validate
+                try {
+                    const test = JSON.parse(raw);
+                    if (!test || typeof test !== 'object' || !test.currencies || typeof test.currencies !== 'object') {
+                        console.warn('Save validation failed — not saving corrupt data');
+                        return;
+                    }
+                } catch(_) { console.warn('Save validation failed'); return; }
+                
+                // Rotate backup
                 const previousRaw = localStorage.getItem(SAVE_KEY);
                 if (previousRaw && previousRaw !== raw) {
-                    // Only promote a save that had real progress (not a wiped state)
                     try {
                         const prevParsed = JSON.parse(previousRaw);
                         if (prevParsed && prevParsed.currencies) {
                             const prevP = typeof prevParsed.currencies.P === 'number' ? prevParsed.currencies.P : 0;
-                            const prevOtherCurrencies = Object.keys(prevParsed.currencies).length > 1;
+                            const prevOther = Object.keys(prevParsed.currencies).length > 1;
                             const prevLevels = prevParsed.levels && Object.keys(prevParsed.levels).length > 0;
-                            if (prevP > 0 || prevOtherCurrencies || prevLevels) {
+                            if (prevP > 0 || prevOther || prevLevels) {
                                 localStorage.setItem(SAVE_BACKUP_KEY, previousRaw);
                             }
                         }
-                    } catch (_) { /* don't promote corrupt backups */ }
+                    } catch (_) {}
                 }
-                // Write the validated save
                 localStorage.setItem(SAVE_KEY, raw);
             } catch (e) {
                 console.warn('Save failed (non-critical):', e);
@@ -5257,15 +6011,20 @@ window.updateNewsMessageCount = updateNewsMessageCount;
             if (!gameState.currencies) gameState.currencies = { P: 0 };
             // Ensure every known currency key exists in currencies, defaulting non-numeric/undefined to 0
             for (const key of Object.keys(gameState.currencies)) {
-                const v = gameState.currencies[key];
-                if (typeof v !== 'number' || isNaN(v)) {
-                    gameState.currencies[key] = 0;
-                }
-            }
-            // Also ensure P exists and is numeric
-            if (typeof gameState.currencies.P !== 'number' || isNaN(gameState.currencies.P)) {
-                gameState.currencies.P = 0;
-            }
+    const v = gameState.currencies[key];
+    if (typeof v === 'number') {
+        if (isNaN(v)) gameState.currencies[key] = 0;
+    } else if (isBigNum(v)) {
+        if (isNaN(v.m) || isNaN(v.e)) gameState.currencies[key] = 0;
+    } else {
+        gameState.currencies[key] = 0;
+    }
+}
+if (!isValidCurrVal(gameState.currencies.P)) {
+    gameState.currencies.P = 0;
+}
+            
+            // NEVER clamp BigNum values stored as {m,e} in save — they're legitimate.
             
             if (!gameState.hiddenCurrencies) gameState.hiddenCurrencies = [];
             if (!gameState.userHiddenCurrencies) gameState.userHiddenCurrencies = [];
@@ -5293,6 +6052,41 @@ window.updateNewsMessageCount = updateNewsMessageCount;
                 panY = gameState.camera.panY || 0;
                 scale = gameState.camera.scale || 1; }
             if (gameState.buyMode !== undefined) { buyMode = gameState.buyMode; }
+            // Post-load: convert any {m, e} objects to Decimal instances
+            // and set BROKEN if break node was purchased
+            if (getLevel('BRK01') >= 1) {
+                BROKEN = true;
+            }
+            // Convert all currency values: {m, e} → Decimal; validate numbers
+            if (gameState.currencies) {
+                for (const key of Object.keys(gameState.currencies)) {
+                    const v = gameState.currencies[key];
+                    if (v === null || v === undefined) { gameState.currencies[key] = 0; continue; }
+                    if (v instanceof Decimal) continue; // already good
+                    if (typeof v === 'number') {
+                        if (!isFinite(v)) gameState.currencies[key] = 0;
+                        else if (BROKEN && Math.abs(v) >= BREAK_THRESHOLD) gameState.currencies[key] = new Decimal(v);
+                        continue;
+                    }
+                    if (v && typeof v === 'object' && 'm' in v && 'e' in v) {
+                        if (typeof v.m === 'number' && typeof v.e === 'number' && isFinite(v.m) && isFinite(v.e) && v.m !== 0) {
+                            const d = new Decimal(v);
+                            // If not broken and value fits as number, keep as number
+                            if (!BROKEN && d.lt(BREAK_THRESHOLD) && d.gt(-BREAK_THRESHOLD)) {
+                                const n = d.toNumber();
+                                gameState.currencies[key] = isFinite(n) ? n : 0;
+                            } else {
+                                gameState.currencies[key] = d;
+                            }
+                        } else {
+                            gameState.currencies[key] = 0;
+                        }
+                        continue;
+                    }
+                    // Fallback
+                    gameState.currencies[key] = 0;
+                }
+            }
             if (gameState.currencyFontSize !== undefined) {
                 currencyFontSize = gameState.currencyFontSize;
             } else {
@@ -5317,6 +6111,10 @@ window.updateNewsMessageCount = updateNewsMessageCount;
         }
 
         function processOfflineProgress() {
+            // Check if break node was purchased
+            if (getLevel('BRK01') >= 1) {
+                BROKEN = true;
+            }
             const lastTime = gameState.offlineTimestamp;
             if (!lastTime) return;
             const elapsedMs = Date.now() - lastTime;
@@ -5342,23 +6140,66 @@ window.updateNewsMessageCount = updateNewsMessageCount;
             // Recalculate gain rates for all known currencies
             cacheDirty = true;
             const gains = {};
-            for (const key of Object.keys(CURRENCIES)) {
-                // Skip currencies excluded from offline progress (diminishing returns, random chance, tick-based)
+                        for (const key of Object.keys(CURRENCIES)) {
                 if (OFFLINE_EXCLUDED_CURRENCIES.has(key)) continue;
                 const rate = calculateGainRate(key);
-                if (rate > 0 && (gameState.currencies[key] || 0) > 0) {
-                    const earned = rate * dt;
-                    if (earned > 0.01 || (key === 'P' && earned > 0)) {
-                        gains[key] = earned;
-                        gameState.currencies[key] = (gameState.currencies[key] || 0) + earned;
-                        // Ensure currency is discovered and in order
-                        if (!gameState.discoveredCurrencies.includes(key)) {
-                            gameState.discoveredCurrencies.push(key);
-                            addCurrencyToOrder(key);
+
+                // Type-aware positive check
+                let positive;
+                if (typeof rate === 'number') positive = rate > 0;
+                else if (rate instanceof Decimal) positive = rate.m > 0;
+                else positive = false;
+                if (!positive) continue;
+
+                const curr = gameState.currencies[key] || 0;
+                if (typeof curr === 'number' && curr <= 0) continue;
+
+                // Compute earned in the right precision
+                let earned;
+                if (rate instanceof Decimal) earned = rate.times(dt);
+                else earned = rate * dt;
+
+                // Apply
+                if (curr instanceof Decimal) {
+                    const newVal = curr.plus(earned);
+                    gains[key] = newVal.minus(curr);
+                    gameState.currencies[key] = newVal;
+                } else if (typeof curr === 'number') {
+                    let nv = null;
+                    if (typeof earned === 'number') {
+                        const cand = curr + earned;
+                        if (isFinite(cand)) nv = cand;
+                    }
+                    if (nv !== null) {
+                        if (!BROKEN) {
+                            const capped = nv >= BREAK_THRESHOLD ? BREAK_THRESHOLD : nv;
+                            gains[key] = capped - curr;
+                            gameState.currencies[key] = capped;
+                        } else if (nv === curr && earned > 0 && curr > 1e15) {
+                            const d = new Decimal(curr).plus(earned);
+                            gains[key] = d.minus(curr).toNumber();
+                            gameState.currencies[key] = d;
+                        } else {
+                            gains[key] = earned;
+                            gameState.currencies[key] = nv;
+                        }
+                    } else {
+                        if (!BROKEN) {
+                            gains[key] = BREAK_THRESHOLD - curr;
+                            gameState.currencies[key] = BREAK_THRESHOLD;
+                        } else {
+                            const d = new Decimal(curr).plus(earned);
+                            gains[key] = earned;
+                            gameState.currencies[key] = d;
                         }
                     }
                 }
+                const smallGain = (gains[key] instanceof Decimal) ? gains[key].toNumber() : gains[key];
+                if (key !== 'P' && (typeof smallGain === 'number' ? smallGain < 0.001 : false)) {
+                    delete gains[key];
+                }
             }
+            // Also handle the closing of the if block above for `const cur = ...`
             if (Object.keys(gains).length === 0) return;
             clearCaches(true);
             // Show popup
@@ -5470,11 +6311,13 @@ window.updateNewsMessageCount = updateNewsMessageCount;
             if (gameState.paused) return;
             // Clear frame-level caches every tick
             clearTickCaches();
-            let changed = false;
-            // Mark changed if any discovered currency has a negative rate
-            for (const key of gameState.discoveredCurrencies) {
-                if (calculateGainRate(key) < 0) { changed = true; break; }
+            
+            // ---- BREAK INFINITY CHECK ----
+            // Check if break node is purchased (enables broken mode)
+            if (!BROKEN && getLevel('BRK01') >= 1) {
+                BROKEN = true;
             }
+            
             // Check all defined currencies for new gains or drains
             const discoveredSet = new Set(gameState.discoveredCurrencies);
             for (const key of Object.keys(CURRENCIES)) {
@@ -5486,31 +6329,81 @@ window.updateNewsMessageCount = updateNewsMessageCount;
                         discoveredSet.add(key);
                         needsNodeUpdate = true;
                     }
-                    if (gameState.currencies[key] === undefined) gameState.currencies[key] = 0;
+                    if (gameState.currencies[key] === undefined || gameState.currencies[key] === null) gameState.currencies[key] = 0;
                 }
             }
             // Process all discovered currencies for gain
+                        // Process all discovered currencies for gain
             for (const key of gameState.discoveredCurrencies) {
                 const rate = calculateGainRate(key);
-                if (rate !== 0) {
-                    const old = gameState.currencies[key] || 0;
-                    const newVal = old + rate * dt;
-                    gameState.currencies[key] = newVal;
-                    if (Math.abs(newVal - old) > Math.max(1, Math.abs(old) * 0.005)) changed = true;
-                    else if (newVal < old && old > 0) changed = true;
+
+                // Skip non-contributing rates
+                if (typeof rate === 'number') {
+                    if (isNaN(rate) || rate === 0) continue;
+                } else if (rate instanceof Decimal) {
+                    if (rate.m === 0) continue;
+                } else {
+                    continue;
                 }
-            }
-            // Auto-unhide currencies with gain
-            for (const key of gameState.discoveredCurrencies || []) {
-                const rate = calculateGainRate(key);
-                if (rate > 0 && gameState.hiddenCurrencies && gameState.hiddenCurrencies.includes(key)) {
+
+                const old = gameState.currencies[key] || 0;
+                const oldIsDecimal = old instanceof Decimal;
+
+                // Compute gain in the appropriate precision
+                let gain;
+                if (rate instanceof Decimal) {
+                    gain = rate.times(dt);
+                } else if (oldIsDecimal) {
+                    gain = new Decimal(rate).times(dt);
+                } else {
+                    gain = rate * dt;
+                }
+
+                // Apply
+                if (oldIsDecimal) {
+                    gameState.currencies[key] = old.plus(gain);
+                } else if (typeof old === 'number') {
+                    // Try plain-number path first (fast and exact for small values)
+                    let nv = null;
+                    if (typeof gain === 'number') {
+                        const candidate = old + gain;
+                        if (isFinite(candidate)) nv = candidate;
+                    }
+
+                    if (nv !== null) {
+                        if (!BROKEN) {
+                            // PRE-BREAK: hard-cap at the threshold. No Decimal promotion.
+                            gameState.currencies[key] = (nv >= BREAK_THRESHOLD) ? BREAK_THRESHOLD : nv;
+                        } else {
+                            // POST-BREAK: precision-freeze promotion
+                            if (nv === old && gain > 0 && old > 1e15) {
+                                gameState.currencies[key] = new Decimal(old).plus(gain);
+                            } else {
+                                gameState.currencies[key] = nv;
+                            }
+                        }
+                    } else {
+                        // Overflowed
+                        if (!BROKEN) {
+                            gameState.currencies[key] = BREAK_THRESHOLD;
+                        } else {
+                            const g = (gain instanceof Decimal) ? gain : new Decimal(gain);
+                            gameState.currencies[key] = new Decimal(old).plus(g);
+                        }
+                    }
+                } else {
+                    gameState.currencies[key] = 0;
+                }
+
+                // Auto-unhide
+                const positive = (rate instanceof Decimal) ? rate.m > 0 : rate > 0;
+                if (positive && gameState.hiddenCurrencies && gameState.hiddenCurrencies.includes(key)) {
                     if (!gameState.userHiddenCurrencies || !gameState.userHiddenCurrencies.includes(key)) {
                         gameState.hiddenCurrencies = gameState.hiddenCurrencies.filter(k => k !== key);
-                        if (typeof renderCurrencyBar === 'function') renderCurrencyBar();
-                        if (typeof renderCurrencyToggles === 'function') renderCurrencyToggles();
                     }
                 }
             }
+
             // Periodically refresh currency bar for currencies that exist but show 0
             // This handles the case where a currency went to 0 after reset
             if (typeof renderCurrencyBar === 'function' && performance.now() % 2000 < 20) {
@@ -5620,8 +6513,9 @@ window.updateNewsMessageCount = updateNewsMessageCount;
         // ---- Build maps ----
         const CURRENCY_EFFECT_INDEX = {};
         Object.keys(CURRENCIES).forEach(c => CURRENCY_EFFECT_INDEX[c] = []);
+        // Index ALL effects from ALL nodes (including challenge nodes that were pushed above)
         TREE_NODES.forEach(node => {
-            if (node.type !== 'upgrade' || !node.effects) return;
+            if ((node.type !== 'upgrade' && node.type !== 'break') || !node.effects) return;
             node.effects.forEach(eff => {
                 const target = eff.currency || eff.targetCurrency;
                 if (!target) return;
