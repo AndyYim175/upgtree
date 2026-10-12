@@ -365,6 +365,13 @@
                     <!-- SECTION: Save & Data -->
                     <div id="section-save" class="flex flex-col gap-1 pt-1 border-t border-zinc-800">
                         <div class="text-[9px] font-bold text-zinc-500 tracking-wider px-1 mb-0.5 uppercase">Save &amp; Data</div>
+                        <div class="flex items-center justify-between gap-1 w-full px-2.5 py-1.5 bg-zinc-950 border border-zinc-800 text-zinc-300 text-[11px]">
+                            <span class="font-bold text-zinc-400">NAME</span>
+                            <div class="flex items-center gap-1">
+                                <span id="settings-player-name" class="text-[10px] text-zinc-400 truncate max-w-[120px]">—</span>
+                                <button id="btn-change-name" class="px-1.5 py-0.5 bg-zinc-800 hover:bg-zinc-700 text-cyan-300 border border-zinc-700 text-[10px] transition rounded-none flex items-center gap-0.5"><i data-lucide="edit" class="w-3 h-3"></i><span>Change</span></button>
+                            </div>
+                        </div>
                         <button id="btn-export-save" class="w-full px-2.5 py-1.5 bg-zinc-950 hover:bg-zinc-800 text-emerald-400 border border-zinc-800 hover:border-emerald-800 transition flex items-center justify-between text-[11px] rounded-none"><span>Export Save</span><i data-lucide="download" class="w-3.5 h-3.5 text-emerald-400"></i></button>
                         <button id="btn-import-save" class="w-full px-2.5 py-1.5 bg-zinc-950 hover:bg-zinc-800 text-cyan-400 border border-zinc-800 hover:border-cyan-800 transition flex items-center justify-between text-[11px] rounded-none"><span>Import Save <br><small>(refresh page afterwards)</small></span><i data-lucide="upload" class="w-3.5 h-3.5 text-cyan-400"></i></button>
                         <button id="btn-wipe" class="w-full px-2.5 py-1.5 bg-zinc-950 hover:bg-red-950 text-red-400 border border-zinc-800 hover:border-red-800 transition flex items-center justify-between text-[11px] rounded-none"><span>Wipe Save</span><i data-lucide="trash-2" class="w-3.5 h-3.5 text-red-400"></i></button>
@@ -414,6 +421,25 @@
             </div>
         </div>
     </div>
+    <!-- Player name display (top-right) -->
+    <div id="player-name-display" class="fixed top-[22px] right-2 z-30 text-[10px] font-mono text-zinc-400 pointer-events-none select-none hidden" style="max-width: 200px; text-overflow: ellipsis; overflow: hidden; white-space: nowrap;"></div>
+    <!-- Name prompt modal -->
+    <div id="name-modal" class="hidden fixed inset-0 z-[60] flex items-center justify-center bg-black/80 backdrop-blur-xs p-4">
+        <div class="bg-zinc-900 border border-emerald-500/60 p-5 max-w-sm w-full shadow-2xl space-y-4">
+            <div class="flex items-center gap-2.5 text-emerald-400 border-b border-zinc-800 pb-2.5">
+                <i data-lucide="user" class="w-5 h-5"></i><h2 class="font-bold text-sm uppercase tracking-wider">Welcome to upgrade land!</h2>
+            </div>
+            <p class="text-xs text-zinc-300">Before you begin, what name shall you go by?</p>
+            <p class="text-[9px] text-zinc-300">This will be used for offline progress greetings and discord notifs.</p>
+            <input id="name-input" type="text" maxlength="28" placeholder="Enter your name..." class="w-full bg-zinc-950 border border-zinc-700 text-zinc-100 text-xs px-3 py-2 outline-none focus:border-emerald-500 font-mono" autocomplete="off">
+            <p id="name-error" class="text-red-400 text-[10px] hidden">Name must be 2–28 characters.</p>
+            <div class="flex justify-end gap-2 pt-1">
+                <button id="name-modal-confirm" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-zinc-950 font-bold text-xs flex items-center gap-1">
+                    <i data-lucide="check" class="w-3.5 h-3.5"></i><span>SET NAME</span>
+                </button>
+            </div>
+        </div>
+    </div>
     <!-- Toast -->
     <div id="toast" class="hidden fixed top-4 right-4 z-50 transform translate-x-full transition-transform duration-300 ease-in-out pointer-events-none overflow-hidden">
         <div class="bg-zinc-900 border border-emerald-500/80 text-emerald-300 px-4 py-2.5 shadow-2xl flex items-center gap-2 text-xs font-mono">
@@ -424,7 +450,7 @@
     <div id="offline-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-xs p-4">
         <div class="bg-zinc-900 border border-emerald-500/60 p-5 max-w-sm w-full shadow-2xl space-y-4">
             <div class="flex items-center gap-2.5 text-emerald-400 border-b border-zinc-800 pb-2.5">
-                <i data-lucide="clock" class="w-5 h-5"></i><h2 class="font-bold text-sm uppercase tracking-wider">Welcome Back!</h2>
+                <i data-lucide="clock" class="w-5 h-5"></i><h2 id="offline-title" class="font-bold text-sm uppercase tracking-wider">Welcome Back!</h2>
             </div>
             <p id="offline-duration" class="text-xs text-zinc-400"></p>
             <div id="offline-gains-list" class="bg-zinc-950 p-3 border border-zinc-800 text-xs space-y-1 max-h-48 overflow-y-auto"></div>
@@ -1171,7 +1197,7 @@ long_longs: { id: 'long_longs', name: 'long longs', color: 'text-[#ff7fff]', fil
         // CRITICAL: _fresh flag prevents saveGame from overwriting a real save before loadGame completes.
         // ANY code that touches gameState before window.onload must NOT call saveGame.
         // This _fresh flag is removed by loadGame ONLY after successful load.
-        let gameState = { _fresh: true, currencies: { P: 0, PR: 0, QT: 0, T: 0, D1: 0, D2: 0, D3: 0, D4: 0, D5: 0, D6: 0, D7: 0, D8: 0 }, discoveredCurrencies: ['P'], currencyOrder: ['P'], hiddenCurrencies: [], userHiddenCurrencies: [], levels: {}, unlockedDecorations: [], camera: { panX: 0, panY: 0, scale: 1 }, soundMuted: false, showEffects: true, buyMode: 1, skipResetConfirm: {}, paused: false, currencyFontSize: 11, offlineTimestamp: Date.now(), hotkeyBindings: null, notation: 'standard', challengeCompletions: {}, activeChallenge: null };
+        let gameState = { _fresh: true, currencies: { P: 0, PR: 0, QT: 0, T: 0, D1: 0, D2: 0, D3: 0, D4: 0, D5: 0, D6: 0, D7: 0, D8: 0 }, discoveredCurrencies: ['P'], currencyOrder: ['P'], hiddenCurrencies: [], userHiddenCurrencies: [], levels: {}, unlockedDecorations: [], camera: { panX: 0, panY: 0, scale: 1 }, soundMuted: false, showEffects: true, buyMode: 1, skipResetConfirm: {}, paused: false, currencyFontSize: 11, offlineTimestamp: Date.now(), hotkeyBindings: null, notation: 'standard', challengeCompletions: {}, activeChallenge: null, announcedUpgrades: {}, _localUpgradeDone: false, firstUpgradeNotified: false,    };
 // Always ensure P is a valid number (defence against undefined save corruption)
 if (typeof gameState.currencies.P !== 'number' || isNaN(gameState.currencies.P)) gameState.currencies.P = 0;
         let displayLevels = {},
@@ -2438,6 +2464,8 @@ const CHALLENGE_NODES = [
     { id: 'V23', type: 'upgrade', code: 'V23', name: 'once more.', coords: [-45, -50], reqs: [[-46, -50]], borderColor: 'green', desc: 'void boost void (slightly weaker).', effects: [{ type: 'currency_mult', currency: 'void', formula: (lvl) => 1+0.25*Math.pow(getCurr('void'), 0.09)/5 }], costCurrency: 'void', costFormula: (lvl) => 2e12, maxLevel: 1 },
     { id: 'V24', type: 'upgrade', code: 'V24', name: 'all.', coords: [-44, -50], reqs: [[-45, -50]], borderColor: 'green', desc: '+25% void per level, but buying costs all your void.', effects: [{ type: 'currency_mult', currency: 'void', formula: (lvl) => 1+0.25*lvl }], costCurrency: 'void', costFormula: (lvl) => Math.max(1e12*Math.pow(1.5+0.1*lvl, lvl), getCurr('void')), maxLevel: 36 },
     { id: 'V25', type: 'upgrade', code: 'V25', name: 'quick recovery.', coords: [-44, -49], reqs: [[-44, -50]], borderColor: 'green', desc: 'gain a lot of raw void per second below 10T, x2 cap per level.', effects: [{ type: 'base_gain_raw', currency: 'void', formula: (lvl) => Math.max(0, 1e13*Math.pow(2, Math.max(0, lvl-1))-getCurr('void')) }], costCurrency: 'void', costFormula: (lvl) => 2e13*Math.pow(2.25+0.025*lvl, lvl), maxLevel: 20 },
+    { id: 'V26', type: 'upgrade', code: 'V26', name: 'once more.', coords: [-43, -50], reqs: [[-44, -50]], borderColor: 'green', desc: 'void boost void (quite weaker).', effects: [{ type: 'currency_mult', currency: 'void', formula: (lvl) => 1+0.25*Math.pow(getCurr('void'), 0.05)/2.5 }], costCurrency: 'void', costFormula: (lvl) => 5e13, maxLevel: 1 },
+    { id: 'V27', type: 'upgrade', code: 'V27', name: 'add+6.', coords: [-44, -48], reqs: [[-44, -49]], borderColor: 'green', desc: '+lvl^3 void/s.', effects: [{ type: 'base_gain', currency: 'void', formula: (lvl) => lvl*lvl*lvl }], costCurrency: 'void', costFormula: (lvl) => (1e13+1e13*lvl)*Math.pow(1.45, Math.max(0, lvl-9)), maxLevel: 100 },
     
             ];
         // Push challenge nodes into TREE_NODES
@@ -3909,7 +3937,7 @@ document.getElementById('btn-pause').onclick = () => {
             gameState = { _fresh: true, currencies: { P: 0, PR: 0, QT: 0, T: 0, D1: 0, D2: 0, D3: 0, D4: 0, D5: 0, D6: 0, D7: 0, D8: 0 }, discoveredCurrencies: ['P'], currencyOrder: ['P'],
                 hiddenCurrencies: [], levels: {}, unlockedDecorations: [], camera: { panX: 0, panY: 0,
                     scale: 1 }, soundMuted: false, showEffects: true, buyMode: 1, skipResetConfirm: {},
-                paused: false, offlineTimestamp: Date.now(), notation: 'standard' };
+                paused: false, offlineTimestamp: Date.now(), notation: 'standard', announcedUpgrades: {}, _localUpgradeDone: false, firstUpgradeNotified: false, };
             panX = 0;
             panY = 0;
             scale = 1;
@@ -3918,6 +3946,9 @@ gameState.currencyFontSize = 11;
 document.getElementById('font-size-label').textContent = 11;
 currentNotation = 'standard';
 applyNotation('standard');
+            // Clear local upgrade counter so fresh start can send Discord notification
+            setLocalCounter(0);
+            _localUpgradeCount = 0;
             document.getElementById('wipe-modal').classList.add('hidden');
             playSound('reset');
             showToast('All data wiped.');
@@ -5789,6 +5820,12 @@ window.updateNewsMessageCount = updateNewsMessageCount;
         window.onload = () => {
             try {
                 loadGame();
+                if (!gameState.announcedUpgrades || typeof gameState.announcedUpgrades !== 'object') {
+            gameState.announcedUpgrades = {};
+        }
+        for (const id in gameState.levels) {
+            if (gameState.levels[id] > 0) gameState.announcedUpgrades[id] = true;
+        }
                 initChallengeState();
                 indexChallengeRewardEffects();
                 // Ensure news state is initialized before any tick runs
@@ -5887,6 +5924,396 @@ window.updateNewsMessageCount = updateNewsMessageCount;
                 delete stepAnimations[sid]; }
             // saveGame already called by the visibility handler and the 200ms timeout
         });
+        </script>
+    <!-- ==================== FIREBASE + NAME + DISCORD INTEGRATION ==================== -->
+    <script type="module">
+    // Firebase SDK imports (CDN)
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
+    import { getDatabase, ref, get, set, runTransaction, child, increment } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-database.js";
+
+    const firebaseConfig = {
+        apiKey: "AIzaSyBxrF566EsZY7Av9atUeUioHc12idY87OU",
+        authDomain: "click-counter-5bc79.firebaseapp.com",
+        databaseURL: "https://click-counter-5bc79-default-rtdb.firebaseio.com",
+        projectId: "click-counter-5bc79",
+        storageBucket: "click-counter-5bc79.firebasestorage.app",
+        messagingSenderId: "76331380589",
+        appId: "1:76331380589:web:1f530709b082af9f073464",
+        measurementId: "G-W6VCVJRM4L"
+    };
+
+    const firebaseApp = initializeApp(firebaseConfig);
+    const database = getDatabase(firebaseApp);
+
+    // ─── Player name state ──────────────────────────────────────────────
+    // Stored in gameState.playerName (and saved with the normal save).
+    const PLAYER_NAME_KEY = 'UG_PLAYER_NAME';
+
+    function getPlayerName() {
+        return (gameState && gameState.playerName) || localStorage.getItem(PLAYER_NAME_KEY) || '';
+    }
+
+    function setPlayerName(name) {
+        const trimmed = name.trim();
+        if (trimmed.length < 2 || trimmed.length > 28) return false;
+        gameState.playerName = trimmed;
+        localStorage.setItem(PLAYER_NAME_KEY, trimmed);
+        updatePlayerNameDisplay();
+        return true;
+    }
+
+    function updatePlayerNameDisplay() {
+        const el = document.getElementById('player-name-display');
+        if (!el) return;
+        const name = getPlayerName();
+        if (name) {
+            el.textContent = '' + name;
+            el.classList.remove('hidden');
+        } else {
+            el.classList.add('hidden');
+        }
+    }
+
+    // ─── Name prompt ────────────────────────────────────────────────────
+    function showNamePrompt(fromSettings) {
+        const modal = document.getElementById('name-modal');
+        if (!modal) return;
+        modal.classList.remove('hidden');
+        const input = document.getElementById('name-input');
+        input.value = getPlayerName() || '';
+        input.focus();
+        const error = document.getElementById('name-error');
+        error.classList.add('hidden');
+        // If opened from settings, change the title
+        const heading = modal.querySelector('h2');
+        if (heading) {
+            heading.textContent = fromSettings ? 'Change your name' : 'Welcome to upgrade land!';
+        }
+        // Store flag so confirm handler knows if it was a settings rename
+        modal.dataset.fromSettings = fromSettings ? '1' : '0';
+    }
+
+    function hideNamePrompt() {
+        document.getElementById('name-modal').classList.add('hidden');
+    }
+
+    // Bind name modal
+    document.getElementById('name-modal-confirm').addEventListener('click', () => {
+        const input = document.getElementById('name-input');
+        const error = document.getElementById('name-error');
+        if (setPlayerName(input.value)) {
+            error.classList.add('hidden');
+            hideNamePrompt();
+            updateSettingsNameDisplay();
+            // After setting name, trigger the first-upgrade check for any existing upgrades
+            checkPendingNameSet();
+        } else {
+            error.classList.remove('hidden');
+        }
+    });
+    document.getElementById('name-input').addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+            document.getElementById('name-modal-confirm').click();
+        }
+    });
+
+    // Settings "Change Name" button
+    document.addEventListener('click', (e) => {
+        const btn = e.target.closest('#btn-change-name');
+        if (btn) {
+            e.stopPropagation();
+            showNamePrompt(true);
+        }
+    });
+
+    // ═══════════════════════════════════════════════════════════════════
+    // PERSISTENT UPGRADE COUNTER (saved in gameState & localStorage)
+    // The Discord notification fires ONCE EVER per player per global
+    // counter read.  The flag gameState.firstUpgradeNotified persists
+    // across page refreshes so Discord never gets spammed.
+    // ═══════════════════════════════════════════════════════════════════
+
+    const TOTAL_UPGRADES_REF = 'global/totalUpgradesPurchased';
+    // LOCAL backup so we never double-increment even if Firebase fails
+    const LOCAL_COUNTER_KEY = 'UG_LOCAL_UPGRADE_COUNT';
+
+    
+
+
+let _initialGlobalCount = 0;
+window._localUpgradeCount = 0;   // was: let _localUpgradeCount
+let _pendingUpgradeNode = null;
+
+function getLocalCounter() {
+    try { return parseInt(localStorage.getItem(LOCAL_COUNTER_KEY)) || 0; } catch(e) { return 0; }
+}
+function setLocalCounter(val) {
+    try { localStorage.setItem(LOCAL_COUNTER_KEY, String(val)); } catch(e) {}
+}
+
+window.getLocalCounter  = getLocalCounter;
+window.setLocalCounter  = setLocalCounter;
+window.getLocalCount    = getLocalCounter; 
+
+function initUpgradeCounter() {
+    _localUpgradeCount = getLocalCounter();
+    const counterRef = ref(database, TOTAL_UPGRADES_REF);
+    get(counterRef).then((snap) => {
+        _initialGlobalCount = snap.val() || 0;
+    }).catch(() => { _initialGlobalCount = 0; });
+}
+
+window.notifyUpgradePurchased = function(nodeId) {
+    const node = NODE_MAP.get(nodeId);
+    if (!node) return;
+
+    // Ensure the map exists (defensive: old saves)
+    if (!gameState.announcedUpgrades || typeof gameState.announcedUpgrades !== 'object') {
+        gameState.announcedUpgrades = {};
+    }
+
+    // Already announced this specific upgrade? Skip.
+    if (gameState.announcedUpgrades[nodeId]) return;
+
+    // Need a name first — queue and prompt
+    const name = getPlayerName();
+    if (!name) {
+        _pendingUpgradeNode = node;
+        showNamePrompt(false);
+        return;
+    }
+
+    // Mark BEFORE the async fire so a rapid double-click can't double-fire
+    gameState.announcedUpgrades[nodeId] = true;
+    _localUpgradeCount++;
+    setLocalCounter(_localUpgradeCount);
+
+    sendUpgradeToFirebase(node);
+};
+
+
+
+    function checkPendingNameSet() {
+        if (_pendingUpgradeNode) {
+            const node = _pendingUpgradeNode;
+            _pendingUpgradeNode = null;
+            window.notifyUpgradePurchased(node.id);
+        }
+    }
+
+        let _lastNotifTime = 0;
+    const NOTIF_THROTTLE_MS = 1000;
+
+    // ─── Notification queue ─────────────────────────────────────────────
+    // Upgrades bought faster than 1/sec are queued here and delivered
+    // one-at-a-time with a 1-second gap, instead of being dropped.
+    const _notifQueue = [];
+    let _notifQueueTimer = null;
+
+    function getCurrencyNameForNode(node) {
+        if (node.costCurrency && CURRENCIES[node.costCurrency]) {
+            return CURRENCIES[node.costCurrency].name || node.costCurrency;
+        }
+        return node.costCurrency || '???';
+    }
+
+    // Public entry point — always enqueues, never drops.
+    function sendUpgradeToFirebase(node) {
+        const name = getPlayerName();
+        if (!name || !node) return;
+        _notifQueue.push(node);
+        _scheduleNotifPump();
+    }
+
+    function _scheduleNotifPump() {
+        if (_notifQueueTimer) return;              // already scheduled
+        if (_notifQueue.length === 0) return;      // nothing to do
+        const elapsed = performance.now() - _lastNotifTime;
+        const wait = Math.max(0, NOTIF_THROTTLE_MS - elapsed);
+        _notifQueueTimer = setTimeout(() => {
+            _notifQueueTimer = null;
+            const nextNode = _notifQueue.shift();
+            _lastNotifTime = performance.now();
+            _deliverUpgradeNotification(nextNode);
+            // If more items remain, schedule the next one
+            if (_notifQueue.length > 0) _scheduleNotifPump();
+        }, wait);
+    }
+
+    // Actual Discord delivery (one message)
+    function _deliverUpgradeNotification(node) {
+        const name = getPlayerName();
+        if (!name || !node) return;
+
+        const counterRef = ref(database, TOTAL_UPGRADES_REF);
+
+        // Atomically increment
+        runTransaction(counterRef, (current) => {
+            return (current || 0) + 1;
+        }).then((result) => {
+            const count = result.snapshot.val() || (_initialGlobalCount + _localUpgradeCount);
+            const upgCode = node.code || node.id;
+            const upgName = node.name || node.id;
+            const currencyName = getCurrencyNameForNode(node);
+
+            const payload = {
+                username: 'Upgrade Land',
+                content: [
+                    `#${count}: **${escapeDiscord(name)}**`,
+                    `has bought upgrade **${escapeDiscord(upgCode)}**`,
+                    `- ${escapeDiscord(upgName)}`,
+                    `(${escapeDiscord(currencyName)})`,
+                    '<@&1548200913242693714>'
+                ].join(' ')
+            };
+
+            const WEBHOOK_URL = 'https://discord.com/api/webhooks/1559172077918101636/N7lmuNGHazdbYEs-Zp8M-2XyKMOBM-UWT1Sfecye8trb3erCL8ihfR5d8fer9axavLwL';
+
+            const fd = new FormData();
+            fd.append('payload_json', JSON.stringify(payload));
+            fetch(WEBHOOK_URL, {
+                method: 'POST',
+                body: fd
+            }).then(resp => {
+                if (resp.ok) console.log('[Firebase] Discord OK (#', count, ')');
+                else console.warn('[Firebase] Discord status', resp.status);
+            }).catch(err => {
+                console.warn('[Firebase] Discord send fail:', err);
+            });
+        }).catch((err) => {
+            console.warn('[Firebase] Transaction failed:', err);
+        });
+    }
+
+    function escapeDiscord(str) {
+        if (!str) return '';
+        return String(str).replace(/\\/g, '\\\\').replace(/[*_~`>|#@]/g, '\\$&');
+    }
+
+    function escapeHtml(str) {
+        if (!str) return '';
+        return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    }
+
+    // ─── Hook into the game's buyUpgrade function ──────────────────────
+    // We wrap the original buyUpgrade to fire our notification.
+    // The function lives in global scope (<script> above) so we poll.
+    if (typeof buyUpgrade === 'function') {
+        const _origBuy = buyUpgrade;
+        buyUpgrade = function(nodeId, isAutomated, isFree) {
+            const result = _origBuy(nodeId, isAutomated, isFree);
+            if (result && !isAutomated && !isFree) {
+                window.notifyUpgradePurchased(nodeId);
+            }
+            return result;
+        };
+    } else {
+        console.log('[Firebase] Waiting for buyUpgrade…');
+        const _waitInt = setInterval(() => {
+            if (typeof buyUpgrade === 'function') {
+                clearInterval(_waitInt);
+                const _orig = buyUpgrade;
+                buyUpgrade = function(nodeId, isAutomated, isFree) {
+                    const result = _orig(nodeId, isAutomated, isFree);
+                    if (result && !isAutomated && !isFree) {
+                        window.notifyUpgradePurchased(nodeId);
+                    }
+                    return result;
+                };
+                console.log('[Firebase] buyUpgrade hooked');
+            }
+        }, 100);
+    }
+
+    // ─── Welcome back screen ────────────────────────────────────────────
+    // The existing offline modal already shows gains. We'll enhance it to show the player name.
+    function enhanceOfflineModal() {
+        const titleEl = document.getElementById('offline-title');
+        const name = getPlayerName();
+        if (titleEl && name) {
+            titleEl.innerHTML = `Welcome Back, <span class="text-emerald-300">${escapeHtml(name)}</span>!`;
+        }
+    }
+
+    // Override the offline-dismiss to also update display
+    const _origOfflineDismiss = document.getElementById('offline-dismiss')?.onclick;
+    document.getElementById('offline-dismiss').onclick = () => {
+        document.getElementById('offline-modal').classList.add('hidden');
+        updatePlayerNameDisplay();
+        updateSettingsNameDisplay();
+        playSound('buy');
+    };
+
+    // Also enhance the offline modal opening
+    const _origProcessOffline = window.processOfflineProgress;
+    if (typeof processOfflineProgress === 'function') {
+        const _origProc = processOfflineProgress;
+        processOfflineProgress = function() {
+            _origProc.call(this);
+            enhanceOfflineModal();
+        };
+    }
+
+    // ─── Settings name display ────────────────────────────────────────
+    function updateSettingsNameDisplay() {
+        const el = document.getElementById('settings-player-name');
+        if (!el) return;
+        const name = getPlayerName();
+        el.textContent = name || '—';
+    }
+
+    // ─── Initialize ────────────────────────────────────────────────────
+    // Wait for gameState to be ready
+    function initPlayerSystem() {
+        updatePlayerNameDisplay();
+        updateSettingsNameDisplay();
+        const name = getPlayerName();
+        if (!name) {
+            // No name yet — prompt after a short delay (so the game can settle)
+            setTimeout(() => showNamePrompt(false), 800);
+        } else {
+            // Name exists — show welcome back in toast later
+            setTimeout(() => {
+                showToast('👋 Welcome back, ' + name + '!');
+            }, 1200);
+        }
+        initUpgradeCounter();
+
+        // Enhance offline modal after DOM is ready
+        enhanceOfflineModal();
+
+        // Re-scan every 2s for the offline modal appearing (it's shown by game code)
+        setInterval(() => {
+            const modal = document.getElementById('offline-modal');
+            if (modal && !modal.classList.contains('hidden')) {
+                enhanceOfflineModal();
+            }
+        }, 500);
+    }
+
+    // Run once gameState is available
+    if (typeof gameState !== 'undefined') {
+        initPlayerSystem();
+    } else {
+        const _gsCheck = setInterval(() => {
+            if (typeof gameState !== 'undefined') {
+                clearInterval(_gsCheck);
+                initPlayerSystem();
+            }
+        }, 100);
+    }
+
+    // Also update name display when settings are opened
+    document.addEventListener('click', (e) => {
+        const btn = e.target.closest('#btn-settings-toggle');
+        if (btn) {
+            // When settings open, refresh the name display
+            setTimeout(updateSettingsNameDisplay, 50);
+        }
+    });
+
+    // Also update name display when save is loaded
+    // (gameState may be updated by loadGame)
     </script>
-</body>
+    </body>
 </html>
