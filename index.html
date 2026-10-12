@@ -431,7 +431,7 @@
             </div>
             <p class="text-xs text-zinc-300">Before you begin, what name shall you go by?</p>
             <p class="text-[9px] text-zinc-300">This will be used for offline progress greetings and discord notifs.</p>
-            <input id="name-input" type="text" maxlength="28" placeholder="Enter your name..." class="w-full bg-zinc-950 border border-zinc-700 text-zinc-100 text-xs px-3 py-2 outline-none focus:border-emerald-500 font-mono" autocomplete="off">
+            <input id="name-input" type="text" maxlength="28" placeholder="Name: A-Z a-z 0-9 - _ (2–28 chars)" class="w-full bg-zinc-950 border border-zinc-700 text-zinc-100 text-xs px-3 py-2 outline-none focus:border-emerald-500 font-mono" autocomplete="off">
             <p id="name-error" class="text-red-400 text-[10px] hidden">Name must be 2–28 characters.</p>
             <div class="flex justify-end gap-2 pt-1">
                 <button id="name-modal-confirm" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-zinc-950 font-bold text-xs flex items-center gap-1">
@@ -5953,13 +5953,32 @@ window.updateNewsMessageCount = updateNewsMessageCount;
         return (gameState && gameState.playerName) || localStorage.getItem(PLAYER_NAME_KEY) || '';
     }
 
-    function setPlayerName(name) {
-        const trimmed = name.trim();
-        if (trimmed.length < 2 || trimmed.length > 28) return false;
-        gameState.playerName = trimmed;
-        localStorage.setItem(PLAYER_NAME_KEY, trimmed);
-        updatePlayerNameDisplay();
-        return true;
+    const VALID_NAME_REGEX = /^[A-Za-z0-9\-_]+$/;
+
+    function sanitizeName(raw) {
+        // Only allow A-Z, a-z, 0-9, hyphens, underscores. Remove everything else.
+        return raw.replace(/[^A-Za-z0-9\-_]/g, '');
+    }
+
+    function setPlayerName(name, silentClean) {
+        const raw = name.trim();
+        const sanitized = sanitizeName(raw);
+        // If silentClean is true, accept the sanitized version even if it differs.
+        // Otherwise require the raw input to already be clean.
+        if (silentClean) {
+            if (sanitized.length < 2 || sanitized.length > 28) return { ok: false, reason: 'Name must be 2–28 characters (only A-Z, a-z, 0-9, - and _).' };
+            gameState.playerName = sanitized;
+            localStorage.setItem(PLAYER_NAME_KEY, sanitized);
+            updatePlayerNameDisplay();
+            return { ok: true, cleaned: sanitized };
+        } else {
+            if (raw !== sanitized) return { ok: false, reason: 'Name contains invalid characters. Only letters (A-Z, a-z), numbers (0-9), hyphens (-) and underscores (_) are allowed.' };
+            if (sanitized.length < 2 || sanitized.length > 28) return { ok: false, reason: 'Name must be 2–28 characters.' };
+            gameState.playerName = sanitized;
+            localStorage.setItem(PLAYER_NAME_KEY, sanitized);
+            updatePlayerNameDisplay();
+            return { ok: true };
+        }
     }
 
     function updatePlayerNameDisplay() {
@@ -6001,13 +6020,16 @@ window.updateNewsMessageCount = updateNewsMessageCount;
     document.getElementById('name-modal-confirm').addEventListener('click', () => {
         const input = document.getElementById('name-input');
         const error = document.getElementById('name-error');
-        if (setPlayerName(input.value)) {
+        const raw = input.value;
+        const result = setPlayerName(raw, false); // false = reject invalid chars
+        if (result.ok) {
             error.classList.add('hidden');
             hideNamePrompt();
             updateSettingsNameDisplay();
             // After setting name, trigger the first-upgrade check for any existing upgrades
             checkPendingNameSet();
         } else {
+            error.textContent = result.reason;
             error.classList.remove('hidden');
         }
     });
@@ -6265,6 +6287,11 @@ window.notifyUpgradePurchased = function(nodeId) {
     // ─── Initialize ────────────────────────────────────────────────────
     // Wait for gameState to be ready
     function initPlayerSystem() {
+        // On page load, silently clean any existing name with invalid chars
+        const currentName = getPlayerName();
+        if (currentName && !VALID_NAME_REGEX.test(currentName)) {
+            setPlayerName(currentName, true); // silent clean
+        }
         updatePlayerNameDisplay();
         updateSettingsNameDisplay();
         const name = getPlayerName();
