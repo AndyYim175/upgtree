@@ -1364,7 +1364,7 @@ const CHALLENGE_NODES = [
           { currency: 'cyan', target: (lvl) => 2e13*Math.pow(5,lvl) },
       ],
       challengeEffects: [
-          { type: 'currency_mult', currency: 'cyan', formula: (lvl) => getCurr('cyan')>=getCurr('anticyan'), desc: 'cyan deboost' },
+          { type: 'currency_mult', currency: 'cyan', formula: (lvl) => (getCurr('cyan')>=getCurr('anticyan'))+1e-308, desc: 'cyan deboost' },
           { type: 'base_gain_raw', currency: 'anticyan', formula: (lvl) => 1+getCurr('anticyan')*Math.pow(2,1+lvl), desc: 'anticyan generation' },
       ],
       rewards: [
