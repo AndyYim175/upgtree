@@ -431,7 +431,7 @@
             </div>
             <p class="text-xs text-zinc-300">Before you begin, what name shall you go by?</p>
             <p class="text-[9px] text-zinc-300">This will be used for offline progress greetings and discord notifs.</p>
-            <input id="name-input" type="text" maxlength="28" placeholder="Name: A-Z a-z 0-9 - _ (2–28 chars)" class="w-full bg-zinc-950 border border-zinc-700 text-zinc-100 text-xs px-3 py-2 outline-none focus:border-emerald-500 font-mono" autocomplete="off">
+            <input id="name-input" type="text" maxlength="28" placeholder="Enter your name..." class="w-full bg-zinc-950 border border-zinc-700 text-zinc-100 text-xs px-3 py-2 outline-none focus:border-emerald-500 font-mono" autocomplete="off">
             <p id="name-error" class="text-red-400 text-[10px] hidden">Name must be 2–28 characters.</p>
             <div class="flex justify-end gap-2 pt-1">
                 <button id="name-modal-confirm" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-zinc-950 font-bold text-xs flex items-center gap-1">
@@ -1364,7 +1364,7 @@ const CHALLENGE_NODES = [
           { currency: 'cyan', target: (lvl) => 2e13*Math.pow(5,lvl) },
       ],
       challengeEffects: [
-          { type: 'currency_mult', currency: 'cyan', formula: (lvl) => (getCurr('cyan')>=getCurr('anticyan'))+1e-308, desc: 'cyan deboost' },
+          { type: 'currency_mult', currency: 'cyan', formula: (lvl) => getCurr('cyan')>=getCurr('anticyan'), desc: 'cyan deboost' },
           { type: 'base_gain_raw', currency: 'anticyan', formula: (lvl) => 1+getCurr('anticyan')*Math.pow(2,1+lvl), desc: 'anticyan generation' },
       ],
       rewards: [
@@ -2027,7 +2027,7 @@ const CHALLENGE_NODES = [
     { id: 'CG10', type: 'upgrade', code: 'CG10', name: 'grass', coords: [41, 11], reqs: [[41,10]], borderColor: 'green', desc: 'green boost green.', effects: [{ type: 'currency_mult', currency: 'green', formula: (lvl) => 1+Math.pow(getCurr('green')/1e18,0.125) }], costCurrency: 'green', costFormula: (lvl) => 1e20, maxLevel: 1 },
     { id: 'CG11', type: 'upgrade', code: 'CG11', name: 'grass!', coords: [42, 11], reqs: [[41,11]], borderColor: 'green', desc: 'green boost green even more (bigger base, lower exponent). buying make cg12 10x more expensive', effects: [{ type: 'currency_mult', currency: 'green', formula: (lvl) => 1+Math.pow(getCurr('green')/1e12,0.075) }], costCurrency: 'green', costFormula: (lvl, getLevel) => 1e20*Math.pow(10, getLevel('CG12')), maxLevel: 1 },
     { id: 'CG12', type: 'upgrade', code: 'CG12', name: 'grass!!', coords: [40, 11], reqs: [[41,11]], borderColor: 'green', desc: 'green boost green even more (bigger base, lower exponent)^2. buying make cg11 10x more expensive', effects: [{ type: 'currency_mult', currency: 'green', formula: (lvl) => 1+Math.pow(getCurr('green')/1e6,0.045) }], costCurrency: 'green', costFormula: (lvl, getLevel) => 1e20*Math.pow(10, getLevel('CG11')), maxLevel: 1 },
-    { id: 'CP06', type: 'upgrade', code: 'CP06', name: 'perm 6 [current endgame]', coords: [42, 12], reqs: [[42,11]], borderColor: 'green', desc: '+250Qn green per level uneffected by green gen (effected by antigreen condition).', effects: [{ type: 'base_gain_raw', currency: 'green', formula: (lvl) => 25e19*(getCurr('antigreen')>0)*(getCurr('antigreen')<=getCurr('green')) }], costCurrency: 'green', costFormula: (lvl) => 2e22, maxLevel: 1 },
+    { id: 'CP06', type: 'upgrade', code: 'CP06', name: 'perm 6', coords: [42, 12], reqs: [[42,11]], borderColor: 'green', desc: '+250Qn green per level uneffected by green gen (effected by antigreen condition).', effects: [{ type: 'base_gain_raw', currency: 'green', formula: (lvl) => 25e19*(getCurr('antigreen')>0)*(getCurr('antigreen')<=getCurr('green')) }], costCurrency: 'green', costFormula: (lvl) => 2e22, maxLevel: 1 },
     { id: 'CG13', type: 'upgrade', code: 'CG13', name: 'finally!!', coords: [39, 11], reqs: [[40,11]], borderColor: 'green', desc: 'antigreen will decrease when its above green!', effects: [{ type: 'currency_mult', currency: 'antigreen', formula: (lvl) => 1-(getCurr('antigreen')>getCurr('green')) },{ type: 'base_gain_raw', currency: 'antigreen', formula: (lvl) => -0.999*getCurr('antigreen')*(getCurr('antigreen')>getCurr('green')) }], costCurrency: 'green', costFormula: (lvl, getLevel) => 2e22, maxLevel: 1 },
     { id: 'CG14', type: 'upgrade', code: 'CG14', name: 'inverse the game', coords: [38, 11], reqs: [[39,11]], borderColor: 'green', desc: '2x green/5x antigreen per level.', effects: [{ type: 'currency_mult', currency: 'green', formula: (lvl) => Math.pow(2,lvl) },{ type: 'currency_mult', currency: 'antigreen', formula: (lvl) => Math.pow(5,lvl) }], costCurrency: 'green', costFormula: (lvl) => 1e23*Math.pow(5*Math.pow(2,lvl),lvl), maxLevel: 3 },
     { id: 'CG15', type: 'upgrade', code: 'CG15', name: 'grass', coords: [41, 12], reqs: [[41,11]], borderColor: 'green', desc: 'green boost green [disclaimer: inflation].', effects: [{ type: 'currency_mult', currency: 'green', formula: (lvl) => 1+5*Math.pow(getCurr('green')/1e24,0.36) }], costCurrency: 'green', costFormula: (lvl) => 1e24, maxLevel: 1 },
@@ -2447,7 +2447,7 @@ const CHALLENGE_NODES = [
     { id: 'V06', type: 'upgrade', code: 'V06', name: 'mult.', coords: [-48, -50], reqs: [[-49, -50]], borderColor: 'green', desc: 'x2 void/s.', effects: [{ type: 'currency_mult', currency: 'void', formula: (lvl) => Math.pow(2, lvl) }], costCurrency: 'void', costFormula: (lvl) => 500, maxLevel: 1 },
     { id: 'V07', type: 'upgrade', code: 'V07', name: 'mult.', coords: [-47, -50], reqs: [[-48, -50]], borderColor: 'green', desc: 'x1.2 void/s.', effects: [{ type: 'currency_mult', currency: 'void', formula: (lvl) => Math.pow(1.2, lvl) }], costCurrency: 'void', costFormula: (lvl) => 3000, maxLevel: 1 },
     { id: 'V08', type: 'upgrade', code: 'V08', name: 'mult.', coords: [-48, -49], reqs: [[-48, -50]], borderColor: 'green', desc: 'x1.5 void/s/lvl.', effects: [{ type: 'currency_mult', currency: 'void', formula: (lvl) => Math.pow(1.5, lvl) }], costCurrency: 'void', costFormula: (lvl) => 2500*Math.pow(4, lvl), maxLevel: 2 },
-    { id: 'V09', type: 'upgrade', code: 'V09', name: 'mult.', coords: [-48, -51], reqs: [[-48, -50]], borderColor: 'green', desc: 'x1.1 void/s/lvl.', effects: [{ type: 'currency_mult', currency: 'void', formula: (lvl) => Math.pow(1.1, lvl) }], costCurrency: 'void', costFormula: (lvl) => 1000*Math.pow(10,lvl), maxLevel: 1000 },
+    { id: 'V09', type: 'upgrade', code: 'V09', name: 'mult.', coords: [-48, -51], reqs: [[-48, -50]], borderColor: 'green', desc: 'x1.1 void/s/lvl.', effects: [{ type: 'currency_mult', currency: 'void', formula: (lvl) => Math.pow(1.1, lvl) }], costCurrency: 'void', costFormula: (lvl) => 1000*Math.pow(10,lvl), maxLevel: 305 },
     { id: 'V10', type: 'upgrade', code: 'V10', name: 'mult.', coords: [-47, -49], reqs: [[-47, -50]], borderColor: 'green', desc: '+25% void/s/lvl.', effects: [{ type: 'currency_mult', currency: 'void', formula: (lvl) => 1+0.25*lvl }], costCurrency: 'void', costFormula: (lvl) => 2000*Math.pow(1.25,lvl), maxLevel: 36 },
     { id: 'V11', type: 'upgrade', code: 'V11', name: 'add+++.', coords: [-48, -48], reqs: [[-49, -48]], borderColor: 'green', desc: '+5 void/s/lvl.', effects: [{ type: 'base_gain', currency: 'void', formula: (lvl) => 5*lvl }], costCurrency: 'void', costFormula: (lvl) => (1e4+2e3*lvl)*Math.pow(1.05, Math.max(0, lvl-25)), maxLevel: 1000 },
     { id: 'V12', type: 'upgrade', code: 'V12', name: 'mult.', coords: [-46, -49], reqs: [[-47, -49]], borderColor: 'green', desc: '+20% void/s/lvl.', effects: [{ type: 'currency_mult', currency: 'void', formula: (lvl) => 1+0.2*lvl }], costCurrency: 'void', costFormula: (lvl) => 50000*Math.pow(1.2,lvl), maxLevel: 45 },
@@ -2463,9 +2463,31 @@ const CHALLENGE_NODES = [
     { id: 'V22', type: 'upgrade', code: 'V22', name: 'add+5.', coords: [-47, -47], reqs: [[-47, -48]], borderColor: 'green', desc: '+lvl^2 void/s.', effects: [{ type: 'base_gain', currency: 'void', formula: (lvl) => lvl*lvl }], costCurrency: 'void', costFormula: (lvl) => (1e10+2e9*lvl)*Math.pow(1.15, Math.max(0, lvl-20)), maxLevel: 1000 },
     { id: 'V23', type: 'upgrade', code: 'V23', name: 'once more.', coords: [-45, -50], reqs: [[-46, -50]], borderColor: 'green', desc: 'void boost void (slightly weaker).', effects: [{ type: 'currency_mult', currency: 'void', formula: (lvl) => 1+0.25*Math.pow(getCurr('void'), 0.09)/5 }], costCurrency: 'void', costFormula: (lvl) => 2e12, maxLevel: 1 },
     { id: 'V24', type: 'upgrade', code: 'V24', name: 'all.', coords: [-44, -50], reqs: [[-45, -50]], borderColor: 'green', desc: '+25% void per level, but buying costs all your void.', effects: [{ type: 'currency_mult', currency: 'void', formula: (lvl) => 1+0.25*lvl }], costCurrency: 'void', costFormula: (lvl) => Math.max(1e12*Math.pow(1.5+0.1*lvl, lvl), getCurr('void')), maxLevel: 36 },
-    { id: 'V25', type: 'upgrade', code: 'V25', name: 'quick recovery.', coords: [-44, -49], reqs: [[-44, -50]], borderColor: 'green', desc: 'gain a lot of raw void per second below 10T, x2 cap per level.', effects: [{ type: 'base_gain_raw', currency: 'void', formula: (lvl) => Math.max(0, 1e13*Math.pow(2, Math.max(0, lvl-1))-getCurr('void')) }], costCurrency: 'void', costFormula: (lvl) => 2e13*Math.pow(2.25+0.025*lvl, lvl), maxLevel: 20 },
+    { id: 'V25', type: 'upgrade', code: 'V25', name: 'quick recovery.', coords: [-44, -49], reqs: [[-44, -50]], borderColor: 'green', desc: 'gain a lot of raw void per second below 10T, x2 cap per level.', effects: [{ type: 'base_gain_raw', currency: 'void', formula: (lvl) => Math.max(0, 1e13*Math.pow(2, Math.max(0, lvl-1))-getCurr('void')) }], costCurrency: 'void', costFormula: (lvl) => 2e13*Math.pow(2.25+0.05*lvl, lvl), maxLevel: 20 },
     { id: 'V26', type: 'upgrade', code: 'V26', name: 'once more.', coords: [-43, -50], reqs: [[-44, -50]], borderColor: 'green', desc: 'void boost void (quite weaker).', effects: [{ type: 'currency_mult', currency: 'void', formula: (lvl) => 1+0.25*Math.pow(getCurr('void'), 0.05)/2.5 }], costCurrency: 'void', costFormula: (lvl) => 5e13, maxLevel: 1 },
     { id: 'V27', type: 'upgrade', code: 'V27', name: 'add+6.', coords: [-44, -48], reqs: [[-44, -49]], borderColor: 'green', desc: '+lvl^3 void/s.', effects: [{ type: 'base_gain', currency: 'void', formula: (lvl) => lvl*lvl*lvl }], costCurrency: 'void', costFormula: (lvl) => (1e13+1e13*lvl)*Math.pow(1.45, Math.max(0, lvl-9)), maxLevel: 100 },
+    { id: 'V28', type: 'upgrade', code: 'V28', name: 'the button.', coords: [-43, -49], reqs: [[-43, -50]], borderColor: 'green', desc: 'unlock a upgrade and x1.25 void.', effects: [{ type: 'currency_mult', currency: 'void', formula: (lvl) => 1.25 }], costCurrency: 'void', costFormula: (lvl) => 5e14, maxLevel: 1 },
+    { id: 'V29', type: 'upgrade', code: 'V29', name: 'hi', coords: [-42, -49], reqs: [[-43, -49]], borderColor: 'green', desc: 'get more void based on level. [capped at 100]', effects: [{ type: 'currency_mult', currency: 'void', formula: (lvl) => Math.pow(0.7+0.1*Math.sqrt(lvl+9), 1+0.1*getLevel('V32')+0.1*getLevel('V37')) }, {type: 'max_level_mod', target:'V29', amount: (lvl) => Math.min(lvl+getLevel('V31')+5*getLevel('V41')+1, 100+25*getLevel('V30')+100*getLevel('V33')+500*getLevel('V35')+2500*getLevel('V40'))-1}], costCurrency: 'void', costFormula: (lvl) => 0, maxLevel: 1 },
+    { id: 'V30', type: 'upgrade', code: 'V30', name: 'expand', coords: [-41, -49], reqs: [[-42, -49]], borderColor: 'green', desc: '+25 to V29 max level per level', effects: [], costCurrency: 'void', costFormula: (lvl) => 1e15*Math.pow(2, Math.pow(lvl, 0.5)), maxLevel: 36 },
+    { id: 'V31', type: 'upgrade', code: 'V31', name: 'efficient', coords: [-41, -50], reqs: [[-41, -49]], borderColor: 'green', desc: '+1 to V29 clicking bulk per level', effects: [], costCurrency: 'void', costFormula: (lvl) => 2e15*Math.pow(10, Math.pow(lvl, 0.7)), maxLevel: 9 },
+    { id: 'V32', type: 'upgrade', code: 'V32', name: 'power', coords: [-41, -48], reqs: [[-41, -49]], borderColor: 'green', desc: '+^0.1 to V29 booste effect per level', effects: [], costCurrency: 'void', costFormula: (lvl) => 5e15*Math.pow(2, Math.pow(lvl, 0.8)), maxLevel: 5 },
+    { id: 'V33', type: 'upgrade', code: 'V33', name: 'expand2', coords: [-40, -49], reqs: [[-41, -49]], borderColor: 'green', desc: '+100 to V29 max level per level', effects: [], costCurrency: 'void', costFormula: (lvl) => 2e16*Math.pow(2.5, Math.pow(lvl+2, 0.7))/4.43, maxLevel: 15 },
+    { id: 'V34', type: 'upgrade', code: 'V34', name: 'please remember to buy the early void upgrades more!', coords: [-43, -51], reqs: [[-43, -50]], borderColor: 'green', desc: 'x5 void', effects: [{ type: 'currency_mult', currency: 'void', formula: (lvl) => 5 }], costCurrency: 'void', costFormula: (lvl) => 7.5e16, maxLevel: 1 },
+    { id: 'V35', type: 'upgrade', code: 'V35', name: 'expand3', coords: [-39, -49], reqs: [[-40, -49]], borderColor: 'green', desc: '+500 to V29 max level per level', effects: [], costCurrency: 'void', costFormula: (lvl) => 5e17*Math.pow(3, Math.pow(lvl+2, 0.7))/5.96, maxLevel: 15 },
+    { id: 'V36', type: 'upgrade', code: 'V36', name: 'auto', coords: [-40, -50], reqs: [[-41, -49]], borderColor: 'green', desc: 'auto V29 (note: still gets wuite capped by clicking bulk)', effects: [{type: 'automation', target: 'V29'}], costCurrency: 'void', costFormula: (lvl) => 5e18, maxLevel: 1 },
+    { id: 'V37', type: 'upgrade', code: 'V37', name: 'powerful', coords: [-42, -48], reqs: [[-41, -48]], borderColor: 'green', desc: '+^0.1 to V29 booste effect per level', effects: [], costCurrency: 'void', costFormula: (lvl) => 7e18*Math.pow(2, Math.pow(lvl, 0.8)), maxLevel: 5 },
+    { id: 'V38', bulkFinalCost: true, type: 'upgrade', code: 'V38', name: 'too many levels', coords: [-44, -51], reqs: [[-43, -51]], borderColor: 'green', desc: '+1 raw void per second per level. you only need to pay for the last level.', effects: [{ type: 'base_gain_raw', currency: 'void', formula: (lvl) => lvl },{type: 'max_level_mod', target:'V38', amount: (lvl) => Math.min(Math.floor(Math.pow(lvl,1.025))+1, 1e24)-1}], costCurrency: 'void', costFormula: (lvl) => 1e17*(lvl==0)+Math.pow(lvl,1.2)/100, maxLevel: 10 },
+    { id: 'V39', type: 'upgrade', code: 'V39', name: 'please remember (again) to buy the early void upgrades more!', coords: [-45, -51], reqs: [[-44, -51]], borderColor: 'green', desc: 'x5 void', effects: [{ type: 'currency_mult', currency: 'void', formula: (lvl) => 5 }], costCurrency: 'void', costFormula: (lvl) => 2e18, maxLevel: 1 },
+    { id: 'V40', type: 'upgrade', code: 'V40', name: 'expand4', coords: [-44, -52], reqs: [[-44, -51]], borderColor: 'green', desc: '+2500 to V29 max level per level', effects: [], costCurrency: 'void', costFormula: (lvl) => 5e21*Math.pow(3, Math.pow(lvl+2, 0.7375))/6.24, maxLevel: 16 },
+    { id: 'V41', type: 'upgrade', code: 'V41', name: 'efficient2', coords: [-43, -52], reqs: [[-44, -52]], borderColor: 'green', desc: '+5 to V29 clicking bulk per level', effects: [], costCurrency: 'void', costFormula: (lvl) => 7e21*Math.pow(2.8, Math.pow(lvl, 0.7)), maxLevel: 18 },
+    { id: 'V42', type: 'upgrade', code: 'V42', name: 'chain start', coords: [-42, -51], reqs: [[-43, -51]], borderColor: 'green', desc: '+10% void per level', effects: [{ type: 'currency_mult', currency: 'void', formula: (lvl) => 1+0.1*lvl }], costCurrency: 'void', costFormula: (lvl) => 1e22+1e21*lvl, maxLevel: 10 },
+    { id: 'V43', type: 'upgrade', code: 'V43', name: '1/s', coords: [-42, -50], reqs: [[-42, -51]], borderColor: 'green', desc: '+1 raw void per level (this upgrade is not useful at all...?)', effects: [{ type: 'base_gain_raw', currency: 'void', formula: (lvl) => lvl }], costCurrency: 'void', costFormula: (lvl) => 1e22*Math.pow(1.25,lvl), maxLevel: 1000 },
+    { id: 'V44', type: 'upgrade', code: 'V44', name: 'chain', coords: [-41, -51], reqs: [[-42, -51]], borderColor: 'green', desc: '+2 max V42 levels per level', effects: [{ type: 'max_level_mod', target: 'V42', amount: (lvl) => 2*lvl }], costCurrency: 'void', costFormula: (lvl) => 1e23+1e22*lvl, maxLevel: 10 },
+    { id: 'V45', type: 'upgrade', code: 'V45', name: 'chain', coords: [-40, -51], reqs: [[-41, -51]], borderColor: 'green', desc: '+2 max V44 levels per level', effects: [{ type: 'max_level_mod', target: 'V44', amount: (lvl) => 2*lvl }], costCurrency: 'void', costFormula: (lvl) => 1e24+1e23*lvl, maxLevel: 10 },
+    { id: 'V46', type: 'upgrade', code: 'V46', name: 'chain', coords: [-39, -51], reqs: [[-40, -51]], borderColor: 'green', desc: '+2 max V45 levels per level', effects: [{ type: 'max_level_mod', target: 'V45', amount: (lvl) => 2*lvl }], costCurrency: 'void', costFormula: (lvl) => 1e25+1e24*lvl, maxLevel: 10 },
+    { id: 'V47', type: 'upgrade', code: 'V47', name: 'no, this isnt the other upgrade with the same effect but the currency is research in a different game you might have played before in the bottom right of that part of the game.', coords: [-42, -52], reqs: [[-42, -51]], borderColor: 'green', desc: 'x2 void and +0.5x per level after', effects: [{ type: 'currency_mult', currency: 'void', formula: (lvl) => 2+0.5*Math.max(lvl-1, 0) }], costCurrency: 'void', costFormula: (lvl) => 2e25*Math.pow(1.5, lvl), maxLevel: 11 },
+    { id: 'V48', type: 'upgrade', code: 'V48', name: 'time to go back', coords: [-42, -53], reqs: [[-42, -52]], borderColor: 'green', desc: 'x2 void and unlock new things near V01', effects: [{ type: 'currency_mult', currency: 'void', formula: (lvl) => 2 }], costCurrency: 'void', costFormula: (lvl) => 1e28, maxLevel: 1 },
+    { id: 'V49', type: 'upgrade', code: 'V49', name: 'next. (current endgame)', coords: [-50, -51], reqs: [[-42, -53]], borderColor: 'green', desc: 'x25 void/s.', effects: [{ type: 'currency_mult', currency: 'void', formula: (lvl) => Math.pow(25, lvl) }], costCurrency: 'void', costFormula: (lvl) => 2.5e28, maxLevel: 1 },
     
             ];
         // Push challenge nodes into TREE_NODES
@@ -3566,9 +3588,10 @@ function addCurrencyToOrder(currKey) {
                             const targetNode = NODE_MAP.get(tid);
                             if (targetNode && isNodeUnlocked(targetNode)) {
                                 const cost = getCost(targetNode);
-                                if ((gameState.currencies[targetNode.costCurrency] || 0) >= cost) {
-                                    buyUpgrade(targetNode.id, true, true);
-                                }
+                        if ((gameState.currencies[targetNode.costCurrency] || 0) >= cost) {
+                            //if (tid === 'V29') console.log('[Auto] V29 cost=' + cost + ' void=' + (gameState.currencies[targetNode.costCurrency] || 0) + ' curLvl=' + getLevel('V29') + ' maxLvl=' + getMaxLevel(targetNode));
+                            buyUpgrade(targetNode.id, true, true);
+                        }
                             }
                         }
                     }
@@ -5953,32 +5976,13 @@ window.updateNewsMessageCount = updateNewsMessageCount;
         return (gameState && gameState.playerName) || localStorage.getItem(PLAYER_NAME_KEY) || '';
     }
 
-    const VALID_NAME_REGEX = /^[A-Za-z0-9\-_]+$/;
-
-    function sanitizeName(raw) {
-        // Only allow A-Z, a-z, 0-9, hyphens, underscores. Remove everything else.
-        return raw.replace(/[^A-Za-z0-9\-_]/g, '');
-    }
-
-    function setPlayerName(name, silentClean) {
-        const raw = name.trim();
-        const sanitized = sanitizeName(raw);
-        // If silentClean is true, accept the sanitized version even if it differs.
-        // Otherwise require the raw input to already be clean.
-        if (silentClean) {
-            if (sanitized.length < 2 || sanitized.length > 28) return { ok: false, reason: 'Name must be 2–28 characters (only A-Z, a-z, 0-9, - and _).' };
-            gameState.playerName = sanitized;
-            localStorage.setItem(PLAYER_NAME_KEY, sanitized);
-            updatePlayerNameDisplay();
-            return { ok: true, cleaned: sanitized };
-        } else {
-            if (raw !== sanitized) return { ok: false, reason: 'Name contains invalid characters. Only letters (A-Z, a-z), numbers (0-9), hyphens (-) and underscores (_) are allowed.' };
-            if (sanitized.length < 2 || sanitized.length > 28) return { ok: false, reason: 'Name must be 2–28 characters.' };
-            gameState.playerName = sanitized;
-            localStorage.setItem(PLAYER_NAME_KEY, sanitized);
-            updatePlayerNameDisplay();
-            return { ok: true };
-        }
+    function setPlayerName(name) {
+        const trimmed = name.trim();
+        if (trimmed.length < 2 || trimmed.length > 28) return false;
+        gameState.playerName = trimmed;
+        localStorage.setItem(PLAYER_NAME_KEY, trimmed);
+        updatePlayerNameDisplay();
+        return true;
     }
 
     function updatePlayerNameDisplay() {
@@ -6020,16 +6024,13 @@ window.updateNewsMessageCount = updateNewsMessageCount;
     document.getElementById('name-modal-confirm').addEventListener('click', () => {
         const input = document.getElementById('name-input');
         const error = document.getElementById('name-error');
-        const raw = input.value;
-        const result = setPlayerName(raw, false); // false = reject invalid chars
-        if (result.ok) {
+        if (setPlayerName(input.value)) {
             error.classList.add('hidden');
             hideNamePrompt();
             updateSettingsNameDisplay();
             // After setting name, trigger the first-upgrade check for any existing upgrades
             checkPendingNameSet();
         } else {
-            error.textContent = result.reason;
             error.classList.remove('hidden');
         }
     });
@@ -6287,11 +6288,6 @@ window.notifyUpgradePurchased = function(nodeId) {
     // ─── Initialize ────────────────────────────────────────────────────
     // Wait for gameState to be ready
     function initPlayerSystem() {
-        // On page load, silently clean any existing name with invalid chars
-        const currentName = getPlayerName();
-        if (currentName && !VALID_NAME_REGEX.test(currentName)) {
-            setPlayerName(currentName, true); // silent clean
-        }
         updatePlayerNameDisplay();
         updateSettingsNameDisplay();
         const name = getPlayerName();
