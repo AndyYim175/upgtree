@@ -851,9 +851,9 @@ function indexChallengeRewardEffects() {
                             nodeId: node.id,
                             type: eff.type,
                             target: target,
-                            formula: (lvl, gl, gc) => {
+                            formula: (lvl, gl, gc, gt) => {
                                 const completionLvl = getChallengeCompletions(node.id);
-                                return eff.formula ? eff.formula(completionLvl, gl, gc) : 1;
+                                return eff.formula ? eff.formula(completionLvl, gl, gc, gt) : 1;
                             }
                         });
                     }
@@ -873,9 +873,9 @@ function indexChallengeRewardEffects() {
                             nodeId: node.id + '_reward',
                             type: rew.type,
                             target: target,
-                            formula: (lvl, gl, gc) => {
+                            formula: (lvl, gl, gc, gt) => {
                                 const completionLvl = getChallengeCompletions(node.id);
-                                return rew.formula ? rew.formula(completionLvl, gl, gc) : 1;
+                                return rew.formula ? rew.formula(completionLvl, gl, gc, gt) : 1;
                             }
                         });
                     }
@@ -949,6 +949,20 @@ function applyChallengeReset(node) {
     if (node.resettedCoords && node.resettedCoords.length) {
         resetNodeLevels({ resettedCoords: node.resettedCoords, resetCurrencies: [] });
     }
+    
+    // Clear upgrade times for reset nodes too
+    if (node.resettedCoords) {
+        for (const coord of node.resettedCoords) {
+            if (typeof coord === 'string' && gameState.upgradeTimes) {
+                delete gameState.upgradeTimes[coord];
+            } else if (Array.isArray(coord) && coord.length === 2) {
+                const targetNode = COORD_MAP.get(`${coord[0]},${coord[1]}`);
+                if (targetNode && gameState.upgradeTimes) {
+                    delete gameState.upgradeTimes[targetNode.id];
+                }
+            }
+        }
+    }
 }
 
 // Leave a challenge: just grant completion reward, no restore (currencies stay consumed like a reset)
@@ -990,7 +1004,7 @@ function checkChallengeCompletion() {
     const completions = getChallengeCompletions(node.id);
     for (const goal of node.goals) {
         const curr = getCurr(goal.currency);
-        const target = typeof goal.target === 'function' ? goal.target(completions) : goal.target;
+        const target = typeof goal.target === 'function' ? goal.target(completions, getLevel, getCurr, getUpgradeTime) : goal.target;
         if (curr < target) return false;
     }
     leaveChallenge(true);
@@ -1008,7 +1022,7 @@ function applyChallengeEffectsToRate(currency, baseRate) {
     for (const eff of node.challengeEffects) {
         if (!eff.formula || eff.currency !== currency) continue;
         const lvl = getChallengeCompletions(node.id);
-        const val = eff.formula(lvl, getLevel, getCurr);
+        const val = eff.formula(lvl, getLevel, getCurr, getUpgradeTime);
         if (typeof val !== 'number' || isNaN(val)) continue;
         if (eff.type === 'currency_mult' || eff.type === 'dynamic_mult') mult *= val;
         else if (eff.type === 'base_gain' || eff.type === 'base_gain_raw') add += val;
@@ -1197,7 +1211,7 @@ long_longs: { id: 'long_longs', name: 'long longs', color: 'text-[#ff7fff]', fil
         // CRITICAL: _fresh flag prevents saveGame from overwriting a real save before loadGame completes.
         // ANY code that touches gameState before window.onload must NOT call saveGame.
         // This _fresh flag is removed by loadGame ONLY after successful load.
-        let gameState = { _fresh: true, currencies: { P: 0, PR: 0, QT: 0, T: 0, D1: 0, D2: 0, D3: 0, D4: 0, D5: 0, D6: 0, D7: 0, D8: 0 }, discoveredCurrencies: ['P'], currencyOrder: ['P'], hiddenCurrencies: [], userHiddenCurrencies: [], levels: {}, unlockedDecorations: [], camera: { panX: 0, panY: 0, scale: 1 }, soundMuted: false, showEffects: true, buyMode: 1, skipResetConfirm: {}, paused: false, currencyFontSize: 11, offlineTimestamp: Date.now(), hotkeyBindings: null, notation: 'standard', challengeCompletions: {}, activeChallenge: null, announcedUpgrades: {}, _localUpgradeDone: false, firstUpgradeNotified: false,    };
+        let gameState = { _fresh: true, currencies: { P: 0, PR: 0, QT: 0, T: 0, D1: 0, D2: 0, D3: 0, D4: 0, D5: 0, D6: 0, D7: 0, D8: 0 }, discoveredCurrencies: ['P'], currencyOrder: ['P'], hiddenCurrencies: [], userHiddenCurrencies: [], levels: {}, upgradeTimes: {}, unlockedDecorations: [], camera: { panX: 0, panY: 0, scale: 1 }, soundMuted: false, showEffects: true, buyMode: 1, skipResetConfirm: {}, paused: false, currencyFontSize: 11, offlineTimestamp: Date.now(), hotkeyBindings: null, notation: 'standard', challengeCompletions: {}, activeChallenge: null, announcedUpgrades: {}, _localUpgradeDone: false, firstUpgradeNotified: false,    };
 // Always ensure P is a valid number (defence against undefined save corruption)
 if (typeof gameState.currencies.P !== 'number' || isNaN(gameState.currencies.P)) gameState.currencies.P = 0;
         let displayLevels = {},
@@ -1265,7 +1279,21 @@ if (typeof gameState.currencies.P !== 'number' || isNaN(gameState.currencies.P))
     return gameState.levels[nodeId] || 0; 
 }
 
-        function getCurr(key) { return gameState.currencies[key] || 0; }
+// Returns seconds since this upgrade was last purchased (0 if never bought).
+// Uses Date.now() timestamps so it persists across refreshes via save/load.
+function getTime(nodeId) {
+    const lastTime = gameState.upgradeTimes && gameState.upgradeTimes[nodeId];
+    if (!lastTime || lastTime <= 0) return 1e12;
+    return Math.max(0, (Date.now() - lastTime) / 1000);
+}
+
+function getUpgradeTime(nodeId) { 
+    const lastTime = gameState.upgradeTimes && gameState.upgradeTimes[nodeId];
+    if (!lastTime || lastTime <= 0) return 1e12;
+    return Math.max(0, (Date.now() - lastTime) / 1000);
+}
+
+function getCurr(key) { return gameState.currencies[key] || 0; }
         
         function clearCaches(clearAll = false) {
             cacheDirty = true;
@@ -2061,7 +2089,9 @@ const CHALLENGE_NODES = [
     { id: 'CBL25', type: 'upgrade', code: 'CBL25', name: 'something new :D', coords: [42, 3], reqs: [[41,3]], borderColor: 'green', desc: 'Unlock grey.', effects: [], costCurrency: 'blue', costFormula: (lvl) => 2e15, maxLevel: 1 },
     { id: 'CGR01', type: 'upgrade', code: 'CGR01', name: 'gray', coords: [43, 3], reqs: [[42,3]], borderColor: 'green', desc: 'generate gray.', effects: [{ type: 'base_gain', currency: 'gray', formula: (lvl) => 1 }], costCurrency: 'gray', costFormula: (lvl) => 0, maxLevel: 1 },
     { id: 'CGR02', type: 'upgrade', code: 'CGR02', name: 'cyan', coords: [44, 3], reqs: [[43,3]], borderColor: 'green', desc: 'unlcok cyan.', effects: [], costCurrency: 'gray', costFormula: (lvl) => 5, maxLevel: 1 },
-
+    { id: 'CGR03', type: 'upgrade', code: 'CGR03', name: 'gray more', coords: [43, 4], reqs: [[46,12]], borderColor: 'green', desc: 'generate a little more grey. (first level resets 99% of your grey, to prevent inflation due to long time in cyan)', effects: [{ type: 'base_gain', currency: 'gray', formula: (lvl) => lvl }], costCurrency: 'gray', costFormula: (lvl) => (lvl==0)*0.99*getCurr('gray')+lvl*Math.pow(2, Math.floor(Math.log10(Math.max(1, lvl)))), maxLevel: 10000 },
+    { id: 'CGR04', type: 'upgrade', code: 'CGR04', name: 'have patience = timewall', coords: [44, 4], reqs: [[43,4]], borderColor: 'green', desc: 'generate x2 grey per level, but the upgrade take time to work, also formula inspired by the brkt/mid/l/2!', effects: [{ type: 'currency_mult', currency: 'gray', formula: (lvl) => (Math.pow(2,lvl)-1)*(1-Math.pow(0.9, getTime('CGR04')))+1 }], costCurrency: 'gray', costFormula: (lvl) => 100*Math.pow(3*Math.pow(1.125, lvl), lvl), maxLevel: 25 },
+    
     { id: 'CC01', type: 'upgrade', code: 'CC01', name: 'cyan', coords: [43, 8], reqs: [[42,3]], borderColor: 'green', desc: 'generate cyan.', effects: [{ type: 'base_gain', currency: 'cyan', formula: (lvl) => 1 }], costCurrency: 'cyan', costFormula: (lvl) => 0, maxLevel: 1 },
     { id: 'CC02', type: 'upgrade', code: 'CC02', name: 'mult', coords: [43, 9], reqs: [[43,8]], borderColor: 'green', desc: 'x1.125 cyan/lvl.', effects: [{ type: 'currency_mult', currency: 'cyan', formula: (lvl) => Math.pow(1.125,lvl) }], costCurrency: 'cyan', costFormula: (lvl) => 3*Math.pow(1.2*Math.pow(1.0025,lvl),lvl), maxLevel: 250 },
     { id: 'CC03', type: 'upgrade', code: 'CC03', name: 'something new', coords: [44, 8], reqs: [[43,8]], borderColor: 'green', desc: 'unlock a feature you haven\'t seen in main progression til this point. hvae fun with it!', effects: [], costCurrency: 'cyan', costFormula: (lvl) => 20, maxLevel: 1 },
@@ -2478,7 +2508,7 @@ const CHALLENGE_NODES = [
     { id: 'V37', type: 'upgrade', code: 'V37', name: 'powerful', coords: [-42, -48], reqs: [[-41, -48]], borderColor: 'green', desc: '+^0.1 to V29 booste effect per level', effects: [{type:'display',formula:(lvl)=>'+'+(0.1*lvl)+' (^'+(1+0.1*(lvl+getLevel('V37')))+')'}], costCurrency: 'void', costFormula: (lvl) => 7e18*Math.pow(2, Math.pow(lvl, 0.8)), maxLevel: 5 },
     { id: 'V38', bulkFinalCost: true, type: 'upgrade', code: 'V38', name: 'too many levels', coords: [-44, -51], reqs: [[-43, -51]], borderColor: 'green', desc: '+1 raw void per second per level. you only need to pay for the last level.', effects: [{ type: 'base_gain_raw', currency: 'void', formula: (lvl) => lvl },{type: 'max_level_mod', target:'V38', amount: (lvl) => Math.min(Math.floor(Math.pow(lvl,1.025))+1, 1e24)-1}], costCurrency: 'void', costFormula: (lvl) => 1e17*(lvl==0)+Math.pow(lvl,1.2)/100, maxLevel: 10 },
     { id: 'V39', type: 'upgrade', code: 'V39', name: 'please remember (again) to buy the early void upgrades more!', coords: [-45, -51], reqs: [[-44, -51]], borderColor: 'green', desc: 'x5 void', effects: [{ type: 'currency_mult', currency: 'void', formula: (lvl) => 5 }], costCurrency: 'void', costFormula: (lvl) => 2e18, maxLevel: 1 },
-    { id: 'V40', type: 'upgrade', code: 'V40', name: 'expand4', coords: [-44, -52], reqs: [[-44, -51]], borderColor: 'green', desc: '+2500 to V29 max level per level', effects: [{type:'display',formula:(lvl)=>'+'+(2500*lvl)}], costCurrency: 'void', costFormula: (lvl) => 5e21*Math.pow(3, Math.pow(lvl+2, 0.7375))/6.24, maxLevel: 16 },
+    { id: 'V40', type: 'upgrade', code: 'V40', name: 'expand4', coords: [-44, -52], reqs: [[-44, -51]], borderColor: 'green', desc: '+2500 to V29 max level per level (click bulk is behind this upgade)', effects: [{type:'display',formula:(lvl)=>'+'+(2500*lvl)}], costCurrency: 'void', costFormula: (lvl) => 5e21*Math.pow(3, Math.pow(lvl+2, 0.7375))/6.24, maxLevel: 16 },
     { id: 'V41', type: 'upgrade', code: 'V41', name: 'efficient2', coords: [-43, -52], reqs: [[-44, -52]], borderColor: 'green', desc: '+5 to V29 clicking bulk per level', effects: [{type:'display',formula:(lvl)=>'+'+(5*lvl)}], costCurrency: 'void', costFormula: (lvl) => 7e21*Math.pow(2.8, Math.pow(lvl, 0.7)), maxLevel: 18 },
     { id: 'V42', type: 'upgrade', code: 'V42', name: 'chain start', coords: [-42, -51], reqs: [[-43, -51]], borderColor: 'green', desc: '+10% void per level', effects: [{ type: 'currency_mult', currency: 'void', formula: (lvl) => 1+0.1*lvl }], costCurrency: 'void', costFormula: (lvl) => 1e22+1e21*lvl, maxLevel: 10 },
     { id: 'V43', type: 'upgrade', code: 'V43', name: '1/s', coords: [-42, -50], reqs: [[-42, -51]], borderColor: 'green', desc: '+1 raw void per level (this upgrade is not useful at all...?)', effects: [{ type: 'base_gain_raw', currency: 'void', formula: (lvl) => lvl }], costCurrency: 'void', costFormula: (lvl) => 1e22*Math.pow(1.25,lvl), maxLevel: 1000 },
@@ -2488,6 +2518,16 @@ const CHALLENGE_NODES = [
     { id: 'V47', type: 'upgrade', code: 'V47', name: 'no, this isnt the other upgrade with the same effect but the currency is research in a different game you might have played before in the bottom right of that part of the game.', coords: [-42, -52], reqs: [[-42, -51]], borderColor: 'green', desc: 'x2 void and +0.5x per level after', effects: [{ type: 'currency_mult', currency: 'void', formula: (lvl) => 2+0.5*Math.max(lvl-1, 0) }], costCurrency: 'void', costFormula: (lvl) => 2e25*Math.pow(1.5, lvl), maxLevel: 11 },
     { id: 'V48', type: 'upgrade', code: 'V48', name: 'time to go back', coords: [-42, -53], reqs: [[-42, -52]], borderColor: 'green', desc: 'x2 void and unlock new things near V01', effects: [{ type: 'currency_mult', currency: 'void', formula: (lvl) => 2 }], costCurrency: 'void', costFormula: (lvl) => 1e28, maxLevel: 1 },
     { id: 'V49', type: 'upgrade', code: 'V49', name: 'next. (current endgame)', coords: [-50, -51], reqs: [[-42, -53]], borderColor: 'green', desc: 'x25 void/s.', effects: [{ type: 'currency_mult', currency: 'void', formula: (lvl) => Math.pow(25, lvl) }], costCurrency: 'void', costFormula: (lvl) => 2.5e28, maxLevel: 1 },
+    { id: 'V50', type: 'upgrade', code: 'V50', name: 'temporaily booster thingy', coords: [-50, -52], reqs: [[-50, -51]], borderColor: 'green', desc: 'unlock another button and x2 void.', effects: [{ type: 'currency_mult', currency: 'void', formula: (lvl) => Math.pow(2, lvl) }], costCurrency: 'void', costFormula: (lvl) => 2e30, maxLevel: 1 },
+    { id: 'V51', type: 'upgrade', code: 'V51', name: 'the booster', coords: [-50, -53], reqs: [[-50, -52]], borderColor: 'green', desc: 'boost points which decays, reset on next perchase, cooldown 15s (to drop to full void level, drops lower by time, be patient to click a little more late so it costs nothing)', effects: [{ type: 'currency_mult', currency: 'void', formula: (lvl) => (1+getLevel('V52')+2*getLevel('V53')+5*getLevel('V58'))*Math.pow(0.85, Math.pow((getTime('V51')*(1*(1-0.1*getLevel('V55'))))+10,2)/20-5)+1+getLevel('V57') },{ type: 'max_level_mod', target: 'V51', amount: (lvl) => lvl }], costCurrency: 'void', costFormula: (lvl) => getCurr('void')*(Math.pow(100, Math.max((15-2*getLevel('V54'))-getTime('V51'),0))-1), maxLevel: 1 },
+    { id: 'V52', type: 'upgrade', code: 'V52', name: 'boost more', coords: [-50, -54], reqs: [[-50, -53]], borderColor: 'green', desc: 'boost cap +1/lvl.', effects: [{ type: 'display', currency: 'void', formula: (lvl) => '+'+lvl+' to cap' }], costCurrency: 'void', costFormula: (lvl) => 2e31*(1+0.1*(Math.pow(lvl+2, 2)-4)), maxLevel: 9 },
+    { id: 'V53', type: 'upgrade', code: 'V53', name: 'boost more more', coords: [-50, -55], reqs: [[-50, -54]], borderColor: 'green', desc: 'boost cap +2/lvl.', effects: [{ type: 'display', currency: 'void', formula: (lvl) => '+'+lvl*2+' to cap' }], costCurrency: 'void', costFormula: (lvl) => 1e33*(1+0.0775*(Math.pow(lvl+3, 2)-9)), maxLevel: 10 },
+    { id: 'V54', type: 'upgrade', code: 'V54', name: 'no, its not anoter notelike thing where the frequency only get boosted by -0.125s, at least not yet.', coords: [-51, -53], reqs: [[-50, -53]], borderColor: 'green', desc: 'boost cooldown -2s/lvl.', effects: [{ type: 'display', currency: 'void', formula: (lvl) => '-'+2*lvl+' to cooldown time' }], costCurrency: 'void', costFormula: (lvl) => 1e32*Math.pow(2*Math.pow(1.1,lvl), lvl), maxLevel: 5 },
+    { id: 'V55', type: 'upgrade', code: 'V55', name: 'calm', coords: [-49, -54], reqs: [[-50, -54]], borderColor: 'green', desc: 'booster decay speed -10% per level (additive, dont stack with other upgrades).', effects: [{ type: 'display', currency: 'void', formula: (lvl) => '×'+(1-0.01*Math.floor(lvl*10))+' to cooldown speed get time calculation' }], costCurrency: 'void', costFormula: (lvl) => 1e33*Math.pow(2*Math.pow(1.1,lvl), lvl), maxLevel: 5 },
+    { id: 'V56', type: 'upgrade', code: 'V56', name: 'more simple', coords: [-49, -53], reqs: [[-49, -54]], borderColor: 'green', desc: 'x1.25 void per level.', effects: [{ type: 'currency_mult', currency: 'void', formula: (lvl) => Math.pow(1.25, lvl) }], costCurrency: 'void', costFormula: (lvl) => 5e33*Math.pow(1.4*Math.pow(1.05,lvl),lvl), maxLevel: 15 },
+    { id: 'V57', type: 'upgrade', code: 'V57', name: 'base after base', coords: [-51, -55], reqs: [[-50, -55]], borderColor: 'green', desc: 'base amount (cap too) +1/lvl.', effects: [{ type: 'display', currency: 'void', formula: (lvl) => '+'+lvl*1+' to base/cap' }], costCurrency: 'void', costFormula: (lvl) => 2e34*(1+0.0775*(Math.pow(lvl+3, 2)-9)), maxLevel: 9 },
+    { id: 'V58', type: 'upgrade', code: 'V58', name: 'boost more 3', coords: [-50, -56], reqs: [[-50, -55]], borderColor: 'green', desc: 'boost cap +5/lvl.', effects: [{ type: 'display', currency: 'void', formula: (lvl) => '+'+lvl*5+' to cap' }], costCurrency: 'void', costFormula: (lvl) => 1e35*(1+0.0775*(Math.pow(lvl+3, 2)-9)), maxLevel: 8 },
+    
     
             ];
         // Push challenge nodes into TREE_NODES
@@ -2661,7 +2701,7 @@ function wrapText(text, maxWidth, fontSize) {
         for (const eff of node.challengeEffects) {
             if ((eff.type === 'currency_mult' || eff.type === 'base_gain' || eff.type === 'base_gain_raw') && eff.currency) {
     let val = '?';
-    try { val = formatNum(eff.formula(completions, getLevel, getCurr)); } catch(e) {}
+    try { val = formatNum(eff.formula(completions, getLevel, getCurr, getUpgradeTime)); } catch(e) {}
     parts.push((eff.type === 'currency_mult' ? 'x' : '+') + val + ' ' + eff.currency);
 }
         }
@@ -2673,11 +2713,11 @@ function wrapText(text, maxWidth, fontSize) {
             const useLvl = completions;
             if (rew.type === 'currency_mult' && (rew.currency || rew.targetCurrency)) {
                 let val = '?';
-                try { val = formatNum(rew.formula(useLvl, getLevel, getCurr)); } catch(e) {}
+                try { val = formatNum(rew.formula(useLvl, getLevel, getCurr, getUpgradeTime)); } catch(e) {}
                 parts.push('Rew: x' + val + ' ' + (rew.currency||rew.targetCurrency));
             } else if (rew.type === 'reset_gain_mult' && rew.targetCurrency) {
                 let val = '?';
-                try { val = formatNum(rew.formula(useLvl, getLevel, getCurr)); } catch(e) {}
+                try { val = formatNum(rew.formula(useLvl, getLevel, getCurr, getUpgradeTime)); } catch(e) {}
                 parts.push('Rew: x' + val + ' ' + rew.targetCurrency + ' r/g');
             }
         }
@@ -2688,15 +2728,15 @@ function wrapText(text, maxWidth, fontSize) {
         for (const eff of node.effects) {
             if (eff.type === 'currency_mult' && eff.currency) {
                 let val = '?';
-                try { val = formatNum(eff.formula(completions, getLevel, getCurr)); } catch(e) {}
+                try { val = formatNum(eff.formula(completions, getLevel, getCurr, getUpgradeTime)); } catch(e) {}
                 parts.push('x' + val + ' ' + eff.currency);
             } else if (eff.type === 'reset_gain_mult' && eff.targetCurrency) {
                 let val = '?';
-                try { val = formatNum(eff.formula(completions, getLevel, getCurr)); } catch(e) {}
+                try { val = formatNum(eff.formula(completions, getLevel, getCurr, getUpgradeTime)); } catch(e) {}
                 parts.push('x' + val + ' ' + eff.targetCurrency + ' r/g');
             } else if (eff.type === 'display' && eff.formula) {
                 let val = '?';
-                try { val = eff.formula(completions, getLevel, getCurr); } catch(e) {}
+                try { val = eff.formula(completions, getLevel, getCurr, getUpgradeTime); } catch(e) {}
                 parts.push(val);
             }
         }
@@ -2717,19 +2757,19 @@ function wrapText(text, maxWidth, fontSize) {
             if (!node.effects || node.effects.length === 0) return '';
             const parts = [];
             node.effects.forEach(eff => {
-                if (eff.type === 'base_gain') parts.push(`+${formatNum(eff.formula(curLevel, getLevel, getCurr))}`);
-                else if (eff.type === 'base_gain_raw') parts.push(`+${formatNum(eff.formula(curLevel, getLevel, getCurr))} raw`);
+                if (eff.type === 'base_gain') parts.push(`+${formatNum(eff.formula(curLevel, getLevel, getCurr, getUpgradeTime))}`);
+                else if (eff.type === 'base_gain_raw') parts.push(`+${formatNum(eff.formula(curLevel, getLevel, getCurr, getUpgradeTime))} raw`);
                 else if (eff.type === 'currency_mult' || eff.type === 'dynamic_mult') parts.push(
-                    `x${formatNum(eff.formula(curLevel, getLevel, getCurr))}`);
+                    `x${formatNum(eff.formula(curLevel, getLevel, getCurr, getUpgradeTime))}`);
                 else if (eff.type === 'max_level_mod') parts.push(
-                    `+${formatNum(typeof eff.amount === 'function' ? eff.amount(curLevel, getLevel, getCurr) : (eff.amount||0)*curLevel)} MAX`
+                    `+${formatNum(typeof eff.amount === 'function' ? eff.amount(curLevel, getLevel, getCurr, getUpgradeTime) : (eff.amount||0)*curLevel)} MAX`
                     );
                 else if (eff.type === 'automation') parts.push('AUTO');
                 else if (eff.type === 'reset_gain_mult') parts.push(
-                    `x${formatNum(eff.formula(curLevel, getLevel, getCurr))} ${eff.targetCurrency} r/g`);
+                    `x${formatNum(eff.formula(curLevel, getLevel, getCurr, getUpgradeTime))} ${eff.targetCurrency} r/g`);
                 else if (eff.type === 'reset_gain_add') parts.push(
-                    `+${formatNum(eff.formula(curLevel, getLevel, getCurr))} ${eff.targetCurrency} r/g`);
-                else if (eff.type === 'display') parts.push(eff.formula(curLevel, getLevel, getCurr));
+                    `+${formatNum(eff.formula(curLevel, getLevel, getCurr, getUpgradeTime))} ${eff.targetCurrency} r/g`);
+                else if (eff.type === 'display') parts.push(eff.formula(curLevel, getLevel, getCurr, getUpgradeTime));
             });
             return parts.join(', ');
         }
@@ -2839,7 +2879,7 @@ function wrapText(text, maxWidth, fontSize) {
             });
             
             // Description (center, wrapped)
-            const descText = typeof node.desc === 'function' ? node.desc(getLevel(node.id), getLevel, getCurr) : (node.desc || '');
+            const descText = typeof node.desc === 'function' ? node.desc(getLevel(node.id), getLevel, getCurr, getUpgradeTime) : (node.desc || '');
             const descLines = wrapTextCached(descText, width - padding * 2, 8);
             const descY = posY + height / 2 - (descLines.length * 9) / 2;
             ctx.fillStyle = '#34d399';
@@ -2911,7 +2951,9 @@ if (gameState.showEffects) {
                 ctx.font = '9px "Fira Code", monospace';
                 ctx.fillText(`${formatLevel(displayLvl)}/${formatLevel(effectiveMax)}`, posX + padding, bottomY);
                 
-                // Effect summary (below level, left)
+                // (time-since-purchase is available via getUpgradeTime(node.id) in formulas)
+                
+                // Effect summary (below level/time, left)
                 if (gameState.showEffects && node.effects && node.effects.length > 0) {
                     const effectSummary = getNodeEffectSummary(node, getLevel(node.id));
                     if (effectSummary) {
@@ -3244,7 +3286,7 @@ function draw() {
                     }
                     const lvl = gameState.levels[eff.nodeId] || 0;
                     if (lvl <= 0) continue;
-                    const val = eff.formula(lvl, getLevel, getCurr);
+                    const val = eff.formula(lvl, getLevel, getCurr, getUpgradeTime);
                     if (eff.type === 'base_gain') base += val;
                     else if (eff.type === 'base_gain_raw') baseRaw += val;
                     else mult *= val;
@@ -3267,8 +3309,8 @@ function draw() {
             const curLvl = getLevel(node.id) + levelOffset;
             const max = getMaxLevel(node);
             if (curLvl >= max) return Infinity;
-            if (node.bulkFinalCost) { return node.costFormula(curLvl + 1, getLevel, getCurr); }
-            return node.costFormula(curLvl, getLevel, getCurr);
+            if (node.bulkFinalCost) { return node.costFormula(curLvl + 1, getLevel, getCurr, getUpgradeTime); }
+            return node.costFormula(curLvl, getLevel, getCurr, getUpgradeTime);
         }
 
         let _displayCostCache = {};
@@ -3305,6 +3347,7 @@ function draw() {
             });
             return idx;
         })();
+        // Also rebuild the _resetGainEffectsIndex formulas to pass getUpgradeTime — wrap at call site instead
         function getEffectiveResetGain(resetNode) {
             if (_resetGainFrame[resetNode.id] === cacheDirtyFrame && _resetGainCache[resetNode.id] !== undefined) return _resetGainCache[resetNode.id];
             if (!cacheDirty && cache.resetGain.has(resetNode.id)) return cache.resetGain.get(resetNode.id);
@@ -3320,8 +3363,8 @@ function draw() {
                 for (const eff of effects) {
                     const lvl = getLevel(eff.nodeId);
                     if (lvl <= 0) continue;
-                    if (eff.type === 'reset_gain_add') add += eff.formula(lvl, getLevel, getCurr);
-                    if (eff.type === 'reset_gain_mult') mult *= eff.formula(lvl, getLevel, getCurr);
+                    if (eff.type === 'reset_gain_add') add += eff.formula(lvl, getLevel, getCurr, getUpgradeTime);
+                    if (eff.type === 'reset_gain_mult') mult *= eff.formula(lvl, getLevel, getCurr, getUpgradeTime);
                 }
             }
             const result = (base + add) * mult;
@@ -3385,6 +3428,9 @@ function buyUpgrade(nodeId, isAutomated = false, isFree = false) {
                 const oldLevel = currentLvl,
                     newLevel = currentLvl + bought;
                 gameState.levels[node.id] = newLevel;
+                // Record the time this upgrade was last purchased (ms timestamp)
+                if (!gameState.upgradeTimes) gameState.upgradeTimes = {};
+                gameState.upgradeTimes[node.id] = Date.now();
                 // Only add to discoveredCurrencies if not already there
                 if (!gameState.discoveredCurrencies.includes(node.costCurrency)) {
                     gameState.discoveredCurrencies.push(node.costCurrency);
@@ -3654,7 +3700,10 @@ function addCurrencyToOrder(currKey) {
             const list = getResettedCoordsList(node);
             const resetIds = new Set();
             for (const entry of list) { if (entry.id) { resetIds.add(entry.id);
-                    gameState.levels[entry.id] = 0; } }
+                    gameState.levels[entry.id] = 0;
+                    // Also clear the upgrade timer for reset nodes
+                    if (gameState.upgradeTimes) delete gameState.upgradeTimes[entry.id];
+                } }
             if (node.resetCurrencies && Array.isArray(node.resetCurrencies)) { for (const curr of node.resetCurrencies)
                     gameState.currencies[curr] = 0; }
             for (const sid in stepAnimations) { cancelAnimationFrame(stepAnimations[sid].rafId);
@@ -3963,7 +4012,7 @@ document.getElementById('btn-pause').onclick = () => {
             localStorage.removeItem(SAVE_KEY);
             localStorage.removeItem(SAVE_BACKUP_KEY);
             gameState = { _fresh: true, currencies: { P: 0, PR: 0, QT: 0, T: 0, D1: 0, D2: 0, D3: 0, D4: 0, D5: 0, D6: 0, D7: 0, D8: 0 }, discoveredCurrencies: ['P'], currencyOrder: ['P'],
-                hiddenCurrencies: [], levels: {}, unlockedDecorations: [], camera: { panX: 0, panY: 0,
+                hiddenCurrencies: [], levels: {}, upgradeTimes: {}, unlockedDecorations: [], camera: { panX: 0, panY: 0,
                     scale: 1 }, soundMuted: false, showEffects: true, buyMode: 1, skipResetConfirm: {},
                 paused: false, offlineTimestamp: Date.now(), notation: 'standard', announcedUpgrades: {}, _localUpgradeDone: false, firstUpgradeNotified: false, };
             panX = 0;
@@ -4252,7 +4301,7 @@ function checkTeleportKey(key) {
     return false;
 }
 
-// Call setup after DOM is ready
+// Call setup after DOM is ready — also render teleport rows on window.onload
 if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', () => {
         setupHotkeyListeners();
@@ -4669,6 +4718,7 @@ document.getElementById('btn-font-up').onclick = (e) => {
             });
             renderCurrencyToggles();
             updateHotkeyButtonLabels();
+            renderTeleportRows(); // Ensure teleport spots are rendered when settings open
             try { renderNewsGroups(); } catch(e) { console.warn('renderNewsGroups error:', e); }
             // Also update the news message count immediately
             try { if (typeof updateNewsMessageCount === 'function') updateNewsMessageCount(); } catch(e) {}
@@ -5479,6 +5529,10 @@ window.updateNewsMessageCount = updateNewsMessageCount;
             if (gameState.currencyFontSize === undefined) gameState.currencyFontSize = 11;
             if (!gameState.currencyOrder) gameState.currencyOrder = ['P'];
             if (!gameState.discoveredCurrencies) gameState.discoveredCurrencies = ['P'];
+            if (!gameState.teleportSpots) gameState.teleportSpots = [];
+            if (!Array.isArray(gameState.teleportSpots)) gameState.teleportSpots = [];
+            // Ensure upgradeTimes exists — persisted in save, uses Date.now() so survives refresh
+            if (!gameState.upgradeTimes || typeof gameState.upgradeTimes !== 'object') gameState.upgradeTimes = {};
             // CRITICAL: remove _fresh flag — loadGame succeeded, saveGame can now write
             if (gameState._fresh) delete gameState._fresh;
             // Ensure the core pointers/arrays exist
@@ -5892,6 +5946,7 @@ window.updateNewsMessageCount = updateNewsMessageCount;
                 resizeCanvas();
                 updateTransform();
                 renderCurrencyBar();
+                renderTeleportRows();
                 // Restore bar scroll state & lock state AFTER the bar is first rendered
                 restoreCurrencyBarScrollState();
                 setupBarScrollSave();
