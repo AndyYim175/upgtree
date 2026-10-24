@@ -2663,7 +2663,7 @@ const CHALLENGE_NODES = [
             if (node.type !== 'upgrade') return 0;
             if (_maxLevelFrame[node.id] === cacheDirtyFrame && _maxLevelCache[node.id] !== undefined) return _maxLevelCache[node.id];
             if (!cacheDirty && cache.maxLevel.has(node.id)) return cache.maxLevel.get(node.id);
-            let maxCap = node.maxLevel || 0;
+            let maxCap = node.maxLevel || 1;
             ensureMaxLevelModIndex();
             for (const mod of _maxLevelModEffects) {
                 const lvl = getLevel(mod.nodeId);
@@ -2672,7 +2672,7 @@ const CHALLENGE_NODES = [
                     maxCap += typeof mod.amount === 'function' ? mod.amount(lvl, getLevel, getCurr) : (mod.amount || 0) * lvl;
                 }
             }
-            maxCap = Math.max(0, maxCap);
+            maxCap = Math.max(1, maxCap);
             cache.maxLevel.set(node.id, maxCap);
             _maxLevelCache[node.id] = maxCap;
             _maxLevelFrame[node.id] = cacheDirtyFrame;
