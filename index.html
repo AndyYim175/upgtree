@@ -496,7 +496,11 @@ const OFFLINE_EXCLUDED_CURRENCIES = new Set([
     'nox',         // Only gained during the night
     //'void',         // Only gained during the night
     
-    'clocktime',   // Pointless to track offline, since lux and nox are already excluded
+    'clocktime',   
+    'droplets',     // Depends on the weather, which is random
+    'sunbeams',     // Depends on the weather, which is random
+    'gusts',     // Depends on the weather, which is random
+    'mist',     // Depends on the weather, which is random
 ]);
         // ==================== DECORATION DEFINITIONS ====================
         const DECORATIONS = [
@@ -1212,7 +1216,7 @@ long_longs: { id: 'long_longs', name: 'long longs', color: 'text-[#ff7fff]', fil
         droplets: { id:'droplets', name: 'Droplets', color: 'text-[#3690E8]', fillBg: 'rgba(128,128,128,0.2)' },
         sunbeams: { id:'sunbeams', name: 'Sunbeams', color: 'text-[#FFC42E]', fillBg: 'rgba(128,128,128,0.2)' },
         gusts: { id:'gusts', name: 'Gusts', color: 'text-[#7CE2BC]', fillBg: 'rgba(128,128,128,0.2)' },
-        shade: { id:'shade', name: 'Shade', color: 'text-[#96A0B2]', fillBg: 'rgba(128,128,128,0.2)' },};
+        mist: { id:'mist', name: 'mist', color: 'text-[#96A0B2]', fillBg: 'rgba(128,128,128,0.2)' },};
 // ==================== GAME STATE ====================
         // CRITICAL: _fresh flag prevents saveGame from overwriting a real save before loadGame completes.
         // ANY code that touches gameState before window.onload must NOT call saveGame.
@@ -2404,9 +2408,9 @@ const CHALLENGE_NODES = [
         {type: 'base_gain', currency: 'sunbeams', formula: (lvl) => 
         Weather.getWeather(getTime('BCL03')).Curr =='Sunny'? 1 : 
         Weather.getWeather(getTime('BCL03')).Curr=='Windy'? (getCurr('sunbeams')>0?-10:0) : 0 },
-        {type: 'base_gain', currency: 'shade', formula: (lvl) => 
+        {type: 'base_gain', currency: 'mist', formula: (lvl) => 
         Weather.getWeather(getTime('BCL03')).Curr =='Cloudy'? 1 : 
-        Weather.getWeather(getTime('BCL03')).Curr=='Sunny'? (getCurr('shade')>0?-10:0) : 0 },
+        Weather.getWeather(getTime('BCL03')).Curr=='Sunny'? (getCurr('mist')>0?-10:0) : 0 },
         {type: 'base_gain', currency: 'gusts', formula: (lvl) => 
         Weather.getWeather(getTime('BCL03')).Curr =='Windy'? 1 : 
         Weather.getWeather(getTime('BCL03')).Curr=='Rainy'? (getCurr('gusts')>0?-10:0) : 0 },
