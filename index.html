@@ -1320,49 +1320,56 @@ function getCurr(key) { return gameState.currencies[key] || 0; }
         }
 // ==================== CUSTOM FUNCTIONS ==================== For when you really can't code something in one line
 // Weather system
-const Weather = { //access via Weather.getWeather(timeInSeconds)
-    const WEATHERS = ['Sunny', 'Cloudy', 'Rainy', 'Windy'];
-    const EXTREME_WEATHERS = ['Stormy', 'Snowy', 'Foggy', 'Heatwave']; //Currently unused and WIP
-    const SLOT_SECONDS = 300;   // average weather length
-    const JITTER_SECONDS = 100; // each slot's start shifts by 0-99s, so lengths are 201-399s
 
-    // Deterministic pseudo-random number in [0, 1) from an integer seed
-    function seededRandom(seed) {
-    let h = Math.imul(seed ^ 0x9e3779b9, 0x85ebca6b);
-    h ^= h >>> 13;
-    h = Math.imul(h, 0xc2b2ae35);
-    h ^= h >>> 16;
-    return (h >>> 0) / 4294967296;
-    }
+const Weather = {
+    // Weather types
+    WEATHERS: ['Sunny', 'Cloudy', 'Rainy', 'Windy'],
+    EXTREME_WEATHERS: ['Stormy', 'Snowy', 'Foggy', 'Heatwave'], // WIP
 
-    // When a given slot's weather begins, in whole seconds
-    function slotStart(slot) {
-    return slot * SLOT_SECONDS + Math.floor(seededRandom(slot) * JITTER_SECONDS);
-    }
+    SLOT_SECONDS: 300,   // Average weather length
+    JITTER_SECONDS: 100, // Slot start shifts by 0-99 seconds
+
+    // Deterministic pseudo-random number in [0, 1)
+    seededRandom(seed) {
+        let h = Math.imul(seed ^ 0x9e3779b9, 0x85ebca6b);
+        h ^= h >>> 13;
+        h = Math.imul(h, 0xc2b2ae35);
+        h ^= h >>> 16;
+        return (h >>> 0) / 4294967296;
+    },
+
+    // When a slot's weather begins, in whole seconds
+    slotStart(slot) {
+        return slot * this.SLOT_SECONDS +
+            Math.floor(this.seededRandom(slot) * this.JITTER_SECONDS);
+    },
 
     // Which weather a given slot has
-    function slotWeather(slot) {
-    return WEATHERS[Math.floor(seededRandom(slot + 1000000) * WEATHERS.length)];
+    slotWeather(slot) {
+        return this.WEATHERS[
+            Math.floor(this.seededRandom(slot + 1000000) * this.WEATHERS.length)
+        ];
+    },
+
+    // Time is in seconds (e.g. Date.now() / 1000)
+    getWeather(time) {
+        const k = Math.floor(time / this.SLOT_SECONDS);
+        const slot = time >= this.slotStart(k) ? k : k - 1;
+
+        const start = this.slotStart(slot);
+        const end = this.slotStart(slot + 1);
+
+        return {
+            Curr: this.slotWeather(slot),
+            Next: this.slotWeather(slot + 1),
+            Start: start,
+            End: end,
+            Duration: end - start,
+            Remaining: end - time,
+        };
     }
+};
 
-    // time is in seconds (e.g. Date.now() / 1000)
-    function getWeather(time) {
-    const k = Math.floor(time / SLOT_SECONDS);
-    const slot = time >= slotStart(k) ? k : k - 1;
-
-    const start = slotStart(slot);
-    const end = slotStart(slot + 1);
-
-    return {
-        Curr: slotWeather(slot),
-        Next: slotWeather(slot + 1),
-        Start: start,
-        End: end,
-        Duration: end - start,
-        Remaining: end - time,
-    };
-    }
-}
 
         // ==================== CHALLENGE NODES ====================
 // Challenge nodes use type: 'challenge'
