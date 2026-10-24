@@ -2465,7 +2465,7 @@ const CHALLENGE_NODES = [
             Weather.getWeather(getTime('BCL03')).Next=='Windy' ? 'Windy':
             'ERROR: No weather lol') 
             +
-            (lvl==1 ? (' in ' + Weather.getWeather(getTime('BCL03')).Remaining + ' seconds') : '')
+            (lvl==1 ? (' in ' + Weather.getWeather(getTime('BCL03')).Remaining.toFixed(2) + ' seconds') : '')
         }
         ], costCurrency: 'clocktime', costFormula: (lvl) => 600, maxLevel: 0 },
     // { id: 'BW03', type: 'upgrade', code: 'BW03', name: 'Climate change', coords: [6, -27], reqs: [[7, -27]], borderColor: 'green', desc: 'Change weather types to extreme versions', effects: [{ type: 'currency_mult', currency: 'nox', formula: (lvl, getLevel, getCurr) => 1-0.002*lvl},{ type: 'base_gain', currency: 'lux', formula: (lvl, getLevel, getCurr) => 0.01*lvl}], costCurrency: 'nox', costFormula: (lvl) => 1e12*(1.5*lvl+1)*Math.pow(1.01,lvl), maxLevel: 100 },
