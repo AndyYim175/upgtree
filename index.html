@@ -632,6 +632,8 @@ const OFFLINE_EXCLUDED_CURRENCIES = new Set([
             { type: 'rect', coords: [42.5, 7.5], width: 800, height: 800, fillColor: '#ACFFFC', fillOpacity: 0.5, strokeColor: '#ACFFFC', strokeOpacity: 0.9, strokeWidth: 2, requirements: ['CBL25'] },
             { type: 'text', coords: [2.5, -27.5], text: 'Day/night baseplate', alignment: 'Bottom-left', color: '#808080', fontSize: 28, opacity: 0.9, requirements: ['+BU10'] },
             { type: 'rect', coords: [2.5, -27.5], width: 800, height: 800, fillColor: '#D3D3D3', fillOpacity: 0.3, strokeColor: '#D3D3D3', strokeOpacity: 0.9, strokeWidth: 2, requirements: ['+BU10'] },
+            { type: 'text', coords: [2.5, -32.5], text: 'Weather baseplate', alignment: 'Bottom-left', color: '#888EE0', fontSize: 28, opacity: 0.9, requirements: ['BCL3'] },
+            { type: 'rect', coords: [2.5, -32.5], width: 800, height: 800, fillColor: '#1C2854', fillOpacity: 0.3, strokeColor: '#3C4874', strokeOpacity: 0.9, strokeWidth: 2, requirements: ['BCL3'] },
             
         ];
         // ==================== AUDIO ENGINE ====================
@@ -1206,7 +1208,11 @@ long_longs: { id: 'long_longs', name: 'long longs', color: 'text-[#ff7fff]', fil
         clocktime: { id:'clocktime', name: 'Clocktime', color: 'text-zinc-100', fillBg: 'rgba(255, 255, 255, 0.2)' },
         lux: { id:'lux', name: 'Lux', color: 'text-zinc-100', fillBg: 'rgba(255, 255, 255, 0.2)' },
         nox: { id:'nox', name: 'Nox', color: 'text-[#808080]', fillBg: 'rgba(128,128,128,0.2)' },
-        'void': { id:'void', name: 'Void', color: 'text-[#4D4344]', fillBg: 'rgba(128,128,128,0.2)' }};
+        'void': { id:'void', name: 'Void', color: 'text-[#4D4344]', fillBg: 'rgba(128,128,128,0.2)' },
+        droplets: { id:'droplets', name: 'Droplets', color: 'text-[#3690E8]', fillBg: 'rgba(128,128,128,0.2)' },
+        sunbeams: { id:'sunbeams', name: 'Sunbeams', color: 'text-[#FFC42E]', fillBg: 'rgba(128,128,128,0.2)' },
+        gusts: { id:'gusts', name: 'Gusts', color: 'text-[#7CE2BC]', fillBg: 'rgba(128,128,128,0.2)' },
+        shade: { id:'shade', name: 'Shade', color: 'text-[#96A0B2]', fillBg: 'rgba(128,128,128,0.2)' },};
 // ==================== GAME STATE ====================
         // CRITICAL: _fresh flag prevents saveGame from overwriting a real save before loadGame completes.
         // ANY code that touches gameState before window.onload must NOT call saveGame.
@@ -1312,6 +1318,52 @@ function getCurr(key) { return gameState.currencies[key] || 0; }
             _displayCostCache = {};
             _currencyRateCache = {};
         }
+// ==================== CUSTOM FUNCTIONS ==================== For when you really can't code something in one line
+// Weather system
+const Weather = { //access via Weather.getWeather(timeInSeconds)
+    const WEATHERS = ['Sunny', 'Cloudy', 'Rainy', 'Windy'];
+    const EXTREME_WEATHERS = ['Stormy', 'Snowy', 'Foggy', 'Heatwave']; //Currently unused and WIP
+    const SLOT_SECONDS = 300;   // average weather length
+    const JITTER_SECONDS = 100; // each slot's start shifts by 0-99s, so lengths are 201-399s
+
+    // Deterministic pseudo-random number in [0, 1) from an integer seed
+    function seededRandom(seed) {
+    let h = Math.imul(seed ^ 0x9e3779b9, 0x85ebca6b);
+    h ^= h >>> 13;
+    h = Math.imul(h, 0xc2b2ae35);
+    h ^= h >>> 16;
+    return (h >>> 0) / 4294967296;
+    }
+
+    // When a given slot's weather begins, in whole seconds
+    function slotStart(slot) {
+    return slot * SLOT_SECONDS + Math.floor(seededRandom(slot) * JITTER_SECONDS);
+    }
+
+    // Which weather a given slot has
+    function slotWeather(slot) {
+    return WEATHERS[Math.floor(seededRandom(slot + 1000000) * WEATHERS.length)];
+    }
+
+    // time is in seconds (e.g. Date.now() / 1000)
+    function getWeather(time) {
+    const k = Math.floor(time / SLOT_SECONDS);
+    const slot = time >= slotStart(k) ? k : k - 1;
+
+    const start = slotStart(slot);
+    const end = slotStart(slot + 1);
+
+    return {
+        Curr: slotWeather(slot),
+        Next: slotWeather(slot + 1),
+        Start: start,
+        End: end,
+        Duration: end - start,
+        Remaining: end - time,
+    };
+    }
+}
+
         // ==================== CHALLENGE NODES ====================
 // Challenge nodes use type: 'challenge'
 // Properties:
@@ -2338,7 +2390,20 @@ const CHALLENGE_NODES = [
     // day/night
     { id: 'BCL01', type: 'upgrade', code: 'BCL01', name: 'tick tock', coords: [5, -23], reqs: [[-2, -7]], borderColor: 'green', desc: 'Start generating lux when its day and nox when its night (1 ingame day = 10 minutes)', effects: [{ type:'display', formula: (lvl, getLevel, getCurr) => getCurr('clocktime')%600<240 ? 'Time: Day' : getCurr('clocktime')%600<300 ? 'Time: Dusk' : getCurr('clocktime')%600<360 ? 'Time: Night': 'Time: Dawn'},{ type: 'base_gain', currency: 'lux', formula: (lvl) => 1 * lvl * (Math.max(0, Math.min(1, getCurr('clocktime') % 600 < 240 ? 1 : getCurr('clocktime') % 600 < 300 ? 1 - (getCurr('clocktime') % 600 - 240) / 60 : getCurr('clocktime') % 600 < 540 ? 0 : (getCurr('clocktime') % 600 - 540) / 60)))},{ type: 'base_gain', currency: 'nox', formula: (lvl) => 1 * lvl * (1-Math.max(0, Math.min(1, getCurr('clocktime') % 600 < 240 ? 1 : getCurr('clocktime') % 600 < 300 ? 1 - (getCurr('clocktime') % 600 - 240) / 60 : getCurr('clocktime') % 600 < 540 ? 0 : (getCurr('clocktime') % 600 - 540) / 60)))}], costCurrency: 'clocktime', costFormula: (lvl) => 1, maxLevel: 1 },
     { id: 'BCL02', type: 'upgrade', code: 'BCL02', name: 'waiting game', coords: [5, -24], reqs: [[5, -23]], borderColor: 'green', desc: 'Boost lux and nox by x1.001 per level (no cap)', effects: [{ type: 'currency_mult', currency: 'lux', formula: (lvl, getLevel, getCurr) => Math.pow(1.001+0.0001*getLevel('BDY07'),lvl*(1+0.1*getLevel('BNI07')))},{ type: 'currency_mult', currency: 'nox', formula: (lvl, getLevel, getCurr) => Math.pow(1.001+0.0001*getLevel('BDY07'),lvl*(1+0.1*getLevel('BNI07')))},{ type: 'max_level_mod', target: 'BCL02', amount: (lvl) => lvl }], costCurrency: 'clocktime', costFormula: (lvl) => 600, maxLevel: 100},
-    { id: 'BCL03', type: 'upgrade', code: 'BCL03', name: 'no more waiting', coords: [5, -27], reqs: [[4, -27],[6, -27]], borderColor: 'green', desc: 'The wait is over', effects: [{type:'display', formula: (lvl) => 'Unlock weather baseplate (WIP)'}], costCurrency: 'clocktime', costFormula: (lvl) => 0, maxLevel: 1},
+    { id: 'BCL03', type: 'upgrade', code: 'BCL03', name: 'no more waiting', coords: [5, -27], reqs: [[4, -27],[6, -27]], borderColor: 'green', desc: 'Unlock weather baseplate', effects: [
+        {type: 'base_gain', currency: 'droplets', formula: (lvl) => 
+            Weather.getWeather(getTime('BCL03')).Curr =='Rainy'? 1 : 
+            Weather.getWeather(getTime('BCL03')).Curr=='Cloudy'? (getCurr('droplets')>0?-10:0) : 0 },
+        {type: 'base_gain', currency: 'sunbeams', formula: (lvl) => 
+        Weather.getWeather(getTime('BCL03')).Curr =='Sunny'? 1 : 
+        Weather.getWeather(getTime('BCL03')).Curr=='Windy'? (getCurr('sunbeams')>0?-10:0) : 0 },
+        {type: 'base_gain', currency: 'shade', formula: (lvl) => 
+        Weather.getWeather(getTime('BCL03')).Curr =='Cloudy'? 1 : 
+        Weather.getWeather(getTime('BCL03')).Curr=='Sunny'? (getCurr('shade')>0?-10:0) : 0 },
+        {type: 'base_gain', currency: 'gusts', formula: (lvl) => 
+        Weather.getWeather(getTime('BCL03')).Curr =='Windy'? 1 : 
+        Weather.getWeather(getTime('BCL03')).Curr=='Rainy'? (getCurr('gusts')>0?-10:0) : 0 },
+    ], costCurrency: 'clocktime', costFormula: (lvl) => 0, maxLevel: 1},
     
     { id: 'BDY01', type: 'upgrade', code: 'BDY01', name: 'Day boosts night', coords: [4, -23], reqs: [[5, -23]], borderColor: 'green', desc: 'Boost nox by x1.25', effects: [{ type: 'currency_mult', currency: 'nox', formula: (lvl, getLevel, getCurr) => Math.pow(1.25,lvl)}], costCurrency: 'lux', costFormula: (lvl) => (getLevel('BNI02') >= 1 ? (Math.pow(1.25,-getLevel('BNI02'))*(0.1/(Math.pow(1.5,getLevel('BNI05')))+0.009*(Math.max(0,getCurr('nox')/(1+Math.pow(getCurr('lux'),0.5*getLevel('BNI10')))))/Math.pow(10+getLevel('BNI06'),getLevel('BNI05')))) : 1)*10 * (0.15*lvl+1) * (Math.pow(1.4,lvl)), maxLevel: 100 },
     { id: 'BDY02', type: 'upgrade', code: 'BDY02', name: 'Photon inversion', coords: [4, -24], reqs: [[4, -23]], borderColor: 'green', desc: 'Lower lux boosts nox (nerf above 100) and also multiply nox by 1.25 per level', effects: [{ type: 'currency_mult', currency: 'nox', formula: (lvl, getLevel, getCurr) => Math.pow(1.25,lvl)/(0.1/(Math.pow(1.5,getLevel('BDY05')))+0.009*(Math.max(0,getCurr('lux')/(1+Math.pow(getCurr('nox'),0.5*getLevel('BDY10')))))/Math.pow(10+getLevel('BDY06'),getLevel('BDY05')))}], costCurrency: 'lux', costFormula: (lvl) => (getLevel('BNI02') >= 1 ? (Math.pow(1.25,-getLevel('BNI02'))*(0.1/(Math.pow(1.5,getLevel('BNI05')))+0.009*(Math.max(0,getCurr('nox')/(1+Math.pow(getCurr('lux'),0.5*getLevel('BNI10')))))/Math.pow(10+getLevel('BNI06'),getLevel('BNI05')))) : 1)*500 * (0.35*lvl+1) * (Math.pow(2,lvl)), maxLevel: 10 },
@@ -2366,6 +2431,21 @@ const CHALLENGE_NODES = [
     { id: 'BNI10', type: 'upgrade', code: 'BNI10', name: 'Shiny moon', coords: [7, -27], reqs: [[7, -26]], borderColor: 'green', desc: 'Effective nox for BNI02 divided by sqrt(lux) per level', effects: [{type:'display',formula:(lvl)=>'/'+(Math.pow(getCurr('lux'),0.5*lvl)).toExponential(3)}], costCurrency: 'nox', costFormula: (lvl) => 1e11*Math.pow(15,lvl), maxLevel: 100 },
     { id: 'BNI11', type: 'upgrade', code: 'BNI11', name: 'Open one eye', coords: [6, -27], reqs: [[7, -27]], borderColor: 'green', desc: '-0.2% nox but always gain 1% lux', effects: [{ type: 'currency_mult', currency: 'nox', formula: (lvl, getLevel, getCurr) => 1-0.002*lvl},{ type: 'base_gain', currency: 'lux', formula: (lvl, getLevel, getCurr) => 0.01*lvl}], costCurrency: 'nox', costFormula: (lvl) => 1e12*(1.5*lvl+1)*Math.pow(1.01,lvl), maxLevel: 100 },
 
+    // Weather
+    { id: 'BW01', type: 'upgrade', code: 'BW01', name: "How's the weather?", coords: [5, -28], reqs: [[5, -27]], borderColor: 'green', desc: 'Check the weather (each weather lasts between 200 and 400 seconds)', effects: [
+        {
+            type:'display', formula: (lvl)=> lvl==0 ? 'Go outside to see the weather':
+            Weather.getWeather(getTime('BCL03')).Curr=='Sunny' ? 'Weather: Sunny':
+            Weather.getWeather(getTime('BCL03')).Curr=='Cloudy'? 'Weather: Cloudy':
+            Weather.getWeather(getTime('BCL03')).Curr=='Rainy' ? 'Weather: Rainy':
+            Weather.getWeather(getTime('BCL03')).Curr=='Windy' ? 'Weather: Windy':
+            'ERROR: No weather lol'
+        }
+        ], costCurrency: 'clocktime', costFormula: (lvl) => 600, maxLevel: 1 },
+    // { id: 'BW02', type: 'upgrade', code: 'BW02', name: 'Weather forecast', coords: [6, -27], reqs: [[7, -27]], borderColor: 'green', desc: 'Shows the next weather (requires 30 levels in BCL02 to buy)', effects: [{ type: 'currency_mult', currency: 'nox', formula: (lvl, getLevel, getCurr) => 1-0.002*lvl},{ type: 'base_gain', currency: 'lux', formula: (lvl, getLevel, getCurr) => 0.01*lvl}], costCurrency: 'nox', costFormula: (lvl) => 1e12*(1.5*lvl+1)*Math.pow(1.01,lvl), maxLevel: 100 },
+    // { id: 'BW03', type: 'upgrade', code: 'BW03', name: 'Climate change', coords: [6, -27], reqs: [[7, -27]], borderColor: 'green', desc: 'Change weather types to extreme versions', effects: [{ type: 'currency_mult', currency: 'nox', formula: (lvl, getLevel, getCurr) => 1-0.002*lvl},{ type: 'base_gain', currency: 'lux', formula: (lvl, getLevel, getCurr) => 0.01*lvl}], costCurrency: 'nox', costFormula: (lvl) => 1e12*(1.5*lvl+1)*Math.pow(1.01,lvl), maxLevel: 100 },
+    // { id: 'BW04', type: 'upgrade', code: 'BW04', name: 'Climate control', coords: [6, -27], reqs: [[7, -27]], borderColor: 'green', desc: 'Boost all weather currencies by 1.01x per level (no cap again)', effects: [{ type: 'currency_mult', currency: 'nox', formula: (lvl, getLevel, getCurr) => 1-0.002*lvl},{ type: 'base_gain', currency: 'lux', formula: (lvl, getLevel, getCurr) => 0.01*lvl}], costCurrency: 'nox', costFormula: (lvl) => 1e12*(1.5*lvl+1)*Math.pow(1.01,lvl), maxLevel: 100 },
+    // { id: 'BW05', type: 'upgrade', code: 'BW05', name: 'Compendium complete', coords: [6, -27], reqs: [[7, -27]], borderColor: 'green', desc: '-0.2% nox but always gain 1% lux', effects: [{ type: 'currency_mult', currency: 'nox', formula: (lvl, getLevel, getCurr) => 1-0.002*lvl},{ type: 'base_gain', currency: 'lux', formula: (lvl, getLevel, getCurr) => 0.01*lvl}], costCurrency: 'nox', costFormula: (lvl) => 1e12*(1.5*lvl+1)*Math.pow(1.01,lvl), maxLevel: 100 },
     
     //tokens
     { id: 'BT01', type: 'upgrade', code: 'BT01', name: 'Token', coords: [3, -8], reqs: [[2, -6]], borderColor: 'green', desc: '+0.01 token/s/lvl.', effects: [{ type: 'base_gain', currency: 'tokens', formula: (lvl) => 0.01 * lvl }], costCurrency: 'tokens', costFormula: (lvl) => 0.001*Math.floor(10*Math.pow(lvl+1,2)*Math.pow(1.025,lvl))*Math.pow(0.1,getLevel('BT06')), maxLevel: 499 },
