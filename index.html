@@ -1292,12 +1292,14 @@ if (typeof gameState.currencies.P !== 'number' || isNaN(gameState.currencies.P))
 // Returns seconds since this upgrade was last purchased (0 if never bought).
 // Uses Date.now() timestamps so it persists across refreshes via save/load.
 function getTime(nodeId) {
+    if (!gameState.upgradeTimes[nodeId] && getLevel(nodeId) > 0) gameState.upgradeTimes[nodeId] = Date.now(); // Initialize timestamp if missing (for old upgrades)
     const lastTime = gameState.upgradeTimes && gameState.upgradeTimes[nodeId];
     if (!lastTime || lastTime <= 0) return 1e12;
     return Math.max(0, (Date.now() - lastTime) / 1000);
 }
 
 function getUpgradeTime(nodeId) { 
+    if (!gameState.upgradeTimes[nodeId] && getLevel(nodeId) > 0) gameState.upgradeTimes[nodeId] = Date.now(); // Initialize timestamp if missing (for old upgrades)
     const lastTime = gameState.upgradeTimes && gameState.upgradeTimes[nodeId];
     if (!lastTime || lastTime <= 0) return 1e12;
     return Math.max(0, (Date.now() - lastTime) / 1000);
