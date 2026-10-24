@@ -2451,9 +2451,21 @@ const CHALLENGE_NODES = [
             Weather.getWeather(getTime('BCL03')).Curr=='Rainy' ? 'Weather: Rainy':
             Weather.getWeather(getTime('BCL03')).Curr=='Windy' ? 'Weather: Windy':
             'ERROR: No weather lol'
-        }
+        },
+        {type: 'max_level_mod',target: 'BW02',amount: (lvl, getLevel) => (getLevel('BCL02') >= 30 ? 1 : 0)}
         ], costCurrency: 'clocktime', costFormula: (lvl) => 600, maxLevel: 1 },
-    // { id: 'BW02', type: 'upgrade', code: 'BW02', name: 'Weather forecast', coords: [6, -27], reqs: [[7, -27]], borderColor: 'green', desc: 'Shows the next weather (requires 30 levels in BCL02 to buy)', effects: [{ type: 'currency_mult', currency: 'nox', formula: (lvl, getLevel, getCurr) => 1-0.002*lvl},{ type: 'base_gain', currency: 'lux', formula: (lvl, getLevel, getCurr) => 0.01*lvl}], costCurrency: 'nox', costFormula: (lvl) => 1e12*(1.5*lvl+1)*Math.pow(1.01,lvl), maxLevel: 100 },
+    { id: 'BW02', type: 'upgrade', code: 'BW02', name: 'Weather forecast', coords: [5, -29], reqs: [[5, -28]], borderColor: 'green', desc: 'Shows the next weather (requires 30 levels in BCL02 to buy)', effects: [
+        {        
+            type:'display', formula: (lvl)=> (lvl==0 ? 'Open a weather forecast app lol':
+            Weather.getWeather(getTime('BCL03')).Next=='Sunny' ? 'Weather: Sunny':
+            Weather.getWeather(getTime('BCL03')).Next=='Cloudy'? 'Weather: Cloudy':
+            Weather.getWeather(getTime('BCL03')).Next=='Rainy' ? 'Weather: Rainy':
+            Weather.getWeather(getTime('BCL03')).Next=='Windy' ? 'Weather: Windy':
+            'ERROR: No weather lol') 
+            +
+            (lvl==1 ? ('in ' + Weather.getWeather(getTime('BCL03')).Remaining + ' seconds') : '')
+        }
+        ], costCurrency: 'clocktime', costFormula: (lvl) => 600, maxLevel: 0 },
     // { id: 'BW03', type: 'upgrade', code: 'BW03', name: 'Climate change', coords: [6, -27], reqs: [[7, -27]], borderColor: 'green', desc: 'Change weather types to extreme versions', effects: [{ type: 'currency_mult', currency: 'nox', formula: (lvl, getLevel, getCurr) => 1-0.002*lvl},{ type: 'base_gain', currency: 'lux', formula: (lvl, getLevel, getCurr) => 0.01*lvl}], costCurrency: 'nox', costFormula: (lvl) => 1e12*(1.5*lvl+1)*Math.pow(1.01,lvl), maxLevel: 100 },
     // { id: 'BW04', type: 'upgrade', code: 'BW04', name: 'Climate control', coords: [6, -27], reqs: [[7, -27]], borderColor: 'green', desc: 'Boost all weather currencies by 1.01x per level (no cap again)', effects: [{ type: 'currency_mult', currency: 'nox', formula: (lvl, getLevel, getCurr) => 1-0.002*lvl},{ type: 'base_gain', currency: 'lux', formula: (lvl, getLevel, getCurr) => 0.01*lvl}], costCurrency: 'nox', costFormula: (lvl) => 1e12*(1.5*lvl+1)*Math.pow(1.01,lvl), maxLevel: 100 },
     // { id: 'BW05', type: 'upgrade', code: 'BW05', name: 'Compendium complete', coords: [6, -27], reqs: [[7, -27]], borderColor: 'green', desc: '-0.2% nox but always gain 1% lux', effects: [{ type: 'currency_mult', currency: 'nox', formula: (lvl, getLevel, getCurr) => 1-0.002*lvl},{ type: 'base_gain', currency: 'lux', formula: (lvl, getLevel, getCurr) => 0.01*lvl}], costCurrency: 'nox', costFormula: (lvl) => 1e12*(1.5*lvl+1)*Math.pow(1.01,lvl), maxLevel: 100 },
@@ -2651,7 +2663,7 @@ const CHALLENGE_NODES = [
             if (node.type !== 'upgrade') return 0;
             if (_maxLevelFrame[node.id] === cacheDirtyFrame && _maxLevelCache[node.id] !== undefined) return _maxLevelCache[node.id];
             if (!cacheDirty && cache.maxLevel.has(node.id)) return cache.maxLevel.get(node.id);
-            let maxCap = node.maxLevel || 1;
+            let maxCap = node.maxLevel || 0;
             ensureMaxLevelModIndex();
             for (const mod of _maxLevelModEffects) {
                 const lvl = getLevel(mod.nodeId);
@@ -2660,7 +2672,7 @@ const CHALLENGE_NODES = [
                     maxCap += typeof mod.amount === 'function' ? mod.amount(lvl, getLevel, getCurr) : (mod.amount || 0) * lvl;
                 }
             }
-            maxCap = Math.max(1, maxCap);
+            maxCap = Math.max(0, maxCap);
             cache.maxLevel.set(node.id, maxCap);
             _maxLevelCache[node.id] = maxCap;
             _maxLevelFrame[node.id] = cacheDirtyFrame;
