@@ -2445,7 +2445,7 @@ const CHALLENGE_NODES = [
         {type: 'base_gain_raw', currency: 'solar', formula: (lvl) => //solar loss
             Weather.getWeather(getTime('BCL03')).Curr=='Rainy'? -Math.floor(getCurr('solar')) : 
             Weather.getWeather(getTime('BCL03')).Curr=='Hail'? -Math.floor(getCurr('solar')) : 
-            Weather.getWeather(getTime('BCL03')).Curr=='Blizzard'? -Math.floor(getCurr('solar')) : 
+            Weather.getWeather(getTime('BCL03')).Curr=='Thunderstorm'? -Math.floor(getCurr('solar')) : 
             Weather.getWeather(getTime('BCL03')).Curr=='Sandstorm'? -Math.floor(getCurr('solar')) : 
             Weather.getWeather(getTime('BCL03')).Curr=='Smog'? -Math.floor(getCurr('solar')) : 
             0 },
@@ -2457,8 +2457,8 @@ const CHALLENGE_NODES = [
         {type: 'base_gain_raw', currency: 'foggy', formula: (lvl) => //foggy loss
             Weather.getWeather(getTime('BCL03')).Curr=='Sunny'? -Math.floor(getCurr('foggy')) : 
             Weather.getWeather(getTime('BCL03')).Curr=='Heatwave'? -Math.floor(getCurr('foggy')) : 
-            Weather.getWeather(getTime('BCL03')).Curr=='Drought'? -Math.floor(getCurr('foggy')) : 
-            Weather.getWeather(getTime('BCL03')).Curr=='Thunderstorm'? -Math.floor(getCurr('foggy')) : 
+            Weather.getWeather(getTime('BCL03')).Curr=='Sandstorm'? -Math.floor(getCurr('foggy')) : 
+            Weather.getWeather(getTime('BCL03')).Curr=='Hail'? -Math.floor(getCurr('foggy')) : 
             Weather.getWeather(getTime('BCL03')).Curr=='Blizzard'? -Math.floor(getCurr('foggy')) : 
             0 },
         {type: 'base_gain', currency: 'breezy', formula: (lvl) => //breezy gain
@@ -2469,9 +2469,9 @@ const CHALLENGE_NODES = [
         {type: 'base_gain_raw', currency: 'breezy', formula: (lvl) => //breezy loss
             Weather.getWeather(getTime('BCL03')).Curr=='Cloudy'? -Math.floor(getCurr('breezy')) : 
             Weather.getWeather(getTime('BCL03')).Curr=='Mist'? -Math.floor(getCurr('breezy')) : 
-            Weather.getWeather(getTime('BCL03')).Curr=='Smog'? -Math.floor(getCurr('breezy')) : 
+            Weather.getWeather(getTime('BCL03')).Curr=='Blizzard'? -Math.floor(getCurr('breezy')) : 
+            Weather.getWeather(getTime('BCL03')).Curr=='Drought'? -Math.floor(getCurr('breezy')) : 
             Weather.getWeather(getTime('BCL03')).Curr=='Heatwave'? -Math.floor(getCurr('breezy')) : 
-            Weather.getWeather(getTime('BCL03')).Curr=='Hail'? -Math.floor(getCurr('breezy')) : 
             0 },
     ], costCurrency: 'clocktime', costFormula: (lvl) => 0, maxLevel: 1},
     
@@ -2538,8 +2538,8 @@ const CHALLENGE_NODES = [
     
 // ===== solar =====
     // effects: BWW02 shrinks effective levels (W_S); costs: BWF02/BWF03 shrink effective levels
-    { id: 'BWS01', type: 'upgrade', code: 'BWS01', name: 'Solar boosts wet', coords: [3, -28], reqs: [[5, -28]], borderColor: 'green', desc: 'Boost wet weather gain by x1.15 per level', effects: [
-        {type: 'currency_mult', currency: 'wet', formula: (lvl) => Math.pow(1.15,lvl
+    { id: 'BWS01', type: 'upgrade', code: 'BWS01', name: 'Solar boosts wet', coords: [3, -28], reqs: [[5, -28]], borderColor: 'green', desc: 'Boost wet weather gain by x1.2 per level', effects: [
+        {type: 'currency_mult', currency: 'wet', formula: (lvl) => Math.pow(1.2,lvl
             *Math.pow(1.01,-(getLevel('BWW02')-0.5*Math.max(0,getLevel('BWW02')-20))))}], //BWW02 effect
         costCurrency: 'solar',
         costFormula: (lvl) => 50*Math.pow(1.5,lvl*
@@ -2563,14 +2563,14 @@ const CHALLENGE_NODES = [
                 /(1+Math.log(Math.max(getCurr('solar'),1))) //BWS03 special
                 *Math.pow(1.01,-(getLevel('BWW02')-0.5*Math.max(0,getLevel('BWW02')-20))))}, //BWW02 effect
         ], costCurrency: 'solar',
-        costFormula: (lvl) => 2000*Math.pow(2.5,lvl*
+        costFormula: (lvl) => 8000*Math.pow(2.5,lvl*
             Math.pow(1.08,-(getLevel('BWF02')-0.5*Math.max(0,getLevel('BWF02')-20)))*Math.pow(1.08,-(getLevel('BWF03')-0.5*Math.max(0,getLevel('BWF03')-20))/(1+Math.log(Math.max(getCurr('foggy'),1)))) //BWF02 + BWF03 effect (+ foggy special)
         )*(lvl*0.5*
             Math.pow(1.08,-(getLevel('BWF02')-0.5*Math.max(0,getLevel('BWF02')-20)))*Math.pow(1.08,-(getLevel('BWF03')-0.5*Math.max(0,getLevel('BWF03')-20))/(1+Math.log(Math.max(getCurr('foggy'),1)))) //BWF02 + BWF03 effect (+ foggy special)
         +1), maxLevel: 8 },
-    { id: 'BWS04', type: 'upgrade', code: 'BWS04', name: 'Heatwave boosts hail', coords: [3, -31], reqs: [[3, -30]], borderColor: 'green', desc: 'Only levelled during Heatwave (max level 10). Boost wet weather gain by x1.3 per level during Hail', effects: [
+    { id: 'BWS04', type: 'upgrade', code: 'BWS04', name: 'Heatwave boosts hail', coords: [3, -31], reqs: [[5, -30]], borderColor: 'green', desc: 'Only levelled during Heatwave (max level 10). Boost wet weather gain by x1.6 per level during hail', effects: [
         {type: 'currency_mult', currency: 'wet', formula: (lvl) => Weather.getWeather(getTime('BCL03')).Curr=='Hail'
-            ? Math.pow(1.3,lvl*Math.pow(1.01,-(getLevel('BWW02')-0.5*Math.max(0,getLevel('BWW02')-20)))) //BWW02 effect
+            ? Math.pow(1.6,lvl*Math.pow(1.01,-(getLevel('BWW02')-0.5*Math.max(0,getLevel('BWW02')-20)))) //BWW02 effect
             : 1}
         ], costCurrency: 'solar',
         costFormula: (lvl) => 2e8*Math.pow(2,lvl*
@@ -2578,9 +2578,9 @@ const CHALLENGE_NODES = [
         )*(lvl*0.5*
             Math.pow(1.08,-(getLevel('BWF02')-0.5*Math.max(0,getLevel('BWF02')-20)))*Math.pow(1.08,-(getLevel('BWF03')-0.5*Math.max(0,getLevel('BWF03')-20))/(1+Math.log(Math.max(getCurr('foggy'),1)))) //BWF02 + BWF03 effect (+ foggy special)
         +1), maxLevel: 0 },
-    { id: 'BWS05', type: 'upgrade', code: 'BWS05', name: 'Drought boosts sandstorm', coords: [3, -32], reqs: [[3, -30]], borderColor: 'green', desc: 'Only levelled during Drought (max level 10). Boost breezy weather gain by x1.3 per level during Sandstorm', effects: [
-        {type: 'currency_mult', currency: 'breezy', formula: (lvl) => Weather.getWeather(getTime('BCL03')).Curr=='Sandstorm'
-            ? Math.pow(1.3,lvl*Math.pow(1.01,-(getLevel('BWW02')-0.5*Math.max(0,getLevel('BWW02')-20)))) //BWW02 effect
+    { id: 'BWS05', type: 'upgrade', code: 'BWS05', name: 'Drought boosts smog', coords: [3, -32], reqs: [[5, -30]], borderColor: 'green', desc: 'Only levelled during Drought (max level 10). Boost foggy weather gain by x1.6 per level during smog', effects: [
+        {type: 'currency_mult', currency: 'foggy', formula: (lvl) => Weather.getWeather(getTime('BCL03')).Curr=='Smog'
+            ? Math.pow(1.6,lvl*Math.pow(1.01,-(getLevel('BWW02')-0.5*Math.max(0,getLevel('BWW02')-20)))) //BWW02 effect
             : 1}
         ], costCurrency: 'solar',
         costFormula: (lvl) => 2e8*Math.pow(2,lvl*
@@ -2591,8 +2591,8 @@ const CHALLENGE_NODES = [
 
     // ===== wet =====
     // costs: multiplied by BWB02 effect
-    { id: 'BWW01', type: 'upgrade', code: 'BWW01', name: 'Wet boosts breezy', coords: [4, -28], reqs: [[5, -28]], borderColor: 'green', desc: 'Boost breezy weather gain by x1.15 per level', effects: [
-        {type: 'currency_mult', currency: 'breezy', formula: (lvl) => Math.pow(1.15,lvl)}],
+    { id: 'BWW01', type: 'upgrade', code: 'BWW01', name: 'Wet boosts breezy', coords: [4, -28], reqs: [[5, -28]], borderColor: 'green', desc: 'Boost breezy weather gain by x1.2 per level', effects: [
+        {type: 'currency_mult', currency: 'breezy', formula: (lvl) => Math.pow(1.2,lvl)}],
         costCurrency: 'wet',
         costFormula: (lvl) => Math.min(1e300,50*Math.pow(1.5,lvl)*(lvl*0.2+1)
             *Math.pow(1.02,(getLevel('BWB02')-0.5*Math.max(0,getLevel('BWB02')-20))*Math.pow(1.08,(getLevel('BWW02')-0.5*Math.max(0,getLevel('BWW02')-20)))*Math.pow(1.08,(getLevel('BWW03')-0.5*Math.max(0,getLevel('BWW03')-20))/(1+Math.log(Math.max(getCurr('wet'),1))))) //BWB02 effect (BWW02 + BWW03 boost, wet special)
@@ -2609,20 +2609,20 @@ const CHALLENGE_NODES = [
                 /(1+Math.log(Math.max(getCurr('wet'),1))) //BWW03 special
             ).toExponential(3)}
         ], costCurrency: 'wet',
-        costFormula: (lvl) => Math.min(1e300,20000*Math.pow(2.5,lvl)*(lvl*0.5+1)
+        costFormula: (lvl) => Math.min(1e300,8000*Math.pow(2.5,lvl)*(lvl*0.5+1)
             *Math.pow(1.02,(getLevel('BWB02')-0.5*Math.max(0,getLevel('BWB02')-20))*Math.pow(1.08,(getLevel('BWW02')-0.5*Math.max(0,getLevel('BWW02')-20)))*Math.pow(1.08,(getLevel('BWW03')-0.5*Math.max(0,getLevel('BWW03')-20))/(1+Math.log(Math.max(getCurr('wet'),1))))) //BWB02 effect (BWW02 + BWW03 boost, wet special)
         ), maxLevel: 8 },
-    { id: 'BWW04', type: 'upgrade', code: 'BWW04', name: 'Hail boosts mist', coords: [4, -31], reqs: [[4, -30]], borderColor: 'green', desc: 'Only levelled during Hail (max level 10). Boost foggy weather gain by x1.3 per level during Mist', effects: [
-        {type: 'currency_mult', currency: 'foggy', formula: (lvl) => Weather.getWeather(getTime('BCL03')).Curr=='Mist'
-            ? Math.pow(1.3,lvl)
+    { id: 'BWW04', type: 'upgrade', code: 'BWW04', name: 'Hail boosts thunderstorm', coords: [4, -31], reqs: [[5, -30]], borderColor: 'green', desc: 'Only levelled during Hail (max level 10). Boost breezy weather gain by x1.6 per level during thunderstorm', effects: [
+        {type: 'currency_mult', currency: 'breezy', formula: (lvl) => Weather.getWeather(getTime('BCL03')).Curr=='Thunderstorm'
+            ? Math.pow(1.6,lvl)
             : 1}
         ], costCurrency: 'wet',
         costFormula: (lvl) => Math.min(1e300,2e8*Math.pow(2,lvl)*(lvl*0.5+1)
             *Math.pow(1.02,(getLevel('BWB02')-0.5*Math.max(0,getLevel('BWB02')-20))*Math.pow(1.08,(getLevel('BWW02')-0.5*Math.max(0,getLevel('BWW02')-20)))*Math.pow(1.08,(getLevel('BWW03')-0.5*Math.max(0,getLevel('BWW03')-20))/(1+Math.log(Math.max(getCurr('wet'),1))))) //BWB02 effect (BWW02 + BWW03 boost, wet special)
         ), maxLevel: 0 },
-    { id: 'BWW05', type: 'upgrade', code: 'BWW05', name: 'Blizzard boosts thunderstorm', coords: [4, -32], reqs: [[4, -30]], borderColor: 'green', desc: 'Only levelled during Blizzard (max level 10). Boost breezy weather gain by x1.3 per level during Thunderstorm', effects: [
-        {type: 'currency_mult', currency: 'breezy', formula: (lvl) => Weather.getWeather(getTime('BCL03')).Curr=='Thunderstorm'
-            ? Math.pow(1.3,lvl)
+    { id: 'BWW05', type: 'upgrade', code: 'BWW05', name: 'Blizzard boosts drought', coords: [4, -32], reqs: [[5, -30]], borderColor: 'green', desc: 'Only levelled during Blizzard (max level 10). Boost solar weather gain by x1.6 per level during drought', effects: [
+        {type: 'currency_mult', currency: 'solar', formula: (lvl) => Weather.getWeather(getTime('BCL03')).Curr=='Drought'
+            ? Math.pow(1.6,lvl)
             : 1}
         ], costCurrency: 'wet',
         costFormula: (lvl) => Math.min(1e300,2e8*Math.pow(2,lvl)*(lvl*0.5+1)
@@ -2631,8 +2631,8 @@ const CHALLENGE_NODES = [
 
     // ===== breezy =====
     // effects: boosted by BWW02 + BWW03; costs: effective levels grown by BWF02
-    { id: 'BWB01', type: 'upgrade', code: 'BWB01', name: 'breezy boosts foggy', coords: [6, -28], reqs: [[5, -28]], borderColor: 'green', desc: 'Boost foggy weather gain by x1.15 per level', effects: [
-        {type: 'currency_mult', currency: 'foggy', formula: (lvl) => Math.pow(1.15,lvl
+    { id: 'BWB01', type: 'upgrade', code: 'BWB01', name: 'breezy boosts foggy', coords: [6, -28], reqs: [[5, -28]], borderColor: 'green', desc: 'Boost foggy weather gain by x1.2 per level', effects: [
+        {type: 'currency_mult', currency: 'foggy', formula: (lvl) => Math.pow(1.2,lvl
             *Math.pow(1.08,(getLevel('BWW02')-0.5*Math.max(0,getLevel('BWW02')-20)))*Math.pow(1.08,(getLevel('BWW03')-0.5*Math.max(0,getLevel('BWW03')-20))/(1+Math.log(Math.max(getCurr('wet'),1)))) //BWW02 + BWW03 effect
         )}],
         costCurrency: 'breezy',
@@ -2660,14 +2660,14 @@ const CHALLENGE_NODES = [
             /(1+Math.log(Math.max(getCurr('breezy'),1))) //BWB03 special
         ).toExponential(3)}
         ], costCurrency: 'breezy',
-        costFormula: (lvl) => 20000*Math.pow(2.5,lvl*
+        costFormula: (lvl) => 8000*Math.pow(2.5,lvl*
             Math.pow(1.01,(getLevel('BWF02')-0.5*Math.max(0,getLevel('BWF02')-20))) //BWF02 effect
         )*(lvl*0.5*
             Math.pow(1.01,(getLevel('BWF02')-0.5*Math.max(0,getLevel('BWF02')-20))) //BWF02 effect
         +1), maxLevel: 8 },
-    { id: 'BWB04', type: 'upgrade', code: 'BWB04', name: 'Thunderstorm boosts drought', coords: [6, -31], reqs: [[6, -30]], borderColor: 'green', desc: 'Only levelled during Thunderstorm (max level 10). Boost solar weather gain by x1.3 per level during Drought', effects: [
-        {type: 'currency_mult', currency: 'solar', formula: (lvl) => Weather.getWeather(getTime('BCL03')).Curr=='Drought'
-            ? Math.pow(1.3,lvl*Math.pow(1.08,(getLevel('BWW02')-0.5*Math.max(0,getLevel('BWW02')-20)))*Math.pow(1.08,(getLevel('BWW03')-0.5*Math.max(0,getLevel('BWW03')-20))/(1+Math.log(Math.max(getCurr('wet'),1))))) //BWW02 + BWW03 effect
+    { id: 'BWB04', type: 'upgrade', code: 'BWB04', name: 'Thunderstorm boosts mist', coords: [6, -31], reqs: [[5, -30]], borderColor: 'green', desc: 'Only levelled during Thunderstorm (max level 10). Boost wet weather gain by x1.6 per level during mist', effects: [
+        {type: 'currency_mult', currency: 'wet', formula: (lvl) => Weather.getWeather(getTime('BCL03')).Curr=='Mist'
+            ? Math.pow(1.6,lvl*Math.pow(1.08,(getLevel('BWW02')-0.5*Math.max(0,getLevel('BWW02')-20)))*Math.pow(1.08,(getLevel('BWW03')-0.5*Math.max(0,getLevel('BWW03')-20))/(1+Math.log(Math.max(getCurr('wet'),1))))) //BWW02 + BWW03 effect
             : 1}
         ], costCurrency: 'breezy',
         costFormula: (lvl) => 2e8*Math.pow(2,lvl*
@@ -2675,9 +2675,9 @@ const CHALLENGE_NODES = [
         )*(lvl*0.5*
             Math.pow(1.01,(getLevel('BWF02')-0.5*Math.max(0,getLevel('BWF02')-20))) //BWF02 effect
         +1), maxLevel: 0 },
-    { id: 'BWB05', type: 'upgrade', code: 'BWB05', name: 'Sandstorm boosts smog', coords: [6, -32], reqs: [[6, -30]], borderColor: 'green', desc: 'Only levelled during Sandstorm (max level 10). Boost foggy weather gain by x1.3 per level during Smog', effects: [
-        {type: 'currency_mult', currency: 'foggy', formula: (lvl) => Weather.getWeather(getTime('BCL03')).Curr=='Smog'
-            ? Math.pow(1.3,lvl*Math.pow(1.08,(getLevel('BWW02')-0.5*Math.max(0,getLevel('BWW02')-20)))*Math.pow(1.08,(getLevel('BWW03')-0.5*Math.max(0,getLevel('BWW03')-20))/(1+Math.log(Math.max(getCurr('wet'),1))))) //BWW02 + BWW03 effect
+    { id: 'BWB05', type: 'upgrade', code: 'BWB05', name: 'Sandstorm boosts blizzard', coords: [6, -32], reqs: [[5, -30]], borderColor: 'green', desc: 'Only levelled during Sandstorm (max level 10). Boost wet weather gain by x1.6 per level during blizzard', effects: [
+        {type: 'currency_mult', currency: 'wet', formula: (lvl) => Weather.getWeather(getTime('BCL03')).Curr=='Blizzard'
+            ? Math.pow(1.6,lvl*Math.pow(1.08,(getLevel('BWW02')-0.5*Math.max(0,getLevel('BWW02')-20)))*Math.pow(1.08,(getLevel('BWW03')-0.5*Math.max(0,getLevel('BWW03')-20))/(1+Math.log(Math.max(getCurr('wet'),1))))) //BWW02 + BWW03 effect
             : 1}
         ], costCurrency: 'breezy',
         costFormula: (lvl) => 2e8*Math.pow(2,lvl*
@@ -2688,8 +2688,8 @@ const CHALLENGE_NODES = [
 
     // ===== foggy =====
     // costs: divided by BWB02 and BWB03 effects
-    { id: 'BWF01', type: 'upgrade', code: 'BWF01', name: 'foggy boosts solar', coords: [7, -28], reqs: [[5, -28]], borderColor: 'green', desc: 'Boost solar weather gain by x1.15 per level', effects: [
-        {type: 'currency_mult', currency: 'solar', formula: (lvl) => Math.pow(1.15,lvl)}],
+    { id: 'BWF01', type: 'upgrade', code: 'BWF01', name: 'foggy boosts solar', coords: [7, -28], reqs: [[5, -28]], borderColor: 'green', desc: 'Boost solar weather gain by x1.2 per level', effects: [
+        {type: 'currency_mult', currency: 'solar', formula: (lvl) => Math.pow(1.2,lvl)}],
         costCurrency: 'foggy',
         costFormula: (lvl) => Math.max(1,50*Math.pow(1.5,lvl)*(lvl*0.2+1)
             /Math.pow(1.2,(getLevel('BWB02')-0.5*Math.max(0,getLevel('BWB02')-20))*Math.pow(1.08,(getLevel('BWW02')-0.5*Math.max(0,getLevel('BWW02')-20)))*Math.pow(1.08,(getLevel('BWW03')-0.5*Math.max(0,getLevel('BWW03')-20))/(1+Math.log(Math.max(getCurr('wet'),1))))) //BWB02 effect (BWW02 + BWW03 boost, wet special)
@@ -2708,22 +2708,22 @@ const CHALLENGE_NODES = [
             /(1+Math.log(Math.max(getCurr('foggy'),1))) //BWF03 special
         ).toExponential(3)}
         ], costCurrency: 'foggy',
-        costFormula: (lvl) => Math.max(1,20000*Math.pow(2.5,lvl)*(lvl*0.5+1)
+        costFormula: (lvl) => Math.max(1,8000*Math.pow(2.5,lvl)*(lvl*0.5+1)
             /Math.pow(1.2,(getLevel('BWB02')-0.5*Math.max(0,getLevel('BWB02')-20))*Math.pow(1.08,(getLevel('BWW02')-0.5*Math.max(0,getLevel('BWW02')-20)))*Math.pow(1.08,(getLevel('BWW03')-0.5*Math.max(0,getLevel('BWW03')-20))/(1+Math.log(Math.max(getCurr('wet'),1))))) //BWB02 effect (BWW02 + BWW03 boost, wet special)
             /Math.pow(1.2,(getLevel('BWB03')-0.5*Math.max(0,getLevel('BWB03')-20))*Math.pow(1.08,(getLevel('BWW02')-0.5*Math.max(0,getLevel('BWW02')-20)))*Math.pow(1.08,(getLevel('BWW03')-0.5*Math.max(0,getLevel('BWW03')-20))/(1+Math.log(Math.max(getCurr('wet'),1))))/(1+Math.log(Math.max(getCurr('breezy'),1)))) //BWB03 effect (BWW02 + BWW03 boost, breezy special)
         ), maxLevel: 8 },
-    { id: 'BWF04', type: 'upgrade', code: 'BWF04', name: 'Mist boosts heatwave', coords: [7, -31], reqs: [[7, -30]], borderColor: 'green', desc: 'Only levelled during Mist (max level 10). Boost solar weather gain by x1.3 per level during Heatwave', effects: [
+    { id: 'BWF04', type: 'upgrade', code: 'BWF04', name: 'Mist boosts heatwave', coords: [7, -31], reqs: [[5, -30]], borderColor: 'green', desc: 'Only levelled during Mist (max level 10). Boost solar weather gain by x1.6 per level during heatwave', effects: [
         {type: 'currency_mult', currency: 'solar', formula: (lvl) => Weather.getWeather(getTime('BCL03')).Curr=='Heatwave'
-            ? Math.pow(1.3,lvl)
+            ? Math.pow(1.6,lvl)
             : 1}
         ], costCurrency: 'foggy',
         costFormula: (lvl) => Math.max(1,2e8*Math.pow(2,lvl)*(lvl*0.5+1)
             /Math.pow(1.2,(getLevel('BWB02')-0.5*Math.max(0,getLevel('BWB02')-20))*Math.pow(1.08,(getLevel('BWW02')-0.5*Math.max(0,getLevel('BWW02')-20)))*Math.pow(1.08,(getLevel('BWW03')-0.5*Math.max(0,getLevel('BWW03')-20))/(1+Math.log(Math.max(getCurr('wet'),1))))) //BWB02 effect (BWW02 + BWW03 boost, wet special)
             /Math.pow(1.2,(getLevel('BWB03')-0.5*Math.max(0,getLevel('BWB03')-20))*Math.pow(1.08,(getLevel('BWW02')-0.5*Math.max(0,getLevel('BWW02')-20)))*Math.pow(1.08,(getLevel('BWW03')-0.5*Math.max(0,getLevel('BWW03')-20))/(1+Math.log(Math.max(getCurr('wet'),1))))/(1+Math.log(Math.max(getCurr('breezy'),1)))) //BWB03 effect (BWW02 + BWW03 boost, breezy special)
         ), maxLevel: 0 },
-    { id: 'BWF05', type: 'upgrade', code: 'BWF05', name: 'Smog boosts blizzard', coords: [7, -32], reqs: [[7, -30]], borderColor: 'green', desc: 'Only levelled during Smog (max level 10). Boost wet weather gain by x1.3 per level during Blizzard', effects: [
-        {type: 'currency_mult', currency: 'wet', formula: (lvl) => Weather.getWeather(getTime('BCL03')).Curr=='Blizzard'
-            ? Math.pow(1.3,lvl)
+    { id: 'BWF05', type: 'upgrade', code: 'BWF05', name: 'Smog boosts sandstorm', coords: [7, -32], reqs: [[5, -30]], borderColor: 'green', desc: 'Only levelled during Smog (max level 10). Boost breezy weather gain by x1.6 per level during sandstorm', effects: [
+        {type: 'currency_mult', currency: 'breezy', formula: (lvl) => Weather.getWeather(getTime('BCL03')).Curr=='Sandstorm'
+            ? Math.pow(1.6,lvl)
             : 1}
         ], costCurrency: 'foggy',
         costFormula: (lvl) => Math.max(1,2e8*Math.pow(2,lvl)*(lvl*0.5+1)
