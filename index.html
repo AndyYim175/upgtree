@@ -1334,8 +1334,8 @@ const Weather = {
     WEATHERS: ['Sunny', 'Cloudy', 'Rainy', 'Windy'],
     EXTREME_WEATHERS: ['Thunderstorm', 'Blizzard', 'Mist', 'Heatwave','Sandstorm','Hail','Smog','Drought'], // WIP
 
-    SLOT_SECONDS: 300,   // Average weather length
-    JITTER_SECONDS: 100, // Slot start shifts by 0-99 seconds
+    SLOT_SECONDS: 240,   // Average weather length
+    JITTER_SECONDS: 60, // Slot start shifts by 0-99 seconds
 
     // Deterministic pseudo-random number in [0, 1)
     seededRandom(seed) {
@@ -2502,7 +2502,7 @@ const CHALLENGE_NODES = [
     { id: 'BNI11', type: 'upgrade', code: 'BNI11', name: 'Open one eye', coords: [6, -27], reqs: [[7, -27]], borderColor: 'green', desc: '-0.2% nox but always gain 1% lux', effects: [{ type: 'currency_mult', currency: 'nox', formula: (lvl, getLevel, getCurr) => 1-0.002*lvl},{ type: 'base_gain', currency: 'lux', formula: (lvl, getLevel, getCurr) => 0.01*lvl}], costCurrency: 'nox', costFormula: (lvl) => 1e12*(1.5*lvl+1)*Math.pow(1.01,lvl), maxLevel: 100 },
 
     // Weather
-    { id: 'BW01', type: 'upgrade', code: 'BW01', name: "How's the weather?", coords: [5, -28], reqs: [[5, -27]], borderColor: 'green', desc: 'Check the weather (each weather lasts between 200 and 400 seconds)', effects: [
+    { id: 'BW01', type: 'upgrade', code: 'BW01', name: "How's the weather?", coords: [5, -28], reqs: [[5, -27]], borderColor: 'green', desc: 'Check the weather (each weather lasts between 3 and 5 minutes)', effects: [
         {
             type:'display', formula: (lvl)=> lvl==0 ? 'Go outside to see the weather':
             Weather.getWeather(getTime('BCL03')).Curr
