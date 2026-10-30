@@ -501,7 +501,11 @@ const OFFLINE_EXCLUDED_CURRENCIES = new Set([
     'nox',         // Only gained during the night
     //'void',         // Only gained during the night
     
-    'clocktime',   // Pointless to track offline, since lux and nox are already excluded
+    'clocktime',   
+    'wet',     // Depends on the weather, which is random
+    'solar',     // Depends on the weather, which is random
+    'breezy',     // Depends on the weather, which is random
+    'foggy',     // Depends on the weather, which is random
 ]);
         // ==================== DECORATION DEFINITIONS ====================
         const DECORATIONS = [
@@ -641,7 +645,9 @@ const OFFLINE_EXCLUDED_CURRENCIES = new Set([
             { type: 'rect', coords: [37.5, -2.5], width: 800, height: 800, fillColor: '#FFD700', fillOpacity: 0.5, strokeColor: '#FFD700', strokeOpacity: 0.9, strokeWidth: 2, requirements: ['CGR09'] },
             { type: 'text', coords: [2.5, -27.5], text: 'Day/night baseplate', alignment: 'Bottom-left', color: '#808080', fontSize: 28, opacity: 0.9, requirements: ['+BU10'] },
             { type: 'rect', coords: [2.5, -27.5], width: 800, height: 800, fillColor: '#D3D3D3', fillOpacity: 0.3, strokeColor: '#D3D3D3', strokeOpacity: 0.9, strokeWidth: 2, requirements: ['+BU10'] },
-            
+            { type: 'text', coords: [2.5, -32.5], text: 'Weather baseplate', alignment: 'Bottom-left', color: '#888EE0', fontSize: 28, opacity: 0.9, requirements: ['BCL03'] },
+            { type: 'rect', coords: [2.5, -32.5], width: 800, height: 800, fillColor: '#3C4874', fillOpacity: 0.5, strokeColor: '#3C4874', strokeOpacity: 0.9, strokeWidth: 2, requirements: ['BCL03'] },            
+
         ];
         // ==================== AUDIO ENGINE ====================
         let audioCtx = null,
@@ -1214,9 +1220,15 @@ ints: { id: 'ints', name: 'ints', color: 'text-[#7fffff]', fillBg: 'rgba(127, 25
 longs: { id: 'longs', name: 'longs', color: 'text-[#7f7fff]', fillBg: 'rgba(127, 127, 255, 0.2)' },
 long_longs: { id: 'long_longs', name: 'long longs', color: 'text-[#ff7fff]', fillBg: 'rgba(255, 127, 255, 0.2)' },
         clocktime: { id:'clocktime', name: 'Clocktime', color: 'text-zinc-100', fillBg: 'rgba(255, 255, 255, 0.2)' },
-        lux: { id:'lux', name: 'Lux', color: 'text-zinc-100', fillBg: 'rgba(255, 255, 255, 0.2)' },
-        nox: { id:'nox', name: 'Nox', color: 'text-[#808080]', fillBg: 'rgba(128,128,128,0.2)' },
-        'void': { id:'void', name: 'Void', color: 'text-[#4D4344]', fillBg: 'rgba(128,128,128,0.2)' }};
+        lux: { id:'lux', name: 'Lux', color: 'text-zinc-100', fillBg: 'rgba(255, 255, 255, 0.3)' },
+        nox: { id:'nox', name: 'Nox', color: 'text-[#808080]', fillBg: 'rgba(64,64,64,0.6)' },
+        'void': { id:'void', name: 'Void', color: 'text-[#4D4344]', fillBg: 'rgba(128,128,128,0.2)' },
+        wet: { id:'wet', name: 'Wet weather', color: 'text-[#3690E8]', fillBg: 'rgba(55,144,232,0.2)' },
+        solar: { id:'solar', name: 'Solar weather', color: 'text-[#FFC42E]', fillBg: 'rgba(255,196,46,0.2)' },
+        breezy: { id:'breezy', name: 'Breezy weather', color: 'text-[#7CE2BC]', fillBg: 'rgba(124,226,188,0.2)' },
+        foggy: { id:'foggy', name: 'Foggy weather', color: 'text-[#96A0B2]', fillBg: 'rgba(150,160,178,0.2)' },
+    
+    };
 // ==================== GAME STATE ====================
         // CRITICAL: _fresh flag prevents saveGame from overwriting a real save before loadGame completes.
         // ANY code that touches gameState before window.onload must NOT call saveGame.
@@ -1334,8 +1346,8 @@ const Weather = {
     WEATHERS: ['Sunny', 'Cloudy', 'Rainy', 'Windy'],
     EXTREME_WEATHERS: ['Thunderstorm', 'Blizzard', 'Mist', 'Heatwave','Sandstorm','Hail','Smog','Drought'], // WIP
 
-    SLOT_SECONDS: 240,   // Average weather length
-    JITTER_SECONDS: 60, // Slot start shifts by 0-99 seconds
+    SLOT_SECONDS: 300,   // Average weather length
+    JITTER_SECONDS: 100, // Slot start shifts by 0-99 seconds
 
     // Deterministic pseudo-random number in [0, 1)
     seededRandom(seed) {
