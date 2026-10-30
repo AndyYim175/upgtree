@@ -501,11 +501,7 @@ const OFFLINE_EXCLUDED_CURRENCIES = new Set([
     'nox',         // Only gained during the night
     //'void',         // Only gained during the night
     
-    'clocktime',   
-    'wet',     // Depends on the weather, which is random
-    'solar',     // Depends on the weather, which is random
-    'breezy',     // Depends on the weather, which is random
-    'foggy',     // Depends on the weather, which is random
+    'clocktime',   // Pointless to track offline, since lux and nox are already excluded
 ]);
         // ==================== DECORATION DEFINITIONS ====================
         const DECORATIONS = [
@@ -645,9 +641,7 @@ const OFFLINE_EXCLUDED_CURRENCIES = new Set([
             { type: 'rect', coords: [37.5, -2.5], width: 800, height: 800, fillColor: '#FFD700', fillOpacity: 0.5, strokeColor: '#FFD700', strokeOpacity: 0.9, strokeWidth: 2, requirements: ['CGR09'] },
             { type: 'text', coords: [2.5, -27.5], text: 'Day/night baseplate', alignment: 'Bottom-left', color: '#808080', fontSize: 28, opacity: 0.9, requirements: ['+BU10'] },
             { type: 'rect', coords: [2.5, -27.5], width: 800, height: 800, fillColor: '#D3D3D3', fillOpacity: 0.3, strokeColor: '#D3D3D3', strokeOpacity: 0.9, strokeWidth: 2, requirements: ['+BU10'] },
-            { type: 'text', coords: [2.5, -32.5], text: 'Weather baseplate', alignment: 'Bottom-left', color: '#888EE0', fontSize: 28, opacity: 0.9, requirements: ['BCL03'] },
-            { type: 'rect', coords: [2.5, -32.5], width: 800, height: 800, fillColor: '#3C4874', fillOpacity: 0.5, strokeColor: '#3C4874', strokeOpacity: 0.9, strokeWidth: 2, requirements: ['BCL03'] },            
-
+            
         ];
         // ==================== AUDIO ENGINE ====================
         let audioCtx = null,
@@ -1220,15 +1214,9 @@ ints: { id: 'ints', name: 'ints', color: 'text-[#7fffff]', fillBg: 'rgba(127, 25
 longs: { id: 'longs', name: 'longs', color: 'text-[#7f7fff]', fillBg: 'rgba(127, 127, 255, 0.2)' },
 long_longs: { id: 'long_longs', name: 'long longs', color: 'text-[#ff7fff]', fillBg: 'rgba(255, 127, 255, 0.2)' },
         clocktime: { id:'clocktime', name: 'Clocktime', color: 'text-zinc-100', fillBg: 'rgba(255, 255, 255, 0.2)' },
-        lux: { id:'lux', name: 'Lux', color: 'text-zinc-100', fillBg: 'rgba(255, 255, 255, 0.3)' },
-        nox: { id:'nox', name: 'Nox', color: 'text-[#808080]', fillBg: 'rgba(64,64,64,0.6)' },
-        'void': { id:'void', name: 'Void', color: 'text-[#4D4344]', fillBg: 'rgba(128,128,128,0.2)' },
-        wet: { id:'wet', name: 'Wet weather', color: 'text-[#3690E8]', fillBg: 'rgba(55,144,232,0.2)' },
-        solar: { id:'solar', name: 'Solar weather', color: 'text-[#FFC42E]', fillBg: 'rgba(255,196,46,0.2)' },
-        breezy: { id:'breezy', name: 'Breezy weather', color: 'text-[#7CE2BC]', fillBg: 'rgba(124,226,188,0.2)' },
-        foggy: { id:'foggy', name: 'Foggy weather', color: 'text-[#96A0B2]', fillBg: 'rgba(150,160,178,0.2)' },
-    
-    };
+        lux: { id:'lux', name: 'Lux', color: 'text-zinc-100', fillBg: 'rgba(255, 255, 255, 0.2)' },
+        nox: { id:'nox', name: 'Nox', color: 'text-[#808080]', fillBg: 'rgba(128,128,128,0.2)' },
+        'void': { id:'void', name: 'Void', color: 'text-[#4D4344]', fillBg: 'rgba(128,128,128,0.2)' }};
 // ==================== GAME STATE ====================
         // CRITICAL: _fresh flag prevents saveGame from overwriting a real save before loadGame completes.
         // ANY code that touches gameState before window.onload must NOT call saveGame.
@@ -1346,8 +1334,8 @@ const Weather = {
     WEATHERS: ['Sunny', 'Cloudy', 'Rainy', 'Windy'],
     EXTREME_WEATHERS: ['Thunderstorm', 'Blizzard', 'Mist', 'Heatwave','Sandstorm','Hail','Smog','Drought'], // WIP
 
-    SLOT_SECONDS: 300,   // Average weather length
-    JITTER_SECONDS: 100, // Slot start shifts by 0-99 seconds
+    SLOT_SECONDS: 240,   // Average weather length
+    JITTER_SECONDS: 60, // Slot start shifts by 0-99 seconds
 
     // Deterministic pseudo-random number in [0, 1)
     seededRandom(seed) {
@@ -2903,8 +2891,8 @@ const CHALLENGE_NODES = [
     { id: 'V39', type: 'upgrade', code: 'V39', name: 'please remember (again) to buy the early void upgrades more!', coords: [-45, -51], reqs: [[-44, -51]], borderColor: 'green', desc: 'x5 void', effects: [{ type: 'currency_mult', currency: 'void', formula: (lvl) => 5 }], costCurrency: 'void', costFormula: (lvl) => 2e18, maxLevel: 1 },
     { id: 'V40', type: 'upgrade', code: 'V40', name: 'expand4', coords: [-44, -52], reqs: [[-44, -51]], borderColor: 'green', desc: '+2500 to V29 max level per level (click bulk is behind this upgade)', effects: [{type:'display',formula:(lvl)=>'+'+(2500*lvl)}], costCurrency: 'void', costFormula: (lvl) => 5e21*Math.pow(3, Math.pow(lvl+2, 0.7375))/6.24, maxLevel: 16 },
     { id: 'V41', type: 'upgrade', code: 'V41', name: 'efficient2', coords: [-43, -52], reqs: [[-44, -52]], borderColor: 'green', desc: '+5 to V29 clicking bulk per level', effects: [{type:'display',formula:(lvl)=>'+'+(5*lvl)}], costCurrency: 'void', costFormula: (lvl) => 7e21*Math.pow(2.8, Math.pow(lvl, 0.7)), maxLevel: 18 },
-    { id: 'V42', type: 'upgrade', code: 'V42', name: 'chain start', coords: [-42, -51], reqs: [[-43, -51]], borderColor: 'green', desc: '+10% void per level', effects: [{ type: 'currency_mult', currency: 'void', formula: (lvl) => 1+0.1*lvl }], costCurrency: 'void', costFormula: (lvl) => 1e22+1e21*lvl, maxLevel: 10 },
-    { id: 'V43', type: 'upgrade', code: 'V43', name: '1/s', coords: [-42, -50], reqs: [[-42, -51]], borderColor: 'green', desc: '+1 raw void per level (this upgrade is not useful at all...?)', effects: [{ type: 'base_gain_raw', currency: 'void', formula: (lvl) => lvl }], costCurrency: 'void', costFormula: (lvl) => 1e22*Math.pow(1.25,lvl), maxLevel: 1000 },
+    { id: 'V42', type: 'upgrade', code: 'V42', name: 'chain start', coords: [-42, -51], reqs: [[-43, -51]], borderColor: 'green', desc: '+10% void per level', effects: [{ type: 'currency_mult', currency: 'void', formula: (lvl) => Math.pow(1+0.1*lvl,1+getLevel('V80')) }], costCurrency: 'void', costFormula: (lvl) => 1e22+1e21*lvl, maxLevel: 10 },
+    { id: 'V43', type: 'upgrade', code: 'V43', name: '1/s', coords: [-42, -50], reqs: [[-42, -51]], borderColor: 'green', desc: '+1 raw void per level (this upgrade is not useful at all...?)', effects: [{ type: 'base_gain_raw', currency: 'void', formula: (lvl) => Math.pow(lvl,1+20*getLevel('V77')+0.05*getLevel('V78')) }], costCurrency: 'void', costFormula: (lvl) => 1e22*Math.pow(1.25,lvl), maxLevel: 1000 },
     { id: 'V44', type: 'upgrade', code: 'V44', name: 'chain', coords: [-41, -51], reqs: [[-42, -51]], borderColor: 'green', desc: '+2 max V42 levels per level', effects: [{ type: 'max_level_mod', target: 'V42', amount: (lvl) => 2*lvl }], costCurrency: 'void', costFormula: (lvl) => 1e23+1e22*lvl, maxLevel: 10 },
     { id: 'V45', type: 'upgrade', code: 'V45', name: 'chain', coords: [-40, -51], reqs: [[-41, -51]], borderColor: 'green', desc: '+2 max V44 levels per level', effects: [{ type: 'max_level_mod', target: 'V44', amount: (lvl) => 2*lvl }], costCurrency: 'void', costFormula: (lvl) => 1e24+1e23*lvl, maxLevel: 10 },
     { id: 'V46', type: 'upgrade', code: 'V46', name: 'chain', coords: [-39, -51], reqs: [[-40, -51]], borderColor: 'green', desc: '+2 max V45 levels per level', effects: [{ type: 'max_level_mod', target: 'V45', amount: (lvl) => 2*lvl }], costCurrency: 'void', costFormula: (lvl) => 1e25+1e24*lvl, maxLevel: 10 },
@@ -2935,7 +2923,19 @@ const CHALLENGE_NODES = [
     { id: 'V71', type: 'upgrade', code: 'V71', name: 'less cost 4', coords: [-53, -51], reqs: [[-53, -52]], borderColor: 'green', desc: 'V51 cost and additional 0.25% less of your void per level (stacks with V59).', effects: [{ type: 'display', currency: 'void', formula: (lvl) => 'another -'+0.25*lvl+'% of void consumed' }], costCurrency: 'void', costFormula: (lvl) => 1e49*Math.pow(2*Math.pow(1.1,lvl), lvl), maxLevel: 3 },
     { id: 'V72', type: 'upgrade', code: 'V72', name: 'boosts all that', coords: [-54, -53], reqs: [[-53, -53]], borderColor: 'green', desc: '+bulk of V51 based on... V51 activations. slightly better per level. log formula !!', effects: [{ type: 'max_level_mod', target: 'V51', amount: (lvl) => Math.floor(15*(Math.pow((Math.log10(getLevel('V51')*(1+0.1*lvl)+1e3)-2),2)-1)) }], costCurrency: 'void', costFormula: (lvl) => 1e48*Math.pow(1.25,lvl)*(1+0.25*lvl), maxLevel: 25 },
     { id: 'V73', type: 'upgrade', code: 'V73', name: 'good bye', coords: [-54, -54], reqs: [[-54, -53]], borderColor: 'green', desc: 'there is no decay', effects: [], costCurrency: 'void', costFormula: (lvl) => 1e50*Math.pow(1.25,lvl)*(1+0.25*lvl), maxLevel: 1 },
-    { id: 'V74', type: 'upgrade', code: 'V74', name: 'welcome back', coords: [-54, -55], reqs: [[-54, -54]], borderColor: 'green', desc: 'unlock something? (wip)', effects: [], costCurrency: 'void', costFormula: (lvl) => 5e50, maxLevel: 1 },
+    { id: 'V74', type: 'upgrade', code: 'V74', name: 'welcome back', coords: [-54, -55], reqs: [[-54, -54]], borderColor: 'green', desc: 'unlock something?', effects: [], costCurrency: 'void', costFormula: (lvl) => 5e50, maxLevel: 1 },
+    { id: 'V75', type: 'upgrade', code: 'V75', name: '75', coords: [-55, -55], reqs: [[-54, -55]], borderColor: 'green', desc: 'lets get to more simple things. x2 void', effects: [{ type: 'currency_mult', currency: 'void', formula: (lvl) => Math.pow(2, lvl) }], costCurrency: 'void', costFormula: (lvl) => 1e50, maxLevel: 1 },
+    { id: 'V76', type: 'upgrade', code: 'V76', name: 'scattered', coords: [-55, -54], reqs: [[-55, -55]], borderColor: 'green', desc: 'unlock more upgrades around the void and x1.25 void', effects: [{ type: 'currency_mult', currency: 'void', formula: (lvl) => Math.pow(1.25, lvl) }], costCurrency: 'void', costFormula: (lvl) => 2e50, maxLevel: 1 },
+    { id: 'V77', type: 'upgrade', code: 'V77', name: 'comeback', coords: [-41, -52], reqs: [[-55, -54]], borderColor: 'green', desc: '^21 upgrade V43s effect', effects: [], costCurrency: 'void', costFormula: (lvl) => 1e52, maxLevel: 1 },
+    { id: 'V78', type: 'upgrade', code: 'V78', name: 'and a bit more', coords: [-40, -52], reqs: [[-41, -52]], borderColor: 'green', desc: '+^0.05 additionally to upgrade V43s effect per level', effects: [{ type: 'display', currency: 'void', formula: (lvl) => '+^'+formatNum(0.05*lvl)+' to V77s boost additionally' }], costCurrency: 'void', costFormula: (lvl) => 2e53*Math.pow(1.3+0.0025*lvl,lvl), maxLevel: 20 },
+    { id: 'V79', type: 'upgrade', code: 'V79', name: 'extra layer', coords: [-38, -51], reqs: [[-55, -54]], borderColor: 'green', desc: '+20 V46 max level per level', effects: [{ type: 'max_level_mod', target: 'V46', amount: (lvl) => 20*lvl }], costCurrency: 'void', costFormula: (lvl) => 1e57+0.5e56*lvl, maxLevel: 20 },
+    { id: 'V80', type: 'upgrade', code: 'V80', name: 'extra power', coords: [-38, -52], reqs: [[-38, -51]], borderColor: 'green', desc: '^2 V42s effect', effects: [], costCurrency: 'void', costFormula: (lvl) => 5e57, maxLevel: 1 },
+    { id: 'V81', type: 'upgrade', code: 'V81', name: 'extra layer 2', coords: [-37, -51], reqs: [[-38, -51]], borderColor: 'green', desc: '+2 V79 max level per level', effects: [{ type: 'max_level_mod', target: 'V79', amount: (lvl) => 2*lvl }], costCurrency: 'void', costFormula: (lvl) => 1e58+0.5e56*lvl, maxLevel: 20 },
+    { id: 'V82', type: 'upgrade', code: 'V82', name: 'pure income', coords: [-37, -52], reqs: [[-37, -51]], borderColor: 'green', desc: '+500 V42 max level per level', effects: [{ type: 'max_level_mod', target: 'V42', amount: (lvl) => 500*lvl }], costCurrency: 'void', costFormula: (lvl) => 3e58+1.5e56*lvl, maxLevel: 20 },
+    { id: 'V83', type: 'upgrade', code: 'V83', name: 'extra layer 3', coords: [-36, -51], reqs: [[-37, -51]], borderColor: 'green', desc: '+1 V81 max level per level. inflation :(', effects: [{ type: 'max_level_mod', target: 'V81', amount: (lvl) => lvl }], costCurrency: 'void', costFormula: (lvl) => 1e59+0.5e56*lvl, maxLevel: 40 },
+    { id: 'V84', type: 'upgrade', code: 'V84', name: 'add+7.', coords: [-45, -48], reqs: [[-55, -54]], borderColor: 'green', desc: '+lvl^4 void/s.', effects: [{ type: 'base_gain', currency: 'void', formula: (lvl) => lvl*lvl*lvl*lvl }], costCurrency: 'void', costFormula: (lvl) => 1e58*Math.pow(1.3, lvl), maxLevel: 100 },
+    { id: 'V85', type: 'upgrade', code: 'V85', name: 'the classic, modified.', coords: [-45, -47], reqs: [[-45, -48]], borderColor: 'green', desc: 'x1.025 void/s/lvl.', effects: [{ type: 'currency_mult', currency: 'void', formula: (lvl) => Math.pow(1.025, lvl) }], costCurrency: 'void', costFormula: (lvl) => 1e61*Math.pow(2,lvl), maxLevel: 800 },
+    { id: 'V86', type: 'upgrade', code: 'V86', name: 'the inflation (not really).', coords: [-44, -47], reqs: [[-45, -47]], borderColor: 'green', desc: 'multiply void based on upgrade time.', effects: [{ type: 'currency_mult', currency: 'void', formula: (lvl) => Math.pow(1+0.25*Math.log(5*(lvl>=1)*getTime('V86')+1), 1.5) }], costCurrency: 'void', costFormula: (lvl) => 2.5e62, maxLevel: 1 },
     
     
             ];
