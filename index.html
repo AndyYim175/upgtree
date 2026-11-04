@@ -525,7 +525,7 @@ const OFFLINE_EXCLUDED_CURRENCIES = new Set([
             { coords: [[1.25, 2.5], [2.5, 3]], thickness: 6, color: 'lightblue', opacity: 0.2, requirements: ['D14'], type: 'line' },
             { type: 'rect', coords: [-2.5, -2.5], width: 800, height: 800, fillColor: 'green', fillOpacity: 0.3, strokeColor: '#34d399', strokeOpacity: 0.9, strokeWidth: 2, requirements: ['#1'] },
             { type: 'rect', coords: [-7.5, -2.5], width: 800, height: 800, fillColor: 'green', fillOpacity: 0.3, strokeColor: '#34d399', strokeOpacity: 0.9, strokeWidth: 2, requirements: ['P11'] },
-            { type: 'rect', coords: [-7.5, -7.5], width: 800, height: 800, fillColor: '#06402B', fillOpacity: 0.3, strokeColor: '#34d399', strokeOpacity: 0.9, strokeWidth: 2, requirements: ['B12'] },
+            { type: 'rect', coords: [-7.5, -7.5], width: 800, height: 800, fillColor: '#06402B', fillOpacity: 0.3, strokeColor: '#34d399', strokeOpacity: 0.9, strokeWidth: 2, requirements: ['+BU2'] },
             { type: 'rect', coords: [2.5, -2.5], width: 800, height: 800, fillColor: '#f9bfbf', fillOpacity: 0.3, strokeColor: '#f9bfbf', strokeOpacity: 0.9, strokeWidth: 2, requirements: ['P05'] },
             { type: 'rect', coords: [7.5, -2.5], width: 800, height: 800, fillColor: '#750d37', fillOpacity: 0.3, strokeColor: '#750d37', strokeOpacity: 0.9, strokeWidth: 2, requirements: ['AU19'] },
             { type: 'rect', coords: [-2.4, -2.4], width: 288, height: 128, fillColor: 'lightgreen', fillOpacity: 0.5, strokeColor: '#34d399', strokeOpacity: 0.9, strokeWidth: 0, requirements: ['D8'] },
@@ -534,8 +534,8 @@ const OFFLINE_EXCLUDED_CURRENCIES = new Set([
             { type: 'rect', coords: [-7.5, -12.5], width: 800, height: 800, fillColor: '#bb8855', fillOpacity: 0.3, strokeColor: '#bb8855', strokeOpacity: 0.9, strokeWidth: 2, requirements: ['+B14'] },
             { type: 'rect', coords: [-2.5, 2.5], width: 800, height: 800, fillColor: 'lightblue', fillOpacity: 0.4, strokeColor: 'lightblue', strokeOpacity: 0.9, strokeWidth: 2, requirements: ['R1'] },
             { type: 'rect', coords: [-7.5, 2.5], width: 800, height: 800, fillColor: 'orange', fillOpacity: 0.35, strokeColor: 'lightyellow', strokeOpacity: 0.9, strokeWidth: 2, requirements: ['R7'] },
-            { type: 'rect', coords: [2.5, -7.5], width: 800, height: 800, fillColor: '#d1d0d0', fillOpacity: 0.35, strokeColor: 'lightyellow', strokeOpacity: 0.9, strokeWidth: 2, requirements: ['B01'] },
-            { type: 'rect', coords: [2.5, -12.5], width: 800, height: 800, fillColor: '#ce8946', fillOpacity: 0.35, strokeColor: '#ce8946', strokeOpacity: 0.9, strokeWidth: 2, requirements: ['B01'] },
+            { type: 'rect', coords: [2.5, -7.5], width: 800, height: 800, fillColor: '#d1d0d0', fillOpacity: 0.35, strokeColor: 'lightyellow', strokeOpacity: 0.9, strokeWidth: 2, requirements: ['+BU1'] },
+            { type: 'rect', coords: [2.5, -12.5], width: 800, height: 800, fillColor: '#ce8946', fillOpacity: 0.35, strokeColor: '#ce8946', strokeOpacity: 0.9, strokeWidth: 2, requirements: ['+BU5'] },
             { type: 'rect', coords: [2.5, -17.5], width: 800, height: 800, fillColor: '#ce8946', fillOpacity: 0.35, strokeColor: '#ce8946', strokeOpacity: 0.9, strokeWidth: 2, requirements: ['+BU6'] },
             { type: 'rect', coords: [2.5, 2.5], width: 800, height: 800, fillColor: 'darkorchid', fillOpacity: 0.35, strokeColor: 'purple', strokeOpacity: 0.9, strokeWidth: 2, requirements: ['R12'] },
             { type: 'rect', coords: [7.5, 2.5], width: 800, height: 800, fillColor: '#895129', fillOpacity: 0.35, strokeColor: 'brown', strokeOpacity: 0.9, strokeWidth: 2, requirements: ['A03'] },
@@ -591,12 +591,14 @@ const OFFLINE_EXCLUDED_CURRENCIES = new Set([
             { type: 'text', coords: [2.5, -2.5], text: 'Automation baseplate', alignment: 'Bottom-left', color: '#f9bfbf', fontSize: 28, opacity: 1, requirements: ['P05'] },
             { type: 'text', coords: [7.5, -2.5], text: 'Automation+ baseplate', alignment: 'Bottom-left', color: '#750d37', fontSize: 28, opacity: 1, requirements: ['AU19'] },
             { type: 'text', coords: [-2.5, -7.5], text: 'Bonus baseplate', alignment: 'Bottom-left', color: 'lightgreen', fontSize: 28, opacity: 0.9, requirements: ['B01'] },
-            { type: 'text', coords: [-7.5, -7.5], text: 'Cash baseplate', alignment: 'Bottom-left', color: 'green', fontSize: 28, opacity: 0.9, requirements: ['+B12'] },
+            { type: 'text', coords: [-7.5, -7.5], text: 'Cash baseplate', alignment: 'Bottom-left', color: 'green', fontSize: 28, opacity: 0.9, requirements: ['+BU2'] },
             { type: 'text', coords: [-2.5, -12.5], text: 'Beta baseplate', alignment: 'Bottom-left', color: 'pink', fontSize: 28, opacity: 0.9, requirements: ['+B13'] },
             { type: 'text', coords: [-7.5, -12.5], text: 'Cookie baseplate', alignment: 'Bottom-left', color: 'brown', fontSize: 28, opacity: 0.9, requirements: ['+B14'] },
-            { type: 'text', coords: [2.5, -7.5], text: 'Infinity baseplate', alignment: 'Bottom-left', color: '#d1d0d0', fontSize: 28, opacity: 0.9, requirements: ['+B11'] },
-            { type: 'text', coords: [2.5, -12.5], text: 'Token baseplate', alignment: 'Bottom-left', color: '#ce8946', fontSize: 28, opacity: 0.9, requirements: ['+B15'] },
-            { type: 'text', coords: [2.5, -17.5], text: 'Clip baseplate', alignment: 'Bottom-left', color: '#ce8946', fontSize: 28, opacity: 0.9, requirements: ['+B15'] },
+            { type: 'text', coords: [2.5, -7.5], text: 'Infinity baseplate', alignment: 'Bottom-left', color: '#d1d0d0', fontSize: 28, opacity: 0.9, requirements: ['+BU1'] },
+            { type: 'rect', coords: [7.5, -7.5], width: 800, height: 800, fillColor: '#63f7b4', fillOpacity: 0.35, strokeColor: '#63f7b4', strokeOpacity: 0.9, strokeWidth: 2, requirements: ['+B21'] },
+            { type: 'text', coords: [7.5, -7.5], text: 'Timewall baseplate', alignment: 'Bottom-left', color: '#63f7b4', fontSize: 28, opacity: 0.3, requirements: ['+B21'] },
+            { type: 'text', coords: [2.5, -12.5], text: 'Token baseplate', alignment: 'Bottom-left', color: '#ce8946', fontSize: 28, opacity: 0.9, requirements: ['+BU5'] },
+            { type: 'text', coords: [2.5, -17.5], text: 'Clip baseplate', alignment: 'Bottom-left', color: '#ce8946', fontSize: 28, opacity: 0.9, requirements: ['+BU6'] },
             { type: 'text', coords: [-2.5, 2.5], text: 'Research baseplate', alignment: 'Bottom-left', color: 'lightblue', fontSize: 28, opacity: 0.9, requirements: ['R1'] },
             { type: 'text', coords: [-7.5, 2.5], text: 'Energy baseplate', alignment: 'Bottom-left', color: 'orange', fontSize: 28, opacity: 0.9, requirements: ['R7'] },
             { type: 'text', coords: [2.5, 2.5], text: 'Decoration baseplate', alignment: 'Bottom-left', color: 'purple', fontSize: 28, opacity: 0.9, requirements: ['R12'] },
@@ -1161,6 +1163,7 @@ function updateChallengeOverlay() {
             XP: { id: 'XP', name: 'Experience', color: 'text-grey-400', fillBg: 'rgba(128,128,128,0.25)' }, 
             L: { id: 'L', name: 'Levels', color: 'text-grey-400', fillBg: 'rgba(128,128,128,0.25)' }, 
             α: { id: 'α', name: 'Alpha', color: 'text-emerald-400', fillBg: 'rgba(34,197,94,0.18)' }, 
+            Ω: { id: 'Ω', name: 'Omega', color: 'text-[#63f7b4]', fillBg: 'rgba(99,247,180,0.18)' },
             β: { id: 'β', name: 'Beta', color: 'text-red-400', fillBg: 'rgba(34,197,94,0.18)' }, 
             Cookie: { id: 'cookie', name: 'Cookie', color: 'text-[#bb8855]', fillBg: 'rgba(210,105,30,0.18)' }, 
             tokens: { id: 'tokens', name: 'Tokens', color: 'text-[#ce8946]', fillBg: 'rgba(206,137,70,0.25)' }, 
@@ -1319,6 +1322,8 @@ function getUpgradeTime(nodeId) {
     if (!lastTime || lastTime <= 0) return 1e12;
     return Math.max(0, (Date.now() - lastTime) / 1000);
 }
+
+
 
 function getCurr(key) { return gameState.currencies[key] || 0; }
         
@@ -2425,6 +2430,7 @@ const CHALLENGE_NODES = [
     { id: 'EX06', type: 'upgrade', code: 'EX06', name: 'the best', coords: [-6, 9], reqs: [[-5, 9],[4,11]], borderColor: 'orange', desc: 'Experience boost experinece, level boost level.', effects: [{ type: 'currency_mult', currency: 'XP', formula: (lvl,getLvl,getCurr) => 1+Math.pow(getCurr('XP'),0.12) },{ type: 'reset_gain_mult', targetCurrency: 'L', formula: (lvl,getLvl,getCurr) => Math.pow(getCurr('L'),0.15) }], costCurrency: 'L', costFormula: (lvl) => 50 * Math.pow(2, Math.pow(lvl,0.7)), maxLevel: 1 },
     { id: 'EX07', type: 'upgrade', code: 'EX07', name: 'finally.', coords: [-7, 9], reqs: [[-6, 9],[4,11]], borderColor: 'green', desc: '+1% of level on reset/s/level.', effects: [{ type: 'base_gain', currency: 'L', formula: (lvl,getLvl,getCurr) => 0.01*lvl*getResetGain('L') }], costCurrency: 'L', costFormula: (lvl) => 500 * Math.pow(2, Math.pow(lvl,0.75)), maxLevel: 100 },
     
+    
     //bonus
     { id: 'UnlockBonus', type: 'upgrade', code: 'Bonus', name: 'Bonus!!', coords: [0, -2], reqs: [], borderColor: 'green', desc: '+Unlock Bonus Basepate.', effects: [], costCurrency: 'P', costFormula: (lvl) => 100, maxLevel: 1 },
     { id: 'Info1', type: 'info', code: 'Extra', name: 'Bonus baseplate', coords: [0, -3], reqs: [[0, -2]], desc: 'Important.', getInfoText: () => `Note that this part of the game does not boost main progress!` },
@@ -2449,6 +2455,16 @@ const CHALLENGE_NODES = [
     { id: '+BU8', type: 'upgrade', code: '+B18', name: 'Plate VIII', coords: [0, -7], reqs: [[2, -6]], borderColor: 'green', desc: 'Unlock random. grind!', effects: [{ type: 'base_gain', currency: 'frogs', formula: (lvl) => 0.01 * lvl }], costCurrency: 'α', costFormula: (lvl) => 15000, maxLevel: 1 },
     { id: '+BU9', type: 'upgrade', code: '+B19', name: 'Plate IX', coords: [-1, -7], reqs: [[2, -6]], borderColor: 'green', desc: 'Unlock bits, a mega baseplate', effects: [{ type: 'base_gain', currency: 'bits', formula: (lvl) => 1 * lvl }], costCurrency: 'α', costFormula: (lvl) => 25000, maxLevel: 1 },
     { id: '+BU10', type: 'upgrade', code: '+B20', name: 'Plate X', coords: [-2, -7], reqs: [[2, -6]], borderColor: 'green', desc: 'Unlock day/night baseplate', effects: [{ type: 'base_gain', currency: 'clocktime', formula: (lvl) => 1 * lvl }], costCurrency: 'α', costFormula: (lvl) => 35000, maxLevel: 1 },
+    { id: '+BU11', type: 'upgrade', code: '+B21', name: 'Plate XI', coords: [-2, -3], reqs: [[2, -6]], borderColor: 'green', desc: 'Unlock a timewally baseplate', effects: [{ type: 'base_gain', currency: 'omega', formula: (lvl) => 1 * lvl }], costCurrency: 'α', costFormula: (lvl) => 1e25, maxLevel: 1 },
+    
+    //timewally
+    { id: 'BTW01', type: 'upgrade', code: 'BTW01', name: 'good luck...', coords: [8, -5], reqs: [[0, -2]], borderColor: 'green', desc: '+0.1Ω/s.', effects: [{ type: 'base_gain', currency: 'Ω', formula: (lvl) => 0.1*lvl }], costCurrency: 'Ω', costFormula: (lvl) => 0, maxLevel: 1 },
+    { id: 'BTW02', type: 'upgrade', code: 'BTW02', name: '[begin]', coords: [8, -6], reqs: [[8, -5]], borderColor: 'green', desc: '+0.01Ω/s/lvl.', effects: [{ type: 'base_gain', currency: 'Ω', formula: (lvl) => 0.01*lvl }], costCurrency: 'Ω', costFormula: (lvl) => 0.25*Math.pow(1.25,Math.pow(lvl,0.8)), maxLevel: 990 },
+    { id: 'BTW03', type: 'upgrade', code: 'BTW03', name: '[continue]', coords: [9, -6], reqs: [[8, -6]], borderColor: 'green', desc: '+10%Ω/s/lvl.', effects: [{ type: 'currency_mult', currency: 'Ω', formula: (lvl) => 1+0.1*lvl }], costCurrency: 'Ω', costFormula: (lvl) => 10*Math.pow(1.3,Math.pow(lvl,0.8)), maxLevel: 240 },
+    { id: 'BTW04', type: 'upgrade', code: 'BTW04', name: 'wait WHAT', coords: [8, -7], reqs: [[8, -6]], borderColor: 'green', desc: 'unlock a way to gain more omega (or lose them). you know what i mean ;)', effects: [{ type: 'display', currency: 'Ω', formula: (lvl) => "on your right"}], costCurrency: 'Ω', costFormula: (lvl) => 15, maxLevel: 1 },
+    { id: 'BTWGM', type: 'reset',   code: 'BTWGM', name: 'bet omega...', coords: [9, -7], reqs: [[8,-7]], desc: 'get/lose Ω', targetCurrency: 'Ω', resetCurrencies: ['Ω'], resettedCoords: [], calculateGain: (lvl, getCurr, getLvl) => { return 1e-308+(Math.random()<=0.01*(50-10*Math.pow(0.9,getLevel('BTW05'))))*((2-0.3*Math.pow(0.75,getLevel('BTW06'))))*getCurr('Ω') } },
+    { id: 'BTW05', type: 'upgrade', code: 'BTW05', name: 'win rate', coords: [10, -7], reqs: [[8, -7]], borderColor: 'green', desc: 'slightly improve BTWGMs win rate.', effects: [{ type: 'display', currency: 'Ω', formula: (lvl) => formatNum(50-10*Math.pow(0.9,lvl))+"% -> "+formatNum(50-10*Math.pow(0.9,lvl+1))+"%"}], costCurrency: 'Ω', costFormula: (lvl) => 25*Math.pow(2,lvl), maxLevel: 20 },
+    { id: 'BTW06', type: 'upgrade', code: 'BTW06', name: 'win reward', coords: [11, -7], reqs: [[10, -7]], borderColor: 'green', desc: 'slightly improve BTWGMs win reward.', effects: [{ type: 'display', currency: 'Ω', formula: (lvl) => formatNum(2-0.3*Math.pow(0.75,lvl))+"x -> "+formatNum(2-0.3*Math.pow(0.75,lvl+1))+"x"}], costCurrency: 'Ω', costFormula: (lvl) => 30*Math.pow(2,lvl), maxLevel: 20 },
     
     { id: 'BC01', type: 'upgrade', code: 'BC01', name: 'Chips', coords: [3, -13], reqs: [[2, -7]], borderColor: 'green', desc: '+0.01 clips/s/lvl.', effects: [{ type: 'base_gain', currency: 'chips', formula: (lvl) => 0.01 * lvl }], costCurrency: 'chips', costFormula: (lvl) => 0.05*Math.pow(1.25,lvl), maxLevel: 499 },
     { id: 'BC02', type: 'upgrade', code: 'BC02', name: 'Grind', coords: [4, -13], reqs: [[3, -13]], borderColor: 'orange', desc: 'x1.25 clips/s/lvl.', effects: [{ type: 'currency_mult', currency: 'chips', formula: (lvl) => Math.pow(1.25, lvl) }], costCurrency: 'chips', costFormula: (lvl) => 1*Math.pow(1.3,lvl), maxLevel: 500 },
@@ -3424,8 +3440,9 @@ if (gameState.showEffects) {
             const centerY = vh / 2;
             
             for (const deco of DECORATIONS) {
-                const isUnlocked = gameState.unlockedDecorations.includes(DECORATIONS.indexOf(deco)) || checkDecoRequirements(deco.requirements);
-                if (!isUnlocked) continue;
+                // Unlocks are persisted by decoration content, not array position, so reordering
+                // or adding decorations cannot show the wrong plate or relock earned art.
+                if (!isDecorationUnlocked(deco)) continue;
                 
                 if (deco.type === 'line') {
                     const [[x1, y1], [x2, y2]] = deco.coords;
@@ -3702,7 +3719,24 @@ function draw() {
         }
         // ==================== DECORATION RENDERING ====================
 
-        function checkDecoRequirements(reqArray) { if (!reqArray || reqArray.length === 0) return true; return reqArray.every(id => getLevel(id) >= 1); }
+        function checkDecoRequirements(reqArray) {
+            if (!reqArray || reqArray.length === 0) return true;
+            return reqArray.every(requirement => {
+                // Resolve by node ID first; only accept a displayed code when it identifies one node.
+                const byId = NODE_MAP.get(requirement);
+                const codeMatches = byId ? [] : TREE_NODES.filter(node => node.code === requirement);
+                const node = byId || (codeMatches.length === 1 ? codeMatches[0] : null);
+                return !!node && node.type === 'upgrade' && getLevel(node.id) >= 1;
+            });
+        }
+
+        function getDecorationKey(deco) {
+            return JSON.stringify(deco);
+        }
+
+        function isDecorationUnlocked(deco) {
+            return (gameState.unlockedDecorationKeys || []).includes(getDecorationKey(deco));
+        }
 
         // ==================== GAME LOGIC ====================
         let _currencyRateCache = {};
@@ -4103,11 +4137,23 @@ function addCurrencyToOrder(currKey) {
 }
 
         function renderDecorationsUnlock() {
-            DECORATIONS.forEach((deco, idx) => {
+            if (!Array.isArray(gameState.unlockedDecorationKeys)) gameState.unlockedDecorationKeys = [];
+            const unlockedKeys = new Set(gameState.unlockedDecorationKeys);
+
+            // This is called after loading and once per second. Add eligible art permanently;
+            // resets or later decoration edits must not make previously earned plates disappear.
+            for (const deco of DECORATIONS) {
                 if (checkDecoRequirements(deco.requirements)) {
-                    if (!gameState.unlockedDecorations.includes(idx)) gameState.unlockedDecorations.push(idx);
+                    unlockedKeys.add(getDecorationKey(deco));
                 }
-            });
+            }
+
+            gameState.unlockedDecorationKeys = [...unlockedKeys];
+            // Maintain the old index-based field for compatibility, but never use it to draw.
+            gameState.unlockedDecorations = DECORATIONS.reduce((indices, deco, idx) => {
+                if (unlockedKeys.has(getDecorationKey(deco))) indices.push(idx);
+                return indices;
+            }, []);
         }
         // ==================== UI RENDERING ====================
         const currencyBarCache = new Map();
@@ -4376,25 +4422,25 @@ function renderCurrencyBar() {
             document.getElementById('reset-skip-check').checked = false;
             document.getElementById('reset-modal').classList.remove('hidden');
         }
-
-        function executeReset(node) {
-    try {
+function executeReset(node) {
+        try {
     if (!node) return;
-    const gain = getEffectiveResetGain(node);
+    const gain = getEffectiveResetGain(node);   // rolled from PRE-reset state
     if (gain <= 0) { playSound('fail');
         document.getElementById('reset-modal').classList.add('hidden'); return; }
     // Save BEFORE reset in case something goes wrong
     try { saveGame(); } catch(e) {}
+    // IMPORTANT: zero currencies / node levels FIRST, then apply the gain.
+    // This makes resets whose targetCurrency is also in resetCurrencies
+    // (e.g. the omega gamble machine BTWGM) work correctly.
+    resetNodeLevels(node);
     gameState.currencies[node.targetCurrency] = (gameState.currencies[node.targetCurrency] || 0) + gain;
     if (!gameState.discoveredCurrencies.includes(node.targetCurrency)) { 
         gameState.discoveredCurrencies.push(node.targetCurrency);
         addCurrencyToOrder(node.targetCurrency); 
-    } else if (gameState.hiddenCurrencies && gameState.hiddenCurrencies.includes(node.targetCurrency) 
-               && (!gameState.userHiddenCurrencies || !gameState.userHiddenCurrencies.includes(node.targetCurrency))) {
-        // Un-hide when currency is earned from a reset, but only if user didn't manually hide it
+    } else if (gameState.hiddenCurrencies && gameState.hiddenCurrencies.includes(node.targetCurrency) && (!gameState.userHiddenCurrencies || !gameState.userHiddenCurrencies.includes(node.targetCurrency))) {
         gameState.hiddenCurrencies = gameState.hiddenCurrencies.filter(k => k !== node.targetCurrency);
     }
-    resetNodeLevels(node);
     needsNodeUpdate = true;
     clearCaches(true);
     playSound('reset');
@@ -6124,6 +6170,7 @@ window.updateNewsMessageCount = updateNewsMessageCount;
         let gameTickAccumulator = 0;
         let lastCurrencyUpdateTime = 0;
         let lastCanvasUpdateTime = 0;
+        let lastDecorationCheckTime = 0;
         let canvasFrameCounter = 0;
         let lastCanvasSnapshot = '';
         let _lastNewsThrottleFrame = 0;
@@ -6170,6 +6217,12 @@ window.updateNewsMessageCount = updateNewsMessageCount;
             try {
             const dt = dtMs / 1000;
             if (gameState.paused) return;
+            // Re-check decoration requirements at least once per second.
+            const now = performance.now();
+            if (now - lastDecorationCheckTime >= 1000) {
+                renderDecorationsUnlock();
+                lastDecorationCheckTime = now;
+            }
             // Clear frame-level caches every tick
             clearTickCaches();
             let changed = false;
