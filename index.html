@@ -3310,12 +3310,12 @@ function wrapText(text, maxWidth, fontSize) {
                         }
                         const resettedNodeObj = COORD_MAP.get(`${resettedNode.coords[0]},${resettedNode.coords[1]}`);
                         if (resettedNodeObj) {
-                            const resettedPosX = resettedNodeObj.coords[0] * NODE_GAP - (NODE_SIZE * (resettedNodeObj.width || 1)) / 2 -0.01;
-                            const resettedPosY = -resettedNodeObj.coords[1] * NODE_GAP - (NODE_SIZE * (resettedNodeObj.height || 1)) / 2 -0.01;
-                            const resettedWidth = NODE_SIZE * (resettedNodeObj.width || 1) +0.02;
-                            const resettedHeight = NODE_SIZE * (resettedNodeObj.height || 1) +0.02;
+                            const resettedPosX = resettedNodeObj.coords[0] * NODE_GAP - (NODE_SIZE * (resettedNodeObj.width || 1)) / 2 -1;
+                            const resettedPosY = -resettedNodeObj.coords[1] * NODE_GAP - (NODE_SIZE * (resettedNodeObj.height || 1)) / 2 -1;
+                            const resettedWidth = NODE_SIZE * (resettedNodeObj.width || 1) +2;
+                            const resettedHeight = NODE_SIZE * (resettedNodeObj.height || 1) +2;
                             ctx.strokeStyle = '#ef4444'; // red border
-                            ctx.lineWidth = 5;
+                            ctx.lineWidth = 3;
                             ctx.strokeRect(resettedPosX, resettedPosY, resettedWidth, resettedHeight);
                         }
                     });
@@ -4191,7 +4191,7 @@ function addCurrencyToOrder(currKey) {
         }
         // ==================== UI RENDERING ====================
         const currencyBarCache = new Map();
-        
+
         function getResettedCoordsList(node) {
             const list = node.resettedCoords || [];
             const result = [];
