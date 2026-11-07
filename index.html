@@ -3300,6 +3300,26 @@ function wrapText(text, maxWidth, fontSize) {
                 const gain = getEffectiveResetGain(node);
                 canAfford = !resetDisabled && gain > 0;
                 progressPct = canAfford ? 100 : 0;
+                if (hovered) { //when hovered make the border of all resetted nodes red and have red arrows pointing to them
+                    // console.log(getResettedCoordsList(node)); //verifying what the output is
+                    //btw the output is a list sort of like this:
+                    //[{coords: [0, 4], id: "B01", type: "id"}]
+                    getResettedCoordsList(node).forEach(resettedNode => {
+                        if (!isNodeUnlocked(NODE_MAP.get(resettedNode.id))) {
+                            return; //skip if the resetted node is not unlocked
+                        }
+                        const resettedNodeObj = COORD_MAP.get(`${resettedNode.coords[0]},${resettedNode.coords[1]}`);
+                        if (resettedNodeObj) {
+                            const resettedPosX = resettedNodeObj.coords[0] * NODE_GAP - (NODE_SIZE * (resettedNodeObj.width || 1)) / 2 -1;
+                            const resettedPosY = -resettedNodeObj.coords[1] * NODE_GAP - (NODE_SIZE * (resettedNodeObj.height || 1)) / 2 -1;
+                            const resettedWidth = NODE_SIZE * (resettedNodeObj.width || 1) +2;
+                            const resettedHeight = NODE_SIZE * (resettedNodeObj.height || 1) +2;
+                            ctx.strokeStyle = '#ef4444'; // red border
+                            ctx.lineWidth = 3;
+                            ctx.strokeRect(resettedPosX, resettedPosY, resettedWidth, resettedHeight);
+                        }
+                    });
+                }
             }
             
             // Draw background
@@ -4171,7 +4191,7 @@ function addCurrencyToOrder(currKey) {
         }
         // ==================== UI RENDERING ====================
         const currencyBarCache = new Map();
-        
+
         function getResettedCoordsList(node) {
             const list = node.resettedCoords || [];
             const result = [];
