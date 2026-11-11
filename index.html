@@ -4474,11 +4474,14 @@ function renderCurrencyBar() {
         activeResetNode = null;
         return;
     }
+    // Calculate the reward from the pre-reset state, then apply the reset before awarding it.
+    // This keeps the reset reward when its currency is also among resetCurrencies (e.g. omega gambling).
     const gain = getEffectiveResetGain(node);
     if (gain <= 0) { playSound('fail');
         document.getElementById('reset-modal').classList.add('hidden'); return; }
     // Save BEFORE reset in case something goes wrong
     try { saveGame(); } catch(e) {}
+    resetNodeLevels(node);
     gameState.currencies[node.targetCurrency] = (gameState.currencies[node.targetCurrency] || 0) + gain;
     if (!gameState.discoveredCurrencies.includes(node.targetCurrency)) { 
         gameState.discoveredCurrencies.push(node.targetCurrency);
@@ -4488,7 +4491,6 @@ function renderCurrencyBar() {
         // Un-hide when currency is earned from a reset, but only if user didn't manually hide it
         gameState.hiddenCurrencies = gameState.hiddenCurrencies.filter(k => k !== node.targetCurrency);
     }
-    resetNodeLevels(node);
     needsNodeUpdate = true;
     clearCaches(true);
     playSound('reset');
