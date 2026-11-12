@@ -292,6 +292,7 @@
                         </div>
                         <button id="btn-recenter" class="w-full px-2.5 py-1.5 bg-zinc-950 hover:bg-zinc-800 text-zinc-300 border border-zinc-800 transition flex items-center justify-between text-[11px] rounded-none"><span>Recenter Cam</span><i data-lucide="crosshair" class="w-3.5 h-3.5 text-zinc-400"></i></button>
                         <button id="btn-toggle-effects" class="w-full px-2.5 py-1.5 bg-zinc-950 hover:bg-zinc-800 text-cyan-400 border border-zinc-800 transition text-left font-bold text-[11px] rounded-none"><span id="effects-mode-label">EFFECTS: ON</span></button>
+                        <button id="btn-toggle-upgrade-links" class="w-full px-2.5 py-1.5 bg-zinc-950 hover:bg-zinc-800 text-yellow-400 border border-zinc-800 transition text-left font-bold text-[11px] rounded-none"><span id="upgrade-links-mode-label">UPGRADE LINKS: ON</span></button>
                     </div>
                     <!-- SECTION: Buy Mode & Notation -->
                     <div id="section-prefs" class="flex flex-col gap-1 pt-1 border-t border-zinc-800">
@@ -334,6 +335,18 @@
                     <div id="section-currency" class="flex flex-col gap-1 pt-1 border-t border-zinc-800">
                         <div class="text-[9px] font-bold text-zinc-500 tracking-wider px-1 mb-0.5 uppercase">Currencies <span class="text-[8px] font-normal text-zinc-600">(eye to hide, arrows to reorder)</span></div>
                         <div id="currency-toggles-list" class="flex flex-col gap-0.5 max-h-48 overflow-y-auto"></div>
+                    </div>
+                    <!-- SECTION: Link & Reset Colors -->
+                    <div id="section-link-colors" class="flex flex-col gap-1 pt-1 border-t border-zinc-800">
+                        <div class="text-[9px] font-bold text-zinc-500 tracking-wider px-1 mb-0.5 uppercase">Link &amp; Reset Indicator Colors</div>
+                        <label class="flex items-center justify-between gap-2 w-full px-2.5 py-1.5 bg-zinc-950 border border-zinc-800 text-zinc-300 text-[11px]">
+                            <span class="font-bold text-zinc-400">UPGRADE LINKS</span>
+                            <input type="color" id="upgrade-link-color" value="#facc15" class="w-7 h-5 bg-transparent border-0 cursor-pointer" title="Upgrade link color">
+                        </label>
+                        <label class="flex items-center justify-between gap-2 w-full px-2.5 py-1.5 bg-zinc-950 border border-zinc-800 text-zinc-300 text-[11px]">
+                            <span class="font-bold text-zinc-400">RESET HIGHLIGHTS</span>
+                            <input type="color" id="reset-indicator-color" value="#ef4444" class="w-7 h-5 bg-transparent border-0 cursor-pointer" title="Reset hover indicator color">
+                        </label>
                     </div>
                     <!-- SECTION: News Ticker -->
                     <div id="section-news" class="flex flex-col gap-1 pt-1 border-t border-zinc-800">
@@ -1243,7 +1256,7 @@ long_longs: { id: 'long_longs', name: 'long longs', color: 'text-[#ff7fff]', fil
         // CRITICAL: _fresh flag prevents saveGame from overwriting a real save before loadGame completes.
         // ANY code that touches gameState before window.onload must NOT call saveGame.
         // This _fresh flag is removed by loadGame ONLY after successful load.
-        let gameState = { _fresh: true, currencies: { P: 0, PR: 0, QT: 0, T: 0, D1: 0, D2: 0, D3: 0, D4: 0, D5: 0, D6: 0, D7: 0, D8: 0 }, discoveredCurrencies: ['P'], currencyOrder: ['P'], hiddenCurrencies: [], userHiddenCurrencies: [], levels: {}, upgradeTimes: {}, unlockedDecorations: [], camera: { panX: 0, panY: 0, scale: 1 }, soundMuted: false, showEffects: true, buyMode: 1, skipResetConfirm: {}, paused: false, currencyFontSize: 11, offlineTimestamp: Date.now(), hotkeyBindings: null, notation: 'standard', challengeCompletions: {}, activeChallenge: null, announcedUpgrades: {}, _localUpgradeDone: false, firstUpgradeNotified: false,    };
+        let gameState = { _fresh: true, currencies: { P: 0, PR: 0, QT: 0, T: 0, D1: 0, D2: 0, D3: 0, D4: 0, D5: 0, D6: 0, D7: 0, D8: 0 }, discoveredCurrencies: ['P'], currencyOrder: ['P'], hiddenCurrencies: [], userHiddenCurrencies: [], levels: {}, upgradeTimes: {}, unlockedDecorations: [], camera: { panX: 0, panY: 0, scale: 1 }, soundMuted: false, showEffects: true, showUpgradeLinks: true, upgradeLinkColor: '#facc15', resetIndicatorColor: '#ef4444', buyMode: 1, skipResetConfirm: {}, paused: false, currencyFontSize: 11, offlineTimestamp: Date.now(), hotkeyBindings: null, notation: 'standard', challengeCompletions: {}, activeChallenge: null, announcedUpgrades: {}, _localUpgradeDone: false, firstUpgradeNotified: false,    };
 // Always ensure P is a valid number (defence against undefined save corruption)
 if (typeof gameState.currencies.P !== 'number' || isNaN(gameState.currencies.P)) gameState.currencies.P = 0;
         let displayLevels = {},
@@ -3378,7 +3391,7 @@ function wrapText(text, maxWidth, fontSize) {
                             const resettedPosY = -resettedNodeObj.coords[1] * NODE_GAP - (NODE_SIZE * (resettedNodeObj.height || 1)) / 2 -1;
                             const resettedWidth = NODE_SIZE * (resettedNodeObj.width || 1) +2;
                             const resettedHeight = NODE_SIZE * (resettedNodeObj.height || 1) +2;
-                            ctx.strokeStyle = '#ef4444'; // red border
+                            ctx.strokeStyle = gameState.resetIndicatorColor || '#ef4444';
                             ctx.lineWidth = 3;
                             ctx.strokeRect(resettedPosX, resettedPosY, resettedWidth, resettedHeight);
                         }
@@ -3763,7 +3776,67 @@ function drawDepthBackground(vw, vh) {
     ctx.globalAlpha = 1;
 }
 
-function draw() {
+        // Reverse prerequisite index: coords -> [nodes that require this coords]
+let _unlockIndex = null;
+function buildUnlockIndex() {
+    _unlockIndex = new Map();
+    TREE_NODES.forEach(node => {
+        if (!node.reqs) return;
+        for (const [x, y] of node.reqs) {
+            const key = `${x},${y}`;
+            if (!_unlockIndex.has(key)) _unlockIndex.set(key, []);
+            _unlockIndex.get(key).push(node);
+        }
+    });
+}
+        // Show which upgrades the hovered node UNLOCKS (reverse prerequisite lookup).
+// Show which upgrades the hovered node UNLOCKS (reverse prerequisite lookup).
+// Only targets that are currently unlocked (visible) get a link/outline.
+function drawPurchasedUpgradeLinks() {
+    const node = hoveredNode ? NODE_MAP.get(hoveredNode) : null;
+    if (gameState.showUpgradeLinks === false || !node || node.type !== 'upgrade' ||
+        node.disableUpgradeLinks) return;
+
+    if (!_unlockIndex) buildUnlockIndex();
+    const unlocked = _unlockIndex.get(`${node.coords[0]},${node.coords[1]}`);
+    if (!unlocked || unlocked.length === 0) return;
+
+    ctx.save();
+    ctx.strokeStyle = gameState.upgradeLinkColor || '#facc15';
+    ctx.globalAlpha = 0.9;
+    ctx.lineWidth = 3;
+    ctx.setLineDash([8, 5]);
+    ctx.lineDashOffset = -(performance.now() / 40) % 26;
+    const fromX = node.coords[0] * NODE_GAP;
+    const fromY = -node.coords[1] * NODE_GAP;
+    const sourceW = NODE_SIZE * (node.width || 1);
+    const sourceH = NODE_SIZE * (node.height || 1);
+    for (const target of unlocked) {
+        // Skip targets that are still hidden on the tree (their prereqs aren't met yet).
+        if (!isNodeUnlocked(target)) continue;
+        const toX = target.coords[0] * NODE_GAP;
+        const toY = -target.coords[1] * NODE_GAP;
+        const dx = toX - fromX;
+        const dy = toY - fromY;
+        const w = NODE_SIZE * (target.width || 1);
+        const h = NODE_SIZE * (target.height || 1);
+        const edgeT = (halfW, halfH) => Math.min(
+            dx !== 0 ? halfW / Math.abs(dx) : Infinity,
+            dy !== 0 ? halfH / Math.abs(dy) : Infinity
+        );
+        const sourceT = edgeT(sourceW / 2, sourceH / 2);
+        const targetT = edgeT(w / 2, h / 2);
+        ctx.beginPath();
+        ctx.moveTo(fromX + dx * sourceT, fromY + dy * sourceT);
+        ctx.lineTo(toX - dx * targetT, toY - dy * targetT);
+        ctx.stroke();
+        ctx.strokeRect(toX - w / 2 - 2, toY - h / 2 - 2, w + 4, h + 4);
+    }
+    ctx.restore();
+}
+
+
+        function draw() {
     try {
             const vw = viewportEl.clientWidth;
             const vh = viewportEl.clientHeight;
@@ -3804,6 +3877,7 @@ function draw() {
                 }
                 drawNode(node, hoveredNode === node.id);
             }
+            drawPurchasedUpgradeLinks();
             
             ctx.restore();
         } catch(e) { console.warn('draw error:', e); }
@@ -4628,7 +4702,7 @@ document.getElementById('btn-scroll-lock').onclick = () => {
             localStorage.removeItem(SAVE_BACKUP_KEY);
             gameState = { _fresh: true, currencies: { P: 0, PR: 0, QT: 0, T: 0, D1: 0, D2: 0, D3: 0, D4: 0, D5: 0, D6: 0, D7: 0, D8: 0 }, discoveredCurrencies: ['P'], currencyOrder: ['P'],
                 hiddenCurrencies: [], levels: {}, upgradeTimes: {}, unlockedDecorations: [], camera: { panX: 0, panY: 0,
-                    scale: 1 }, soundMuted: false, showEffects: true, buyMode: 1, skipResetConfirm: {},
+                    scale: 1 }, soundMuted: false, showEffects: true, showUpgradeLinks: true, upgradeLinkColor: '#facc15', resetIndicatorColor: '#ef4444', buyMode: 1, skipResetConfirm: {},
                 paused: false, offlineTimestamp: Date.now(), notation: 'standard', announcedUpgrades: {}, _localUpgradeDone: false, firstUpgradeNotified: false, };
             panX = 0;
             panY = 0;
@@ -4636,7 +4710,9 @@ document.getElementById('btn-scroll-lock').onclick = () => {
             currencyFontSize = 11;
 gameState.currencyFontSize = 11;
 document.getElementById('font-size-label').textContent = 11;
+document.getElementById('upgrade-links-mode-label').textContent = 'UPGRADE LINKS: ON';
 currentNotation = 'standard';
+syncVisualColorControls();
 applyNotation('standard');
             // Clear local upgrade counter so fresh start can send Discord notification
             setLocalCounter(0);
@@ -4926,10 +5002,38 @@ if (document.readyState === 'loading') {
     setupHotkeyListeners();
     renderTeleportRows();
 }
+        function syncVisualColorControls() {
+            const linkInput = document.getElementById('upgrade-link-color');
+            const resetInput = document.getElementById('reset-indicator-color');
+            if (linkInput) linkInput.value = gameState.upgradeLinkColor || '#facc15';
+            if (resetInput) resetInput.value = gameState.resetIndicatorColor || '#ef4444';
+        }
+
+        const upgradeLinkColorInput = document.getElementById('upgrade-link-color');
+        upgradeLinkColorInput.addEventListener('input', () => {
+            gameState.upgradeLinkColor = upgradeLinkColorInput.value;
+            requestCanvasRedraw(true);
+        });
+        upgradeLinkColorInput.addEventListener('change', saveGame);
+
+        const resetIndicatorColorInput = document.getElementById('reset-indicator-color');
+        resetIndicatorColorInput.addEventListener('input', () => {
+            gameState.resetIndicatorColor = resetIndicatorColorInput.value;
+            requestCanvasRedraw(true);
+        });
+        resetIndicatorColorInput.addEventListener('change', saveGame);
+
         document.getElementById('btn-toggle-effects').onclick = () => {
             gameState.showEffects = !gameState.showEffects;
             document.getElementById('effects-mode-label').textContent = `EFFECTS: ${gameState.showEffects?'ON':'OFF'}`;
             requestCanvasRedraw(true);
+            playSound('buy');
+        };
+        document.getElementById('btn-toggle-upgrade-links').onclick = () => {
+            gameState.showUpgradeLinks = gameState.showUpgradeLinks === false;
+            document.getElementById('upgrade-links-mode-label').textContent = `UPGRADE LINKS: ${gameState.showUpgradeLinks ? 'ON' : 'OFF'}`;
+            requestCanvasRedraw(true);
+            saveGame();
             playSound('buy');
         };
         document.getElementById('btn-recenter').onclick = () => { panX = 0;
@@ -4969,6 +5073,9 @@ if (document.readyState === 'loading') {
                             throw new Error('Missing currencies');
                         }
                         Object.assign(gameState, data);
+                        syncVisualColorControls();
+                        if (gameState.showUpgradeLinks === undefined) gameState.showUpgradeLinks = true;
+                        document.getElementById('upgrade-links-mode-label').textContent = `UPGRADE LINKS: ${gameState.showUpgradeLinks ? 'ON' : 'OFF'}`;
                         if (!gameState.hiddenCurrencies) gameState.hiddenCurrencies = [];
                         if (!gameState.unlockedDecorations) gameState.unlockedDecorations = [];
                         if (!gameState.skipResetConfirm) gameState.skipResetConfirm = {};
@@ -6537,6 +6644,9 @@ window.updateNewsMessageCount = updateNewsMessageCount;
         window.onload = () => {
             try {
                 loadGame();
+                syncVisualColorControls();
+                if (gameState.showUpgradeLinks === undefined) gameState.showUpgradeLinks = true;
+                document.getElementById('upgrade-links-mode-label').textContent = `UPGRADE LINKS: ${gameState.showUpgradeLinks ? 'ON' : 'OFF'}`;
                 if (!gameState.announcedUpgrades || typeof gameState.announcedUpgrades !== 'object') {
             gameState.announcedUpgrades = {};
         }
