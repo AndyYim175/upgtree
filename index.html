@@ -232,7 +232,7 @@
         <div id="news-track" class="relative w-full h-full"></div>
     </div>
     <!-- Challenge overlay (top-right, below news ticker) — plain text, no background/pointer-events -->
-    <div id="challenge-overlay" class="hidden fixed top-[22px] right-2 z-30 flex flex-col gap-0.5 text-[10px] font-mono pointer-events-none select-none" style="max-width: 280px;">
+    <div id="challenge-overlay" class="hidden fixed top-[36px] right-2 z-30 flex flex-col gap-0.5 text-[10px] font-mono pointer-events-none select-none" style="max-width: 280px;">
         <div id="challenge-list" class="flex flex-col gap-2"></div>
     </div>
     <main id="viewport" class="relative flex-1 w-full h-full overflow-hidden cursor-grab active:cursor-grabbing grid-bg" style="margin-top: 20px;">
@@ -5182,15 +5182,33 @@ document.getElementById('btn-font-up').onclick = (e) => {
         playSound('buy');
     }
 };
+        let _toastHideTimer = null;
+        let _toastCleanupTimer = null;
+
         function showToast(msg) {
             const toast = document.getElementById('toast'),
                 text = document.getElementById('toast-text');
             if (!toast) return;
             text.textContent = msg;
+
+            // Sit below the challenge overlay when it is visible, otherwise use the default top offset
+            const overlay = document.getElementById('challenge-overlay');
+            let top = 16; // matches the original top-4
+            if (overlay && !overlay.classList.contains('hidden')) {
+                top = Math.ceil(overlay.getBoundingClientRect().bottom) + 8;
+            }
+            toast.style.top = top + 'px';
+
+            // Cancel timers from a previous toast so it can't hide this one early
+            clearTimeout(_toastHideTimer);
+            clearTimeout(_toastCleanupTimer);
+
             toast.classList.remove('hidden');
             toast.classList.remove('translate-x-full');
-            setTimeout(() => { toast.classList.add('translate-x-full');
-                setTimeout(() => toast.classList.add('hidden'), 300); }, 2500);
+            _toastHideTimer = setTimeout(() => {
+                toast.classList.add('translate-x-full');
+                _toastCleanupTimer = setTimeout(() => toast.classList.add('hidden'), 300);
+            }, 2500);
         }
         // ==================== SAVE / RESTORE SCROLL POSITION ====================
         function saveScrollState() {
