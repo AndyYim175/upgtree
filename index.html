@@ -233,9 +233,7 @@
     </div>
     <!-- Challenge overlay (top-right, below news ticker) — plain text, no background/pointer-events -->
     <div id="challenge-overlay" class="hidden fixed top-[22px] right-2 z-30 flex flex-col gap-0.5 text-[10px] font-mono pointer-events-none select-none" style="max-width: 280px;">
-        <div id="challenge-title" class="text-emerald-400 font-bold text-[11px]"></div>
-        <div id="challenge-goals" class="flex flex-col gap-0"></div>
-        <div id="challenge-effects" class="flex flex-col gap-0 mt-1 text-zinc-400 pt-1"></div>
+        <div id="challenge-list" class="flex flex-col gap-2"></div>
     </div>
     <main id="viewport" class="relative flex-1 w-full h-full overflow-hidden cursor-grab active:cursor-grabbing grid-bg" style="margin-top: 20px;">
         <canvas id="canvas-layer"></canvas>
@@ -865,7 +863,7 @@ const OFFLINE_EXCLUDED_CURRENCIES = new Set([
         // ==================== CHALLENGE SYSTEM ====================
 // State stored in gameState:
 //   gameState.challengeCompletions = { challengeId: number }
-//   gameState.activeChallenge = challengeId | null
+//   gameState.activeChallenges = [challengeId, ...]   (several challenges can run in parallel)
 
 // Index challenge reward effects so they apply to gain rates
 function indexChallengeRewardEffects() {
@@ -922,9 +920,39 @@ function indexChallengeRewardEffects() {
 
 function initChallengeState() {
     if (!gameState.challengeCompletions || typeof gameState.challengeCompletions !== 'object') gameState.challengeCompletions = {};
-    if (gameState.activeChallenge === undefined) gameState.activeChallenge = null;
+    if (!Array.isArray(gameState.activeChallenges)) gameState.activeChallenges = [];
+    // Migrate old saves that only allowed a single active challenge
+    if (gameState.activeChallenge) {
+        if (!gameState.activeChallenges.includes(gameState.activeChallenge)) gameState.activeChallenges.push(gameState.activeChallenge);
+    }
+    delete gameState.activeChallenge;
+    // Drop duplicates and ids that no longer exist
+    gameState.activeChallenges = [...new Set(gameState.activeChallenges)].filter(id => {
+        const n = NODE_MAP.get(id);
+        return n && n.type === 'challenge';
+    });
     // challengeSnapshot is no longer used (challenges act like resets now)
     delete gameState.challengeSnapshot;
+}
+
+// List of currently active challenge ids (always an array, safe to call at any time)
+function getActiveChallenges() {
+    if (!Array.isArray(gameState.activeChallenges)) gameState.activeChallenges = [];
+    return gameState.activeChallenges;
+}
+
+function isChallengeActive(challengeId) {
+    return getActiveChallenges().includes(challengeId);
+}
+
+function hasActiveChallenge() {
+    return getActiveChallenges().length > 0;
+}
+
+// Click/tap handler for a challenge node: toggles it (enter if inactive, leave if active)
+function toggleChallenge(nodeId) {
+    if (isChallengeActive(nodeId)) return leaveChallenge(false, nodeId);
+    return enterChallenge(nodeId);
 }
 
 function getChallengeCompletions(challengeId) {
@@ -943,8 +971,17 @@ function isChallengeCompleted(challengeId) {
 function enterChallenge(nodeId) {
     const node = NODE_MAP.get(nodeId);
     if (!node || node.type !== 'challenge') return false;
-    if (gameState.activeChallenge) {
-        showToast('⚠️ Already in a challenge!');
+    if (isChallengeActive(nodeId)) {
+        showToast('⚠️ Already in this challenge!');
+        playSound('fail');
+        return false;
+    }
+    const nodeTags = node.tags || [];
+    const conflict = getActiveChallenges()
+        .map(id => NODE_MAP.get(id))
+        .find(ch => ch && (ch.tags || []).some(tag => nodeTags.includes(tag)));
+    if (conflict) {
+        showToast('⚠️ Already in ' + conflict.name + '!');
         playSound('fail');
         return false;
     }
@@ -960,8 +997,8 @@ function enterChallenge(nodeId) {
         playSound('fail');
         return false;
     }
-    gameState.activeChallenge = nodeId;
-applyChallengeReset(node);
+    getActiveChallenges().push(nodeId);
+    applyChallengeReset(node);
     //showToast('Entered "' + node.name + '" challenge!');
     playSound('reset');
     updateChallengeOverlay();
@@ -1000,13 +1037,13 @@ function applyChallengeReset(node) {
     }
 }
 
-// Leave a challenge: just grant completion reward, no restore (currencies stay consumed like a reset)
-function leaveChallenge(completed) {
-    if (!gameState.activeChallenge) return false;
-    const nodeId = gameState.activeChallenge;
+// Leave ONE challenge (by id): grants the completion reward if completed, then wipes its currencies/nodes.
+// Other active challenges keep running.
+function leaveChallenge(completed, nodeId) {
+    if (!nodeId || !isChallengeActive(nodeId)) return false;
     const node = NODE_MAP.get(nodeId);
+    gameState.activeChallenges = getActiveChallenges().filter(id => id !== nodeId);
     if (!node) {
-        gameState.activeChallenge = null;
         updateChallengeOverlay();
         clearCaches(true);
         return false;
@@ -1022,8 +1059,7 @@ function leaveChallenge(completed) {
         showToast('Left "' + node.name + '" challenge');
         playSound('buy');
     }
-    applyChallengeReset(node);          // ← new: wipe the same currencies/nodes on exit
-    gameState.activeChallenge = null;
+    applyChallengeReset(node);          // wipe the same currencies/nodes on exit
     updateChallengeOverlay();
     clearCaches(true);
     requestCanvasRedraw(true);
@@ -1031,10 +1067,13 @@ function leaveChallenge(completed) {
     return true;
 }
 
-// Check if active challenge goals are met — auto-complete
-function checkChallengeCompletion() {
-    if (!gameState.activeChallenge) return false;
-    const node = NODE_MAP.get(gameState.activeChallenge);
+// Leave every active challenge without completing any of them
+function leaveAllChallenges() {
+    for (const id of [...getActiveChallenges()]) leaveChallenge(false, id);
+}
+
+// Are all goals of this challenge currently met?
+function areChallengeGoalsMet(node) {
     if (!node || !node.goals) return false;
     const completions = getChallengeCompletions(node.id);
     for (const goal of node.goals) {
@@ -1042,47 +1081,51 @@ function checkChallengeCompletion() {
         const target = typeof goal.target === 'function' ? goal.target(completions, getLevel, getCurr, getUpgradeTime) : goal.target;
         if (curr < target) return false;
     }
-    leaveChallenge(true);
     return true;
 }
 
-// Apply challenge debuff effects to a currency's gain rate
-// Apply challenge debuff effects to a currency's gain rate
+// Check every active challenge — auto-complete all whose goals are met.
+// Goals are evaluated BEFORE any challenge is left, because leaving one wipes its currencies
+// (which can be shared with another active challenge) and would otherwise hide its completion.
+function checkChallengeCompletion() {
+    const active = getActiveChallenges();
+    if (!active.length) return false;
+    const done = [];
+    for (const id of active) {
+        const node = NODE_MAP.get(id);
+        if (areChallengeGoalsMet(node)) done.push(id);
+    }
+    for (const id of done) leaveChallenge(true, id);
+    return done.length > 0;
+}
+
+// Apply the debuff effects of ALL active challenges to a currency's gain rate
+// (multipliers of different challenges multiply, additive effects add up)
 function applyChallengeEffectsToRate(currency, baseRate) {
-    if (!gameState.activeChallenge) return baseRate;
-    const node = NODE_MAP.get(gameState.activeChallenge);
-    if (!node || !node.challengeEffects) return baseRate;
+    const active = getActiveChallenges();
+    if (!active.length) return baseRate;
     let mult = 1;
     let add = 0;
-    for (const eff of node.challengeEffects) {
-        if (!eff.formula || eff.currency !== currency) continue;
+    for (const id of active) {
+        const node = NODE_MAP.get(id);
+        if (!node || !node.challengeEffects) continue;
         const lvl = getChallengeCompletions(node.id);
-        const val = eff.formula(lvl, getLevel, getCurr, getUpgradeTime);
-        if (typeof val !== 'number' || isNaN(val)) continue;
-        if (eff.type === 'currency_mult' || eff.type === 'dynamic_mult') mult *= val;
-        else if (eff.type === 'base_gain' || eff.type === 'base_gain_raw') add += val;
+        for (const eff of node.challengeEffects) {
+            if (!eff.formula || eff.currency !== currency) continue;
+            const val = eff.formula(lvl, getLevel, getCurr, getUpgradeTime);
+            if (typeof val !== 'number' || isNaN(val)) continue;
+            if (eff.type === 'currency_mult' || eff.type === 'dynamic_mult') mult *= val;
+            else if (eff.type === 'base_gain' || eff.type === 'base_gain_raw') add += val;
+        }
     }
     return baseRate * mult + add;
 }
 
-// Update the challenge overlay UI
-function updateChallengeOverlay() {
-    const overlay = document.getElementById('challenge-overlay');
-    const titleEl = document.getElementById('challenge-title');
-    const goalsEl = document.getElementById('challenge-goals');
-    const effectsEl = document.getElementById('challenge-effects');
-    if (!overlay || !titleEl || !goalsEl || !effectsEl) return;
-    if (!gameState.activeChallenge) {
-        overlay.classList.add('hidden');
-        return;
-    }
-    const node = NODE_MAP.get(gameState.activeChallenge);
-    if (!node) { overlay.classList.add('hidden'); return; }
-    overlay.classList.remove('hidden');
-    titleEl.textContent = node.name;
+// Build the overlay HTML block for one active challenge
+function buildChallengeOverlayBlock(node) {
+    const completions = getChallengeCompletions(node.id);
     let goalsHtml = '';
     if (node.goals) {
-        const completions = getChallengeCompletions(node.id);
         for (const goal of node.goals) {
             const curr = getCurr(goal.currency);
             const target = typeof goal.target === 'function' ? goal.target(completions) : goal.target;
@@ -1093,22 +1136,19 @@ function updateChallengeOverlay() {
             goalsHtml += `<div class="${lineClass}"><span class="${colorClass} font-bold">${formatNum(curr)}</span><span class="text-zinc-600">/</span><span class="${colorClass} font-bold">${formatNum(target)}</span><span class="text-zinc-500 ml-0.5">${def ? def.name : goal.currency}</span></div>`;
         }
     }
-    goalsEl.innerHTML = goalsHtml;
     let effectsHtml = '';
     // Show challenge effects (debuffs) in orange
     if (node.challengeEffects) {
         for (const eff of node.challengeEffects) {
             if (eff.desc) {
-                const lvl = getChallengeCompletions(node.id);
                 let val = '?';
-                try { val = formatNum(eff.formula(lvl, getLevel, getCurr)); } catch(e) {}
+                try { val = formatNum(eff.formula(completions, getLevel, getCurr)); } catch(e) {}
                 effectsHtml += `<div class="text-orange-400">${eff.desc} (x${val})</div>`;
             }
         }
     }
     // Show rewards in emerald
     if (node.rewards) {
-        const completions = getChallengeCompletions(node.id);
         const maxLvl = node.maxLevel || 1;
         if (completions < maxLvl) {
             for (const rew of node.rewards) {
@@ -1126,9 +1166,8 @@ function updateChallengeOverlay() {
         }
     }
     // Show persistent effects from completed levels
-    if (node.effects && getChallengeCompletions(node.id) > 0) {
+    if (node.effects && completions > 0) {
         for (const eff of node.effects) {
-            const completions = getChallengeCompletions(node.id);
             if (eff.type === 'currency_mult' && eff.currency) {
                 let val = '?';
                 try { val = formatNum(eff.formula(completions, getLevel, getCurr)); } catch(e) {}
@@ -1140,7 +1179,26 @@ function updateChallengeOverlay() {
             }
         }
     }
-    effectsEl.innerHTML = effectsHtml;
+    return `<div class="challenge-block">` +
+        `<div class="text-emerald-400 font-bold text-[11px]">${node.name}</div>` +
+        `<div class="flex flex-col gap-0">${goalsHtml}</div>` +
+        `<div class="flex flex-col gap-0 mt-1 text-zinc-400 pt-1">${effectsHtml}</div>` +
+        `</div>`;
+}
+
+// Update the challenge overlay UI — one block per active challenge
+function updateChallengeOverlay() {
+    const overlay = document.getElementById('challenge-overlay');
+    const listEl = document.getElementById('challenge-list');
+    if (!overlay || !listEl) return;
+    const nodes = getActiveChallenges().map(id => NODE_MAP.get(id)).filter(Boolean);
+    if (!nodes.length) {
+        overlay.classList.add('hidden');
+        listEl.innerHTML = '';
+        return;
+    }
+    overlay.classList.remove('hidden');
+    listEl.innerHTML = nodes.map(buildChallengeOverlayBlock).join('');
 }
 
 // ==================== GAME CONSTANTS ====================
@@ -1256,7 +1314,7 @@ long_longs: { id: 'long_longs', name: 'long longs', color: 'text-[#ff7fff]', fil
         // CRITICAL: _fresh flag prevents saveGame from overwriting a real save before loadGame completes.
         // ANY code that touches gameState before window.onload must NOT call saveGame.
         // This _fresh flag is removed by loadGame ONLY after successful load.
-        let gameState = { _fresh: true, currencies: { P: 0, PR: 0, QT: 0, T: 0, D1: 0, D2: 0, D3: 0, D4: 0, D5: 0, D6: 0, D7: 0, D8: 0 }, discoveredCurrencies: ['P'], currencyOrder: ['P'], hiddenCurrencies: [], userHiddenCurrencies: [], levels: {}, upgradeTimes: {}, unlockedDecorations: [], camera: { panX: 0, panY: 0, scale: 1 }, soundMuted: false, showEffects: true, showUpgradeLinks: true, upgradeLinkColor: '#facc15', resetIndicatorColor: '#ef4444', buyMode: 1, skipResetConfirm: {}, paused: false, currencyFontSize: 11, offlineTimestamp: Date.now(), hotkeyBindings: null, notation: 'standard', challengeCompletions: {}, activeChallenge: null, announcedUpgrades: {}, _localUpgradeDone: false, firstUpgradeNotified: false,    };
+        let gameState = { _fresh: true, currencies: { P: 0, PR: 0, QT: 0, T: 0, D1: 0, D2: 0, D3: 0, D4: 0, D5: 0, D6: 0, D7: 0, D8: 0 }, discoveredCurrencies: ['P'], currencyOrder: ['P'], hiddenCurrencies: [], userHiddenCurrencies: [], levels: {}, upgradeTimes: {}, unlockedDecorations: [], camera: { panX: 0, panY: 0, scale: 1 }, soundMuted: false, showEffects: true, showUpgradeLinks: true, upgradeLinkColor: '#facc15', resetIndicatorColor: '#ef4444', buyMode: 1, skipResetConfirm: {}, paused: false, currencyFontSize: 11, offlineTimestamp: Date.now(), hotkeyBindings: null, notation: 'standard', challengeCompletions: {}, activeChallenges: [], announcedUpgrades: {}, _localUpgradeDone: false, firstUpgradeNotified: false,    };
 // Always ensure P is a valid number (defence against undefined save corruption)
 if (typeof gameState.currencies.P !== 'number' || isNaN(gameState.currencies.P)) gameState.currencies.P = 0;
         let displayLevels = {},
@@ -1448,7 +1506,8 @@ const CHALLENGE_NODES = [
       effects: [
           
         ],
-      maxLevel: 100
+      maxLevel: 100,
+      tags: ['cyan']
     },
      {id: 'CCC02', type: 'challenge', code: 'CCC02', name: 'Cyan Challenge II', coords: [46, 8], reqs: [[45,8]],
       resetCurrencies: ['cyan'],
@@ -1467,7 +1526,8 @@ const CHALLENGE_NODES = [
       effects: [
           
       ],
-      maxLevel: 5
+      maxLevel: 5,
+      tags: ['cyan']
     },
     {id: 'CCC03', type: 'challenge', code: 'CCC03', name: 'Cyan Challenge III', coords: [46, 9], reqs: [[46,8]],
       resetCurrencies: ['cyan', 'anticyan'],
@@ -1489,7 +1549,8 @@ const CHALLENGE_NODES = [
       effects: [
           
       ],
-      maxLevel: 5
+      maxLevel: 5,
+      tags: ['cyan', 'anticyan']
     },
     {id: 'CCC04', type: 'challenge', code: 'CCC04', name: 'Cyan Challenge IV', coords: [47, 9], reqs: [[46,9]],
       resetCurrencies: ['cyan', 'anticyan'],
@@ -1511,7 +1572,8 @@ const CHALLENGE_NODES = [
       effects: [
           
       ],
-      maxLevel: 5
+      maxLevel: 5,
+      tags: ['cyan', 'anticyan']
     },
     {id: 'CCC05', type: 'challenge', code: 'CCC05', name: 'Cyan Challenge V', coords: [47, 8], reqs: [[47,9]],
       resetCurrencies: ['cyan', 'anticyan'],
@@ -1532,7 +1594,8 @@ const CHALLENGE_NODES = [
       effects: [
           
       ],
-      maxLevel: 5
+      maxLevel: 5,
+      tags: ['cyan']
     },
     {id: 'CCC06', type: 'challenge', code: 'CCC06', name: 'Cyan Challenge VI', coords: [47, 10], reqs: [[47,9]],
       resetCurrencies: ['cyan'],
@@ -1551,7 +1614,8 @@ const CHALLENGE_NODES = [
       effects: [
           
       ],
-      maxLevel: 25
+      maxLevel: 25,
+      tags: ['cyan']
     },
     {id: 'CCC07', type: 'challenge', code: 'CCC07', name: 'Cyan Challenge VII', coords: [47, 11], reqs: [[47,10]],
       resetCurrencies: ['cyan', 'anticyan'],
@@ -1573,7 +1637,8 @@ const CHALLENGE_NODES = [
       effects: [
           
       ],
-      maxLevel: 10
+      maxLevel: 10,
+      tags: ['cyan', 'anticyan']
     },
     {id: 'CCC08', type: 'challenge', code: 'CCC08', name: 'Cyan Challenge VIII', coords: [47, 12], reqs: [[47,11]],
       resetCurrencies: ['cyan', 'anticyan'],
@@ -1596,7 +1661,8 @@ const CHALLENGE_NODES = [
       effects: [
           
       ],
-      maxLevel: 5
+      maxLevel: 5,
+      tags: ['cyan', 'anticyan']
     },
 ];
 
@@ -3205,7 +3271,7 @@ function wrapText(text, maxWidth, fontSize) {
     const maxLvl = node.maxLevel || 1;
     
     // Show current active challenge effects (debuffs) if we're inside this challenge
-    if (gameState.activeChallenge === node.id && node.challengeEffects) {
+    if (isChallengeActive(node.id) && node.challengeEffects) {
         for (const eff of node.challengeEffects) {
             if ((eff.type === 'currency_mult' || eff.type === 'base_gain' || eff.type === 'base_gain_raw') && eff.currency) {
     let val = '?';
@@ -3292,7 +3358,7 @@ function wrapText(text, maxWidth, fontSize) {
             if (node.type === 'info') return '#0e7490';
             if (node.type === 'reset') return '#b45309';
             if (node.type === 'challenge') {
-                if (gameState.activeChallenge === node.id) return '#22c55e';
+                if (isChallengeActive(node.id)) return '#22c55e';
                 if (getChallengeCompletions(node.id) >= (node.maxLevel||1)) return '#27272a';
                 return '#34d399';
             }
@@ -3305,7 +3371,7 @@ function wrapText(text, maxWidth, fontSize) {
             if (node.type === 'info') return 'rgba(8,47,73,0.75)';
             if (node.type === 'reset') return 'rgba(69,26,3,0.85)';
             if (node.type === 'challenge') {
-                if (gameState.activeChallenge === node.id) return 'rgba(6,78,60,0.85)';
+                if (isChallengeActive(node.id)) return 'rgba(6,78,60,0.85)';
                 if (getChallengeCompletions(node.id) >= (node.maxLevel||1)) return 'rgba(9,9,11,0.85)';
                 return 'rgba(5,46,22,0.85)';
             }
@@ -3426,7 +3492,7 @@ function wrapText(text, maxWidth, fontSize) {
             if (node.type === 'challenge') {
                 const completions = getChallengeCompletions(node.id);
                 const maxLvl = node.maxLevel || 1;
-                const isActive = gameState.activeChallenge === node.id;
+                const isActive = isChallengeActive(node.id);
                 ctx.fillStyle = '#22c55e';
                 ctx.textAlign = 'center';
                 ctx.font = '9px "Fira Code", monospace';
@@ -5206,17 +5272,7 @@ document.getElementById('btn-font-up').onclick = (e) => {
                     if (node) {
                         if (node.type === 'upgrade') buyUpgrade(node.id);
                         else if (node.type === 'reset' && !gameState.paused) openResetModal(node);
-                        else if (node.type === 'challenge') {
-                            // If we're already in this challenge, leave it
-                            if (gameState.activeChallenge === node.id) {
-                                leaveChallenge(false);
-                            } else if (gameState.activeChallenge) {
-                                showToast('⚠️ Already in another challenge! Leave it first.');
-                                playSound('fail');
-                            } else {
-                                enterChallenge(node.id);
-                            }
-                        }
+                        else if (node.type === 'challenge') toggleChallenge(node.id);
                     }
                 }
             }
@@ -5247,13 +5303,7 @@ document.getElementById('btn-font-up').onclick = (e) => {
                 if (node) {
                     if (node.type === 'upgrade') buyUpgrade(node.id);
                     else if (node.type === 'reset' && !gameState.paused) openResetModal(node);
-                    else if (node.type === 'challenge') {
-                        if (gameState.activeChallenge === node.id) leaveChallenge(false);
-                        else if (gameState.activeChallenge) {
-                            showToast('⚠️ Already in another challenge!');
-                            playSound('fail');
-                        } else enterChallenge(node.id);
-                    }
+                    else if (node.type === 'challenge') toggleChallenge(node.id);
                 }
                 
             }
@@ -5355,13 +5405,7 @@ document.getElementById('btn-font-up').onclick = (e) => {
                 if (node) {
                     if (node.type === 'upgrade') buyUpgrade(node.id);
                     else if (node.type === 'reset' && !gameState.paused) openResetModal(node);
-                    else if (node.type === 'challenge') {
-                        if (gameState.activeChallenge === node.id) leaveChallenge(false);
-                        else if (gameState.activeChallenge) {
-                            showToast('⚠️ Already in another challenge!');
-                            playSound('fail');
-                        } else enterChallenge(node.id);
-                    }
+                    else if (node.type === 'challenge') toggleChallenge(node.id);
                 }
             }
             if (!e.touches || e.touches.length === 0) { isDragging = false; isPinching = false; touchHandled = true; }
@@ -6489,7 +6533,7 @@ window.updateNewsMessageCount = updateNewsMessageCount;
             // Check challenge completion (every tick)
             checkChallengeCompletion();
             // Update challenge overlay every tick if active
-            if (gameState.activeChallenge) updateChallengeOverlay();
+            if (hasActiveChallenge()) updateChallengeOverlay();
             } catch(e) { console.warn('tick error:', e); }
         }
 
