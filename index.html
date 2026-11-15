@@ -4101,6 +4101,17 @@ function buyUpgrade(nodeId, isAutomated = false, isFree = false) {
                         playSound('buy');
                     }
                 }
+                //trigger effects that are triggered on purchase
+                if (node.effects) {
+                    node.effects.forEach(eff => {
+                        if (eff.type === 'event') {
+                            const lvl = getLevel(eff.nodeId);
+                            if (lvl > 0) {
+                                eff.events(lvl, getLevel, getCurr, getUpgradeTime);
+                            }
+                        } 
+                    });
+                }
                 requestCanvasRedraw();
                 return true;
             }
