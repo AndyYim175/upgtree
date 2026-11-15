@@ -4105,11 +4105,11 @@ function buyUpgrade(nodeId, isAutomated = false, isFree = false) {
                 if (node.effects) {
                     node.effects.forEach(eff => {
                         if (eff.type === 'event') {
-                            const lvl = getLevel(eff.nodeId);
+                            const lvl = getLevel(node.id);
                             if (lvl > 0) {
                                 eff.events(lvl, getLevel, getCurr, getUpgradeTime);
                             }
-                        } 
+                        }
                     });
                 }
                 requestCanvasRedraw();
