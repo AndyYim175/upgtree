@@ -240,6 +240,12 @@
     <main id="viewport" class="relative flex-1 w-full h-full overflow-hidden cursor-grab active:cursor-grabbing grid-bg" style="margin-top: 20px;">
         <canvas id="canvas-layer"></canvas>
     </main>
+    <!-- Giant pause overlay when the game is paused so we no longer forget that it is paused aaaaaa-->
+    <div id="pauseOverlay" hidden style="position:fixed; inset:0; z-index:9999; display:flex; align-items:center; justify-content:center; gap:8vmin; opacity:0.2; pointer-events:none;">
+        <div style="width:25vmin; height:60vmin; background:#fff; border-radius:1vmin;"></div>
+        <div style="width:25vmin; height:60vmin; background:#fff; border-radius:1vmin;"></div>
+        </div>
+    <style>#pauseOverlay[hidden]{display:none !important;}</style>
     <!-- Bottom-left HUD -->
     <div id="currency-bar-container" class="z-30 fixed flex flex-col items-start gap-2 text-xs select-none drop-shadow-md" style="bottom: max(1.25rem, env(safe-area-inset-bottom, 1.25rem)); left: max(1.25rem, env(safe-area-inset-left, 1.25rem));">
         <div id="currency-bar" class="flex flex-col gap-0.5"></div>
@@ -4724,6 +4730,7 @@ document.getElementById('btn-scroll-lock').onclick = () => {
 };
         document.getElementById('btn-pause').onclick = () => {
             gameState.paused = !gameState.paused;
+            document.getElementById('pauseOverlay').hidden = !gameState.paused;
             if (gameState.paused) {
                 document.getElementById('reset-modal').classList.add('hidden');
                 activeResetNode = null;
@@ -5148,6 +5155,7 @@ if (document.readyState === 'loading') {
                     localStorage.setItem(SAVE_KEY, JSON.stringify(gameState));
                         renderCurrencyBar();
                         updateTransform();
+                        document.getElementById('pauseOverlay').hidden = !gameState.paused;
                         if (gameState.paused) {
                             document.getElementById('pause-icon').setAttribute('data-lucide', 'play');
                             document.getElementById('pause-label').textContent = 'Continue';
@@ -6341,6 +6349,7 @@ window.updateNewsMessageCount = updateNewsMessageCount;
                 applyNotation(DEFAULT_NOTATION);
             }
             document.getElementById('buy-mode-label').textContent = `BUY: x${buyMode}`;
+            document.getElementById('pauseOverlay').hidden = !gameState.paused;
             if (gameState.paused) { document.getElementById('pause-icon').setAttribute('data-lucide', 'play');
                 document.getElementById('pause-label').textContent = 'Continue'; } else { document
                     .getElementById('pause-icon').setAttribute('data-lucide', 'pause');
