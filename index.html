@@ -240,12 +240,6 @@
     <main id="viewport" class="relative flex-1 w-full h-full overflow-hidden cursor-grab active:cursor-grabbing grid-bg" style="margin-top: 20px;">
         <canvas id="canvas-layer"></canvas>
     </main>
-    <!-- Giant pause overlay when the game is paused so we no longer forget that it is paused aaaaaa-->
-    <div id="pauseOverlay" hidden style="position:fixed; inset:0; z-index:9999; display:flex; align-items:center; justify-content:center; gap:8vmin; opacity:0.2; pointer-events:none;">
-        <div style="width:25vmin; height:60vmin; background:#fff; border-radius:1vmin;"></div>
-        <div style="width:25vmin; height:60vmin; background:#fff; border-radius:1vmin;"></div>
-        </div>
-    <style>#pauseOverlay[hidden]{display:none !important;}</style>
     <!-- Bottom-left HUD -->
     <div id="currency-bar-container" class="z-30 fixed flex flex-col items-start gap-2 text-xs select-none drop-shadow-md" style="bottom: max(1.25rem, env(safe-area-inset-bottom, 1.25rem)); left: max(1.25rem, env(safe-area-inset-left, 1.25rem));">
         <div id="currency-bar" class="flex flex-col gap-0.5"></div>
@@ -2233,10 +2227,14 @@ const CHALLENGE_NODES = [
     { id: 'CM09', type: 'upgrade', code: 'CM09', name: 'need some mana?', coords: [52, 4], reqs: [[51,4]], borderColor: 'green', desc: '+10 mana on perchase per level. note the cost goes up', effects: [{ type: 'event', events: (lvl) => {gameState.currencies.mana += 10;} }], costCurrency: 'magenta', costFormula: (lvl) => 10000*Math.pow(1.25,Math.pow(lvl, 0.75))-7500, maxLevel: 200 },
     { id: 'CM10', type: 'upgrade', code: 'CM10', name: 'i mean... why not?', coords: [52, 3], reqs: [[52,4]], borderColor: 'green', desc: '+1% magenta additive per level. note that this costs mana.', effects: [{ type: 'currency_mult', currency: 'magenta', formula: (lvl) => 1+0.01*lvl }], costCurrency: 'mana', costFormula: (lvl) => (0.2+0.05*lvl)*Math.pow(1.2, Math.pow(Math.floor(lvl/10),0.7)), maxLevel: 400 },
     { id: 'CM11', type: 'upgrade', code: 'CM11', name: 'double booster is back', coords: [49, 5], reqs: [[49,4]], borderColor: 'green', desc: 'x1.05 megenta, x1.02 mana/lvl.', effects: [{ type: 'currency_mult', currency: 'magenta', formula: (lvl) => Math.pow(1.05, lvl) },{ type: 'currency_mult', currency: 'mana', formula: (lvl) => Math.pow(1.02, lvl) }], costCurrency: 'magenta', costFormula: (lvl) => 125000*Math.pow(1.1,Math.pow(lvl, 0.85))-125000*(lvl!=0), maxLevel: 60 },
+    { id: 'CM12', type: 'upgrade', code: 'CM12', name: 'enhance 1', coords: [48, 5], reqs: [[49,5]], borderColor: 'green', desc: '+1s to CMN01 duration per level.', effects: [{ type: 'display', currency: 'magenta', formula: (lvl) => '+'+formatNum(getLevel('CM12'))+' to effect duration' }], costCurrency: 'magenta', costFormula: (lvl) => 250000*Math.pow(1.25, Math.pow(lvl, 0.8)), maxLevel: 55 },
+    { id: 'CM13', type: 'upgrade', code: 'CM13', name: 'more skills', coords: [51, 5], reqs: [[51,4]], borderColor: 'green', desc: 'unlock new skills. [currently 1, wip]', effects: [{ type: 'display', currency: 'mana', formula: (lvl) => 'skills unlock'}], costCurrency: 'magenta', costFormula: (lvl) => 15000000, maxLevel: 1 },
+    { id: 'CM14', type: 'upgrade', code: 'CM14', name: 'condition I', coords: [50, 5], reqs: [[49,5]], borderColor: 'green', desc: 'x2 mana while mana is below 250, raise the cap for the condition per level after.', effects: [{ type: 'display', currency: 'magenta', formula: (lvl) => 'condition now: <= '+formatNum(250*(1+0.5*lvl)*Math.pow(1.125,lvl))+' mana' },{ type: 'currency_mult', currency: 'mana', formula: (lvl) => 1+1*(getCurr('mana')<=(250*(1+0.5*lvl)*Math.pow(1.125,lvl))) }], costCurrency: 'magenta', costFormula: (lvl) => 50e6*Math.pow(1.25,Math.pow(lvl, 0.725))-50e6*(lvl!=0), maxLevel: 60 },
     
-    { id: 'CMN01', type: 'upgrade', code: 'CMN01', name: 'mana skill I', coords: [48, 2], reqs: [[48,4]], borderColor: 'green', desc: 'double magenta for 5s. cost increased based on all skills time since last activation, this basiclly goes for most mana skills', effects: [{ type: 'currency_mult', currency: 'magenta', formula: (lvl) => 1+(1)*(getTime('CMN01')<=5) }, {type: 'display', currency: 'mana', formula: (lvl)=>'Time left: '+formatNum(Math.max(0, (5)-getTime('CMN01')))+'s'}, {type:'max_level_mod', target: 'CMN01', amount: (lvl) => lvl}], costCurrency: 'mana', costFormula: (lvl) => 2+(1*(Math.max(1, 5*Math.pow(0.8, Math.pow(getTime('CMN01'),0.65)))-1))+(2*(Math.max(1, 5*Math.pow(0.8, Math.pow(getTime('CMN02'),0.65)))-1))+(2*(Math.max(1, 8*Math.pow(0.8, Math.pow(getTime('CMN03'),0.68)))-1)), maxLevel: 1 },
-    { id: 'CMN02', type: 'upgrade', code: 'CMN02', name: 'mana skill II', coords: [49, 2], reqs: [[48,2]], borderColor: 'green', desc: '1.75x magenta for 15s.', effects: [{ type: 'currency_mult', currency: 'magenta', formula: (lvl) => 1+(1)*(getTime('CMN02')<=15) }, {type: 'display', currency: 'mana', formula: (lvl)=>'Time left: '+formatNum(Math.max(0, (15)-getTime('CMN02')))+'s'}, {type:'max_level_mod', target: 'CMN02', amount: (lvl) => lvl}], costCurrency: 'mana', costFormula: (lvl) => 10+(1*(Math.max(1, 5*Math.pow(0.8, Math.pow(getTime('CMN01'),0.65)))-1))+(2*(Math.max(1, 5*Math.pow(0.8, Math.pow(getTime('CMN02'),0.65)))-1))+(2.5*(Math.max(1, 8*Math.pow(0.8, Math.pow(getTime('CMN03'),0.68)))-1)), maxLevel: 1 },
-    { id: 'CMN03', type: 'upgrade', code: 'CMN03', name: 'mana skill III', coords: [50, 2], reqs: [[49,2]], borderColor: 'green', desc: '5x magenta [decays]', effects: [{ type: 'currency_mult', currency: 'magenta', formula: (lvl) => Math.max(1, 5*Math.pow(0.8, Math.pow(getTime('CMN03'), 0.7))) }, {type: 'display', currency: 'mana', formula: (lvl)=>'Effect time: '+formatNum(Math.max(0, getTime('CMN03')))+'s'}, {type:'max_level_mod', target: 'CMN03', amount: (lvl) => lvl}], costCurrency: 'mana', costFormula: (lvl) => 20+(1*(Math.max(1, 5*Math.pow(0.8, Math.pow(getTime('CMN01'),0.65)))-1))+(2*(Math.max(1, 5*Math.pow(0.8, Math.pow(getTime('CMN02'),0.65)))-1))+(3*(Math.max(1, 8*Math.pow(0.8, Math.pow(getTime('CMN03'),0.68)))-1)), maxLevel: 1 },
+    { id: 'CMN01', type: 'upgrade', code: 'CMN01', name: 'mana skill I', coords: [48, 2], reqs: [[48,4]], borderColor: 'green', desc: 'double magenta for 5s. cost increased based on all skills time since last activation, this basiclly goes for most mana skills', effects: [{ type: 'currency_mult', currency: 'magenta', formula: (lvl) => 1+(1)*(getTime('CMN01')<=(5+getLevel('CM12'))) }, {type: 'display', currency: 'mana', formula: (lvl)=>'Time left: '+formatNum(Math.max(0, (5+getLevel('CM12'))-getTime('CMN01')))+'s'}, {type:'max_level_mod', target: 'CMN01', amount: (lvl) => lvl}], costCurrency: 'mana', costFormula: (lvl) => 2+(2*(Math.max(1, 5*Math.pow(0.75, Math.pow(getTime('CMN01'),0.65)))-1))+(2*(Math.max(1, 5*Math.pow(0.8, Math.pow(getTime('CMN02'),0.65)))-1))+(2*(Math.max(1, 8*Math.pow(0.8, Math.pow(getTime('CMN03'),0.68)))-1))+(40*(Math.max(1, 9*Math.pow(0.825, Math.pow(getTime('CMN04'),0.68)))-1)), maxLevel: 1 },
+    { id: 'CMN02', type: 'upgrade', code: 'CMN02', name: 'mana skill II', coords: [49, 2], reqs: [[48,2]], borderColor: 'green', desc: '1.75x magenta for 15s.', effects: [{ type: 'currency_mult', currency: 'magenta', formula: (lvl) => 1+(1)*(getTime('CMN02')<=15) }, {type: 'display', currency: 'mana', formula: (lvl)=>'Time left: '+formatNum(Math.max(0, (15)-getTime('CMN02')))+'s'}, {type:'max_level_mod', target: 'CMN02', amount: (lvl) => lvl}], costCurrency: 'mana', costFormula: (lvl) => 10+(1*(Math.max(1, 5*Math.pow(0.8, Math.pow(getTime('CMN01'),0.65)))-1))+(2*(Math.max(1, 5*Math.pow(0.8, Math.pow(getTime('CMN02'),0.65)))-1))+(2.5*(Math.max(1, 8*Math.pow(0.8, Math.pow(getTime('CMN03'),0.68)))-1))+(75*(Math.max(1, 9*Math.pow(0.825, Math.pow(getTime('CMN04'),0.68)))-1)), maxLevel: 1 },
+    { id: 'CMN03', type: 'upgrade', code: 'CMN03', name: 'mana skill III', coords: [50, 2], reqs: [[49,2]], borderColor: 'green', desc: '5x magenta [decays]', effects: [{ type: 'currency_mult', currency: 'magenta', formula: (lvl) => Math.max(1, 5*Math.pow(0.8, Math.pow(getTime('CMN03'), 0.7))) }, {type: 'display', currency: 'mana', formula: (lvl)=>'Effect time: '+formatNum(Math.max(0, getTime('CMN03')))+'s'}, {type:'max_level_mod', target: 'CMN03', amount: (lvl) => lvl}], costCurrency: 'mana', costFormula: (lvl) => 20+(1*(Math.max(1, 5*Math.pow(0.8, Math.pow(getTime('CMN01'),0.65)))-1))+(3*(Math.max(1, 5*Math.pow(0.8, Math.pow(getTime('CMN02'),0.65)))-1))+(5*(Math.max(1, 8*Math.pow(0.8, Math.pow(getTime('CMN03'),0.68)))-1))+(125*(Math.max(1, 9*Math.pow(0.825, Math.pow(getTime('CMN04'),0.68)))-1)), maxLevel: 1 },
+    { id: 'CMN04', type: 'upgrade', code: 'CMN04', name: 'mana skill IV', coords: [51, 2], reqs: [[50,2]], borderColor: 'green', desc: 'boost megenta based on current mana for 20s', effects: [{ type: 'currency_mult', currency: 'magenta', formula: (lvl) => 1+(0.25+Math.pow(getCurr('mana')/5, 0.22))*(getTime('CMN04')<=20) }, {type: 'display', currency: 'mana', formula: (lvl)=>'Time left: '+formatNum(Math.max(0, (20)-getTime('CMN04')))+'s'}, {type:'max_level_mod', target: 'CMN04', amount: (lvl) => lvl}], costCurrency: 'mana', costFormula: (lvl) => 750+(25*(Math.max(1, 5*Math.pow(0.8, Math.pow(getTime('CMN01'),0.65)))-1))+(40*(Math.max(1, 5*Math.pow(0.8, Math.pow(getTime('CMN02'),0.65)))-1))+(55*(Math.max(1, 8*Math.pow(0.8, Math.pow(getTime('CMN03'),0.68)))-1))+(250*(Math.max(1, 9*Math.pow(0.825, Math.pow(getTime('CMN04'),0.68)))-1)), maxLevel: 1 },
     
     { id: 'CY01', type: 'upgrade', code: 'CY01', name: 'yellow', coords: [43, 2], reqs: [[43,5]], borderColor: 'green', desc: 'generate yellow at a radnom rate 1/random()/s per tick, max rand is 1/10.', effects: [{ type: 'base_gain', currency: 'yellow', formula: (lvl) => 1/Math.max(Math.random()/((Math.pow(1+0.05*getLevel('CY14'), 3))*Math.pow(1.31,Math.pow(getLevel('CY08'), 0.5))*Math.pow(1+9*(getLevel('CGL06')>=1)+Math.max(getLevel('CGL06')-1, 0), 1+0.2*getLevel('CGL23'))), 1/(10*Math.pow(1.08,getLevel('CY06'))*Math.pow(2, getLevel('CY04'))*Math.pow(1.25,Math.pow(getLevel('CY02'), 0.5)))) }], costCurrency: 'gray', costFormula: (lvl) => 0, maxLevel: 1 },
     { id: 'CY02', type: 'upgrade', code: 'CY02', name: 'luck+', coords: [44, 2], reqs: [[43,2]], borderColor: 'green', desc: 'max luck is increased.', effects: [{ type: 'display', currency: 'yellow', formula: (lvl) => '-> 1/'+formatNum(Math.pow(1.25,Math.pow(lvl, 0.5)))+' to min random()' }], costCurrency: 'yellow', costFormula: (lvl) => 20+30*Math.pow(1.5,Math.pow(lvl,0.7)), maxLevel: 250 },
@@ -4730,7 +4728,6 @@ document.getElementById('btn-scroll-lock').onclick = () => {
 };
         document.getElementById('btn-pause').onclick = () => {
             gameState.paused = !gameState.paused;
-            document.getElementById('pauseOverlay').hidden = !gameState.paused;
             if (gameState.paused) {
                 document.getElementById('reset-modal').classList.add('hidden');
                 activeResetNode = null;
@@ -4819,10 +4816,10 @@ applyNotation('standard');
         let _rebindingAction = null;
 
         function applyHotkeyMode(mode) {
-            if (mode === 1) { buyMode = 1; showToast('Now buying 1 at a time'); }
-            else if (mode === 5) { buyMode = 5; showToast('Now buying 5 at a time'); }
-            else if (mode === 10) { buyMode = 10; showToast('Now buying 10 at a time'); }
-            else if (mode === 'MAX') { buyMode = 'MAX'; showToast('Now buying max amount'); }
+            if (mode === 1) { buyMode = 1; }
+            else if (mode === 5) { buyMode = 5; }
+            else if (mode === 10) { buyMode = 10; }
+            else if (mode === 'MAX') { buyMode = 'MAX'; }
             gameState.buyMode = buyMode;
             document.getElementById('buy-mode-label').textContent = `BUY: x${buyMode}`;
             playSound('buy');
@@ -5155,7 +5152,6 @@ if (document.readyState === 'loading') {
                     localStorage.setItem(SAVE_KEY, JSON.stringify(gameState));
                         renderCurrencyBar();
                         updateTransform();
-                        document.getElementById('pauseOverlay').hidden = !gameState.paused;
                         if (gameState.paused) {
                             document.getElementById('pause-icon').setAttribute('data-lucide', 'play');
                             document.getElementById('pause-label').textContent = 'Continue';
@@ -6349,7 +6345,6 @@ window.updateNewsMessageCount = updateNewsMessageCount;
                 applyNotation(DEFAULT_NOTATION);
             }
             document.getElementById('buy-mode-label').textContent = `BUY: x${buyMode}`;
-            document.getElementById('pauseOverlay').hidden = !gameState.paused;
             if (gameState.paused) { document.getElementById('pause-icon').setAttribute('data-lucide', 'play');
                 document.getElementById('pause-label').textContent = 'Continue'; } else { document
                     .getElementById('pause-icon').setAttribute('data-lucide', 'pause');
